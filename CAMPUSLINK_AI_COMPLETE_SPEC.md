@@ -1,511 +1,361 @@
-# 🏛️ CampusLink AI — Comprehensive System Specification, Design Architecture & Enhancement Guide
+# 🏛️ CampusLink AI — Complete System Specification & Architecture Blueprint
+## The Institutional Placement Register ("The Register" Identity · v3.0)
 
-> **Document Version**: 2.0.0  
-> **Target Audience**: Core Engineering Team, UI/UX Designers & Claude AI Prompting Engine  
+> **Document Version**: 3.0.0 (Unslop Edition)  
 > **Platform**: CampusLink AI (BPUT Hackathon PS10 Prototype)  
-> **Status**: Production-Ready Frontend Build Verified (`npm run build` passing with 0 errors)
+> **Aesthetic Theme**: "The Register" / Odisha Ink Editorial System  
+> **Current Build Status**: Production Ready (`npm run build` passing with 0 errors, 0 warnings)  
+> **Repository Branch**: `main` (clean local commit `59d57de`)
 
 ---
 
-## 1. Executive Summary & Brand Philosophy
+## 1. Executive Summary & Brand Identity: "The Register"
 
-**CampusLink AI** is an intelligent, end-to-end Campus-to-Corporate Placement Management and Analytics Ecosystem. It was built to solve the widespread operational paralysis in college placement cells, which typically rely on fragmented WhatsApp groups, chaotic spreadsheets, missed deadlines, opaque shortlisting, and scheduling collisions.
+### 1.1 The Concept
+CampusLink AI has been architected not as another generic SaaS web application, but as an **institutional placement register that learned to explain itself**. 
 
-### Core Product Objectives:
-1. **Digitize & Unify**: Connect Students, Placement Cell Administrators, and Corporate Recruiters onto one synchronized, reactive platform.
-2. **Transparent, Explainable AI**: Replace binary, black-box rejection/shortlisting decisions with human-understandable, weighted factor breakdowns and automated remediation roadmaps.
-3. **Automated Resource Scheduling**: Detect venue collisions and interview panel double-booking automatically, providing single-click conflict mitigation.
-4. **Early Warning Interventions**: Predict unplaced and at-risk students before the recruitment season ends and automate mentor assignments.
-5. **Verified Lifecycle Tracking**: Track the post-selection journey from offer letter verification to documentation compliance and joining confirmation.
-
----
-
-## 2. Design System Deep Dive: "Odisha Ink"
-
-### 2.1 The Visual Narrative
-Most placement portals are rendered in sterile corporate royal blue (`#1E40AF`) and white, while modern AI-generated prototypes default to glowing purple/violet gradients with glassmorphic cards and Inter typography. 
-
-CampusLink AI rejects both clichés. It employs the **"Odisha Ink"** design system, inspired by the historical **Pattachitra** painting tradition of Odisha:
-- Warm, earthy paper and parchment surfaces.
-- Fine, hand-inked line dividers.
-- Deep, solid carbon-ink typography.
-- A single, warm **Ochre** accent color reminiscent of traditional mineral pigments.
-- Crisp status signifiers (Jade for verified, Brick for alerts/conflicts).
-
-This palette connects with BPUT judges from Odisha on a subconscious cultural level while radiating the warmth and restraint of a custom human-designed editorial tool.
+In university placement directorates and Indian administrative offices, real governance runs on **ruled paper ledgers, official stamped approvals, and contextual margin notes**. CampusLink AI captures this physical, trustworthy authority while infusing it with modern machine learning intelligence:
+- **Ruled, Not Boxed**: Content breathes directly on parchment, structured by clean 1px hairline rules rather than claustrophobic card grids.
+- **Official Decision Stamps**: Key authorizations (`VERIFIED`, `REJECTED`, `SHORTLISTED`, `CLASH`, `RESOLVED`, `ACCEPTED`, `LOCKED`) are stamped in mono caps with a physical -2° rotation and spring thud.
+- **Reviewer Margin Notes**: AI explanations appear as handwritten-style italic margin notes where key phrases receive an animated amber highlighter swipe (`<Mark>`).
+- **Precision Data Monospace**: Roll numbers, CTC brackets, timestamps, and match scores are typeset in `IBM Plex Mono` with tabular numerals.
+- **Tactile Paper Grain**: The entire application sits on an archival bone parchment with a 4% subtle fractal noise grain texture.
 
 ---
 
-### 2.2 Complete Color Token Matrix
+## 2. Design System Tokens & Physical Metaphors
 
-| Token Name | Hex Code | Tailwind Token | Visual Description | Strict Usage Rules |
-| :--- | :--- | :--- | :--- | :--- |
-| **Bone** | `#F6F2E9` | `bg-bone`, `text-bone` | Warm cream parchment | The entire application background. Soft on projectors, avoids harsh white glare. |
-| **Paper** | `#FFFDF8` | `bg-paper` | Bright clean card surface | All card containers, drawer surfaces, popovers, and table containers. |
-| **Ink** | `#14161C` | `bg-ink`, `text-ink` | Deep carbon black | Primary typography, headers, dark sidebar, primary buttons, and active borders. |
-| **Ink Soft** | `#5B5F6B` | `text-ink-soft` | Muted neutral graphite | Secondary descriptions, column headers, metadata tags, hints, and muted icons. |
-| **Line** | `#E6DFCF` | `border-line` | Subtle warm border line | 1px borders across all cards, table row dividers, and tab underlines. |
-| **Ochre** | `#E8A33D` | `bg-ochre`, `text-ochre` | Warm saffron / golden ochre | **The ONE primary accent.** Active nav markers, ScoreDial arc, sparkles, highlights. |
-| **Ochre Tint** | `#FBEFD5` | `bg-ochre-tint` | Pale ochre wash | Background for pending badges, highlighted table rows, and explanation banners. |
-| **Ochre Deep** | `#8A5A0B` | `text-ochre-deep` | Dark golden amber | High-contrast text on ochre-tint backgrounds. Text on Ochre is always Ink, never white. |
-| **Jade** | `#1F8A63` | `text-jade`, `bg-jade` | Deep emerald green | Strictly for successful verification, approved records, and high-readiness badges. |
-| **Jade Tint** | `#DDF1E8` | `bg-jade-tint` | Pale mint wash | Background container for approved statuses and verified credentials. |
-| **Brick** | `#C4432F` | `text-brick`, `bg-brick` | Rich terracotta red | Strictly for rejected applications, scheduling conflicts, and at-risk warnings. |
-| **Brick Tint** | `#F8E1DC` | `bg-brick-tint` | Pale terracotta wash | Background for conflict banners, rejected rows, and early warning flags. |
+### 2.1 Color Tokens ("Odisha Ink" Palette)
 
-> [!IMPORTANT]
-> **Strict Color Invariants**:
-> - Never use blue, purple, magenta, or neon gradients.
-> - Never use glassmorphism with heavy blur over content.
-> - Text placed on top of `#E8A33D` (Ochre) must **always** be `#14161C` (Ink), never white.
-> - Green and red are semantic tools, never decorative elements.
+The platform strictly uses the **Odisha Ink** palette, inspired by traditional Pattachitra mineral pigments. It strictly bans purple/blue AI gradients, neon glows, and glassmorphic card blurs.
 
----
+| Token | Hex Value | Tailwind Class | Semantic Application |
+| :--- | :--- | :--- | :--- |
+| **Bone** | `#F6F2E9` | `bg-bone`, `text-bone` | Physical parchment page background. |
+| **Paper** | `#FFFDF8` | `bg-paper` | Floating objects only (record slips, drawers, popovers, score dial). |
+| **Ink** | `#14161C` | `bg-ink`, `text-ink` | Deep carbon typography, headers, dark sidebar, primary buttons. |
+| **Ink Soft** | `#5B5F6B` | `text-ink-soft` | Graphite metadata, column headers, secondary text, muted indicators. |
+| **Line** | `#E6DFCF` | `border-line`, `bg-line` | 1px hairline rules, dividers, and subtle borders. |
+| **Ochre** | `#E8A33D` | `bg-ochre`, `text-ochre` | **The ONE primary accent.** Match bars, timeline threads, highlighter swipes. |
+| **Ochre Tint** | `#FBEFD5` | `bg-ochre-tint` | Wash background for pending tags and explanation containers. |
+| **Ochre Deep** | `#8A5A0B` | `text-ochre-deep` | High-contrast amber text on ochre-tint backgrounds. |
+| **Jade** | `#1F8A63` | `text-jade`, `border-jade` | Strictly for approved credentials, verified drives, and accepted offers. |
+| **Jade Tint** | `#DDF1E8` | `bg-jade-tint` | Light mint wash container for positive audit authorizations. |
+| **Brick** | `#C4432F` | `text-brick`, `border-brick` | Strictly for rejected applications, room collisions, and at-risk flags. |
+| **Brick Tint** | `#F8E1DC` | `bg-brick-tint` | Terracotta wash container for clash alerts and risk warnings. |
 
-### 2.3 Typography System
-
-The application pairs a literary display serif with a clean, humanist sans-serif:
-
-1. **Display & Headings: `Fraunces` (Google Font)**
-   - Variable optical size with weights 500, 600, 700.
-   - Applied to: Main page headers (`h1`), section titles (`h2`), card headings (`h3`), big statistical metrics, and the brand wordmark.
-   - Purpose: Imparts warmth, intentional editorial design, and distinguishes the portal from standard template apps.
-
-2. **Interface & Body: `Manrope` (Google Font)**
-   - Humanist sans-serif with weights 400, 500, 600, 700.
-   - Applied to: Navigation links, body copy, table cell data, buttons, and form inputs.
-   - Purpose: Highly readable at small font sizes (11px–14px), modern geometric proportions without the coldness of Inter.
-
-3. **Tabular Numerals: `.tabular-nums`**
-   - Enabled globally for numbers, scores, percentages, and currencies.
-   - Ensures vertical alignment in data tables and prevents layout jitter when numbers count up.
-
-```css
-/* Typography Scale Sample */
-h1 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; line-height: 1.15; }
-h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; line-height: 1.25; }
-h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
-body { font-family: 'Manrope', sans-serif; font-size: 14px; color: #14161C; }
-.label-caps { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #5B5F6B; }
-```
+> [!NOTE]
+> **Purity Invariant**: Text placed on top of Ochre is **always Ink (`#14161C`)**, never white. Ochre is applied as small, high-density solid areas (marker lines, gauge needles, stamps), never as large background cards.
 
 ---
 
-### 2.4 Layout & Surface Architecture
-- **8-Pixel Spacing Grid**: All padding, margins, and gaps adhere to multiples of 8px (`8px`, `16px`, `24px`, `32px`, `48px`).
-- **Cards**: `bg-paper`, 1px solid `border-line`, rounded corners (`rounded-2xl` = `16px`), padding `p-6`, subtle shadow: `0 1px 2px rgba(20, 22, 28, 0.04)`.
-- **Max Width**: Application main content viewport is constrained to `1180px` (or `1440px` for ultra-wide dashboards) with generous whitespace to prevent data crowding.
-- **Custom Scrollbar**: Minimalist 7px width, transparent track, soft ink thumb with pill curvature.
-
----
-
-## 3. Complete Information Architecture & Route Sitemap
+### 2.2 Typography Hierarchy
 
 ```
-├── /                               Public Landing Hub (Hero, Pipeline, Portals, Tech Architecture)
-│
-├── /student                        (Redirects to /student/overview)
-│   ├── /student/overview           Student Readiness Dashboard & Interactive Skill Gap Engine
-│   ├── /student/profile            Locked Academic Records, Skill Matrix & Resume Upload
-│   ├── /student/drives             Placement Drives Browser with "Apply (AI Match)" Scanning
-│   ├── /student/applications       Application Tracker, Typewriter Explanations & Offers
-│   └── /student/interviews         Interview Schedule Timeline & Cell Preparation Tips
-│
-├── /admin                          (Redirects to /admin/command-center)
-│   ├── /admin/command-center       Placement Directorate Command Center & Conversion Charts
-│   ├── /admin/verification         Academic Transcript Audit Queue with PDF Preview Drawer
-│   ├── /admin/recruiters           Corporate Partner Metrics & Campus Engagement Ratings
-│   ├── /admin/drives               Drive Calendar with Overlap Visualizer & Conflict Resolver
-│   ├── /admin/at-risk              Early Warning System with Faculty Mentor Assignment
-│   └── /admin/offers               Offer Letters, Document Compliance & Notification Dispatch
-│
-└── /recruiter                      (Redirects to /recruiter/overview)
-    ├── /recruiter/overview         Recruitment Dashboard & Selection Funnel Visualizer
-    ├── /recruiter/jobs             Active Job Notification Forms (JNFs)
-    ├── /recruiter/pipeline         AI Candidate Ranking (>85% Matches), Bio Drawer & Slots
-    ├── /recruiter/slots            Weekly Interview Calendar Matrix (Mon–Fri x 4 slots)
-    └── /recruiter/analytics        Hiring Funnel Analytics, Branch Distribution & Match Spread
+Display / Headings  ──▶ Newsreader (optical variable serif, 400/500/600 + italic)
+UI & Body Text      ──▶ Instrument Sans / Manrope (humanist sans, 400/500/600)
+Data & Labels       ──▶ IBM Plex Mono (precision monospace, 400/500/600)
 ```
+
+1. **`Newsreader` (Headings & Big Numerals)**:
+   - Page Titles: `Newsreader 36px / 1.08`, font-weight 400.
+   - Numerical Readouts: `Newsreader 48px – 56px`, tabular numbers.
+   - Lede Statements: `Newsreader italic 17px – 18px`, text-ink-soft.
+2. **`Instrument Sans` (Interface Elements)**:
+   - Body copy: 14px – 15px with 1.6 line height.
+   - Button text: 12px – 13px, font-medium, letter-spacing +0.02em.
+   - Table text: 13px.
+3. **`IBM Plex Mono` (Precision Data)**:
+   - Section context tags: `10.5px`, uppercase, tracking `0.16em` (`01 · STUDENT DESK`).
+   - Identifiers: Roll numbers (`220101045`), college IDs, CTC brackets (`16.5 - 21.0 LPA`).
+   - Timestamps, drive dates, fit score readouts (`FIT 94%`), and decision stamp copy.
 
 ---
 
-## 4. Page-by-Page Detailed Blueprint
+### 2.3 Physical Surface Hierarchy
 
-### 4.1 The Public Landing Hub (`/`)
+Instead of nesting cards inside cards, the interface utilizes three clean surface layers:
+- **Level 0 (Parchment Page)**: `bg-bone` with a fixed, pointer-events-none 4% SVG fractal noise grain overlay (`body::before`).
+- **Level 1 (Ruled Content Sections)**: Zero background, zero border radius. Sections sit directly on the parchment, bounded only by 1px hairline rules (`Rule.jsx`).
+- **Level 2 (Tactile Floating Objects)**: `object={true}` on `Card.jsx`. Used selectively for floating physical slips: Drawer panels, popovers, the Command Palette, the ScoreDial instrument box, and authenticated offer slips (`bg-paper`, 10px radius, 1px line border, `shadow-object`).
+- **Radii Standards**: Controls (`rounded-control` = `6px`), Floating Objects (`rounded-object` = `10px`), Stamps (`rounded-stamp` = `3px`). Rounded-2xl and rounded-3xl are strictly banned.
 
-#### Purpose:
-The introductory gateway shown to judges before exploring deep portal features. It explains the end-to-end transformation in under 30 seconds.
+---
 
-#### Visual Structure & Sections:
-1. **Top Header**:
-   - Left: CampusLink wordmark in Fraunces bold with an Ochre dot and spark logo.
-   - Center: Smooth scroll anchor links (*Pipeline*, *Portals*, *Architecture*, *Metrics*).
-   - Right: Primary button: *"Launch System Demo"* (direct link to `/student/overview`).
-2. **Hero Section**:
-   - Pill badge: `BPUT Hackathon · Problem Statement 10 Prototype` in Ochre tint.
-   - Headline: `"From campus to corporate, in one clear pipeline."` (64px Fraunces with an underlined serif emphasis on *"clear pipeline"*).
-   - Subtitle: Clear explanation of how spreadsheets and chaotic communication are replaced.
-   - Dual CTAs: *"Explore the Live Portals"* (scrolls to `#portals`) and *"See How the Pipeline Works"* (scrolls to `#pipeline`).
-   - Background: Radial ochre ambient glow with a geometric SVG line pattern (`hero-grid-pattern`).
-   - Bottom Trust Badges: Jade checkmarks for *Rule + AI Hybrid Matching*, *Conflict-Aware Scheduler*, *Transparent Shortlists*, and *Connected Multi-Portal State*.
-3. **The 6-Step Pipeline Section (`#pipeline`)**:
-   - 6 cards illustrating the PS10 lifecycle:
-     1. *Readiness Profiling* (UserCheck icon)
-     2. *AI Matching & Scoring* (Brain icon)
-     3. *Conflict-Free Scheduling* (CalendarCheck icon)
-     4. *Targeted Notifications* (BellRing icon)
-     5. *Offer & Doc Tracking* (Award icon)
-     6. *Predictive Analytics* (BarChart3 icon)
-   - Staggered card entrance on scroll.
-4. **Three Portals Section (`#portals`)**:
-   - 3 large interactive cards representing the Student, Central Cell (Admin), and Recruiter views.
-   - Hover effect: Card lifts -6px, border turns Ochre, right arrow slides forward.
-   - Features 3 bulleted value propositions per role and an instant launch button.
-5. **Under the Hood / Architecture Section (`#architecture`)**:
-   - Inked dark section (`bg-ink text-bone`).
-   - Three architectural pillars: *Rule + AI Hybrid Scoring*, *Semantic Match Embeddings*, and *Conflict-Aware Scheduling*.
-   - Interactive SVG data-flow diagram: `Source Ingestion` $\rightarrow$ `Intelligence Layer` $\rightarrow$ `Scheduler` $\rightarrow$ `Reactive Store`.
-6. **Metrics Counter Bar (`#impact`)**:
-   - 4 count-up statistical cards:
-     - 1,420 Registered Students (across 6 disciplines)
-     - 42 Recruiter Partners (Tier-1 MNCs)
-     - 78.4% Placement Rate (+12.8% YoY)
-     - ₹34.0 LPA Highest CTC (Cloud Systems Engineer)
+## 3. The Unslop Component Library
+
+### 3.1 [`Stamp.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/Stamp.jsx) — Official Decision Stamp
+- **Visuals**: `font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold border-[1.5px] rounded-[3px] px-2 py-0.5 select-none -rotate-2`.
+- **Tones**: Jade (`VERIFIED`, `APPROVED`, `RESOLVED`, `ACCEPTED`), Brick (`REJECTED`, `CLASH`, `WITHDRAWN`), Ochre (`SHORTLISTED`, `OFFERED`), Ink (`LOCKED`).
+- **Physics**: When an action occurs (e.g. Admin clicks Approve), the stamp lands with a scale spring ($1.5 \rightarrow 1.0$), slight rotational tilt ($-8^\circ \rightarrow -2^\circ$), and opacity transition, simulating a physical rubber stamp impact.
+
+### 3.2 [`Mark.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/Mark.jsx) — Animated Highlighter Swipe
+- Wraps key competencies inside AI explanations (e.g., `<Mark>React</Mark>`, `<Mark>Python</Mark>`, `<Mark>Data Structures</Mark>`).
+- Renders an amber Ochre highlight block covering the lower 55% of the text.
+- Animates via Framer Motion with `scaleX: 0 -> 1` originating from the left (`originX: 0`) over 500ms, recreating the visual of a reviewer running an amber highlighter over paper.
+
+### 3.3 [`MarginNote.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/MarginNote.jsx) — Reviewer Margin Note
+- Renders a clean left-bordered margin column (`border-l-2 border-ochre` or `border-line`).
+- Top label: `font-mono text-[10px] uppercase tracking-[0.14em] font-semibold text-ink-soft`.
+- Body: `font-serif italic text-sm text-ink/90 leading-relaxed max-w-[65ch]`.
+
+### 3.4 [`StatStrip.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/StatStrip.jsx) — Ruled Metric Bar
+- Replaces generic 4-card metric blocks with an institutional ruled register bar.
+- Top and bottom bounded by 1px hairline rules; metric items separated by vertical hairlines.
+- Features: Mono uppercase category labels, large `Newsreader 48px–56px` count-up numerals, and one-line context hints.
+
+### 3.5 [`Masthead.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/Masthead.jsx) — Editorial Page Header
+- Provides consistent, authoritative framing on every screen:
+  - Mono context slug: `01 · STUDENT DESK · ROLL 220101045`
+  - Page title: `Newsreader 36px`
+  - One-sentence italic lede: `Newsreader italic 17px`
+  - Action slot on the right
+  - Bottom hairline rule (`Rule.jsx`) separating header from page data.
+
+### 3.6 [`ScoreDial.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/ui/ScoreDial.jsx) — v2 Physical Instrument
+- Custom SVG semicircle instrument gauge (230px diameter):
+  - **61 Engraved Tick Marks**: Every 3 degrees spanning $180^\circ$, with every 10th tick lengthened and labeled (`0`, `50`, `100`).
+  - **3px Background Track**: Clean line-color arc.
+  - **5px Solid Ochre Arc**: Represents calculated student readiness.
+  - **Physical Rotating Needle**: 1.75px ink needle pivoting on a 4.5px circular hub that swings smoothly with spring overshoot (`needleAngle: -90° -> +90°`).
+  - **Center Readout**: Large `Newsreader 48px` numeral counting in real-time, accompanied by the mono level name (`DEVELOPING`, `READY`).
+
+### 3.7 [`JudgeGuide.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/layout/JudgeGuide.jsx) — Judge's 90-Second Walkthrough
+- Discrete floating pill fixed in the bottom-left corner: `GUIDE 0/6`.
+- Clicking expands an L2 paper slip listing the 6 critical hackathon evaluation steps:
+  1. *Adjust skill gap chip* $\rightarrow$ verifies dynamic instrument dial & progression ruler.
+  2. *Apply (AI Match) on Microsoft SDE* $\rightarrow$ verifies laser scan line & typewriter feedback.
+  3. *Audit & stamp student verification* $\rightarrow$ verifies PDF audit drawer & stamp thud.
+  4. *Resolve Lab 4 scheduling clash* $\rightarrow$ verifies 3-room resource timeline & animated slot move.
+  5. *Schedule slot from candidate pipeline* $\rightarrow$ verifies conflict-free calendar booking & bio drawer.
+  6. *Confirm cross-portal synchronization* $\rightarrow$ verifies live interview calendar sync.
+- Features "Go $\rightarrow$" shortcuts that jump directly to each page.
+- **Automatically ticks off items** with green checks as actions are triggered in the shared reactive store.
+
+---
+
+## 4. Screen-by-Screen System Blueprint
+
+### 4.1 Public Landing Hub (`/`)
+
+```mermaid
+flowchart TD
+    Header["Header: Wordmark + Links + Launch CTA"]
+    Hero["Hero (12-Col Asymmetric): Left Headline & Mark + Right Physical Register Artifacts"]
+    Pipeline["The Pipeline Thread: 6 Numbered Ruled Nodes (01 to 06)"]
+    Desks["Three Desks: Ruled Rows I (Student), II (Admin), III (Recruiter)"]
+    Architecture["Under the Hood: Rule+ML Hybrid, Embeddings, Interval Trees + SVG Dataflow"]
+    Metrics["Metrics: Ruled StatStrip (1,420 Students, 42 Recruiters, 78.4% Placed, ₹34.0 LPA)"]
+    Footer["Institutional Minimalist Footer"]
+    
+    Header --> Hero --> Pipeline --> Desks --> Architecture --> Metrics --> Footer
+```
+
+- **Asymmetric 12-Column Hero**:
+  - **Left 7 Columns**: Mono label `BPUT HACKATHON 2026 · PS10 PLACEMENT PLATFORM`, headline `"Every shortlist, explained."` with `<Mark>` swipe on *"explained."*, Instrument Sans subtext, direct CTA button *"Open the Demo Desks →"*.
+  - **Right 5 Columns ("The Physical Register")**:
+    - **Slip B (Background, rotated -2°)**: Resource schedule for Lab 4 with brick hatched collision pattern and `<Stamp tone="brick">CLASH</Stamp>`.
+    - **Slip A (Foreground, rotated 1.5°)**: Candidate slip for *Rohan Senapati* (CGPA 9.12), 94% fit bar, `<MarginNote>` with highlighted skills (`React`, `Python`, `Data Structures`), and an official `<Stamp tone="jade">SHORTLISTED</Stamp>`.
+- **02 · The Placement Thread**: 6 numbered nodes (`01` to `06`) on a continuous thread line covering the complete PS10 lifecycle.
+- **03 · Three Unified Desks**: Ruled horizontal rows (I, II, III) with large Newsreader numerals, mono keywords, and hover transitions.
+- **04 · Under the Hood**: Inked section with bone typography, documenting Rule+ML hybrid scoring, cosine skill embeddings, interval intersection trees, and an operational SVG dataflow diagram.
+- **StatStrip**: 1,420 Students · 42 Recruiters · 78.4% Placed · ₹34.0 LPA Highest.
 
 ---
 
 ### 4.2 Student Portal
 
 #### 1. Readiness Dashboard (`/student/overview`)
-- **Banner**: Displays logged-in student (*Ananya Sharma*, B.Tech CSE, CGPA 8.80) with a live dynamic badge: `Verified by Placement Cell` (Jade) or `Pending Verification` (Ochre).
-- **4 Metric Cards**:
-  - *Eligible Drives*: 18 (based on CGPA filter)
-  - *Active Applications*: Dynamic count from store
-  - *Interviews Scheduled*: Real-time count of confirmed interviews
-  - *AI Resume Score*: 88% (ATS parsed rating)
-- **Placement Readiness Card (Left Column)**:
-  - Custom SVG **ScoreDial**: A 210px diameter semicircle dial that dynamically animates from 0 to current readiness score (72/100).
-  - **Readiness Progression Ladder**: A 4-step horizontal track:
-    $$\text{Not Ready } (<65) \longrightarrow \text{Developing } (65-79) \longrightarrow \text{Ready } (80-89) \longrightarrow \text{Highly Employable } (90+)$$
-  - Active step indicator marker with an animated pinging pulse ring.
-- **Skill Gaps for Target Role (Right Column - Signature Feature)**:
-  - Contextualized for *Microsoft SDE* (Benchmark: 80+ Ready).
-  - 4 interactive chips:
-    - *Cloud Infrastructure (AWS/Azure)* (+4 pts)
-    - *Distributed System Design* (+3 pts)
-    - *Mock Coding Interviews (Hard Algorithmic)* (+5 pts)
-    - *Certified Kubernetes / DevOps Foundations* (+2 pts)
-  - **Interaction**: Clicking any chip toggles its status to "In Progress", draws an SVG checkmark inside the chip, animates the ScoreDial arc to the new score, and if a threshold is crossed (e.g. 72 to 80), the ladder marker smoothly slides to the next tier!
+- **Masthead**: `01 · STUDENT DESK · ROLL 220101045`, title `"Good morning, Ananya Sharma."`, status stamp `VERIFIED` or `PENDING AUDIT`.
+- **StatStrip**: Eligible Drives (18), Active Applications (4), Confirmed Interviews (2), AI Resume Score (88%).
+- **Asymmetric 7/5 Grid**:
+  - **Left 7 Cols (Readiness Instrument)**: ScoreDial v2 with 61 tick marks, rotating needle, and the **Readiness Progression Ruler** (1px track with ticks for `NOT READY`, `DEVELOPING (65)`, `READY (80)`, `HIGHLY EMPLOYABLE (90)`).
+  - **Right 5 Cols (Target Gaps)**: 4 ruled rows for *Cloud Infrastructure (+4)*, *System Design (+3)*, *Mock Coding (+5)*, *Kubernetes (+2)*. Toggling any gap swings the needle, counts up the dial, and updates the status to `IN PROGRESS`.
 
-#### 2. Profile & Verified Credentials (`/student/profile`)
-- **Locked Academic Records**:
-  - Read-only card with a security lock icon.
-  - Displays College ID (`220101045`), Discipline (CSE), Verified CGPA (`8.80 / 10.0`), and Active Backlogs (`0`).
-  - Labeled `Locked & Audited by Central Placement Cell`.
-- **Technical Stack & Skills Matrix**:
-  - Interactive `TagInput` component.
-  - Tags (`React`, `Node.js`, `Python`, `PostgreSQL`, `Tailwind CSS`) pop in and out with Framer Motion layout springs.
-  - Students can add new skills by typing and pressing Enter.
-- **Resume Upload & Audit**:
-  - PDF file attachment picker with file size and type preview.
-  - ATS verification badge (88% compliance).
-- **Submit for Verification**:
-  - Simulates a 900ms server audit request.
-  - Dispatches toast notification.
-  - Shifts student status to `Pending Verification`.
-  - Appends an audit task to the Admin's Verification Queue!
+#### 2. Academic Record & Skills (`/student/profile`)
+- **Official University Record Slip**: Floating L2 slip with locked fields (Reg No `220101045`, Branch CSE, CGPA `8.80 / 10.0`, 0 Backlogs) and a black `LOCKED` stamp.
+- **Technical Stack**: Interactive `TagInput` where skill badges pop in and out.
+- **Resume Upload**: PDF slip viewer with verified ATS compliance badge (88%).
+- **Submit for Audit**: Simulates official submission, shifting status to `PENDING AUDIT` and pushing an item to the Admin queue.
 
-#### 3. Campus Placement Drives (`/student/drives`)
-- **Stream Tabs**: *All Streams*, *IT / Software*, *Core Engg*.
-- **Search Bar**: Instant filtering by company or role.
-- **Drive Cards**:
-  - Company name, stream tag, package range (e.g. `16.5 - 21.0 LPA`), drive date, venue, cut-off CGPA, and required skill chips.
-  - Detects conflict status (if a drive has a schedule collision, it displays a terracotta alert badge).
-- **Apply (AI Match) Button (Signature Animation)**:
-  - Clicking triggers an animated state:
-    1. Button text becomes *"Matching..."* with an animated spinner and sparkle icon.
-    2. A thin, horizontal Ochre laser scan line sweeps across the entire card container (0.85s).
-    3. The button transforms into an AI Fit Badge (e.g. `72% Match` or `88% Match`).
-    4. Automatically adds the application to the student's records and pushes the student into the Recruiter's talent pipeline.
+#### 3. Placement Drives Register (`/student/drives`)
+- **Tabs**: All Streams, IT / Software, Core Engg.
+- **96px Ruled Register Rows**: Company name in Newsreader 22px, role, CTC in bold mono, venue, cut-off, and skill tags.
+- **Apply (AI Match)**: Clicking triggers an Ochre laser scan line sweep (850ms) across the row before transforming into a mono `FIT 72%` readout and a status stamp.
+- **Conflict Visibility**: Clashing drives display an official `CLASH` stamp.
 
-#### 4. Applications & Placement Status (`/student/applications`)
-- **Two Sub-Tabs**: *My Applications* and *Verified Offers & Docs*.
-- **Expandable Application Accordion**:
-  - Shows Company, Role, CTC, Status badge (*Shortlisted*, *Rejected*, *In Review*), and Fit Score percentage.
-  - **On Expand (Signature Animation)**:
-    - **Typewriter Effect**: The AI explanation text types itself out character-by-character at 20ms per letter.
-    - **Factor Breakdown Bars**: Once typed, 5 factor weight bars fill sequentially from 0% to their respective values:
-      1. *Skill & Tech-Stack Alignment* (40% weight)
-      2. *CGPA & Academic Consistency* (20% weight)
-      3. *Mock Technical Interview* (20% weight)
-      4. *Project Relevance & GitHub* (10% weight)
-      5. *Cloud Certifications* (10% weight)
-    - **Color Coded Bars**: Jade for $\ge 80\%$, Ochre for $60-79\%$, Brick for $<60\%$.
-    - **Remediation Action**: If rejected, an actionable box slides in with a link to *"Open Notion Remediation Roadmap $\rightarrow$"*.
-- **Verified Offers Tab**:
-  - Cards for accepted/offered packages with CTC, joining dates, and document verification checklists.
+#### 4. Application Log & Audit (`/student/applications`)
+- **Ruled Accordion**: Displays company, role, CTC, status stamp, and a **4-node stage thread** (`Applied → Screened → Interview → Offer`).
+- **On Expand**:
+  - `<MarginNote>`: Reviewer explanation with `<Mark>` highlighter marks on *cloud infrastructure* and *mock interview benchmark*.
+  - **Decision Factor Weightage**: Five 4px horizontal bars (Skill Match 40%, CGPA 20%, Mock Technical 20%, Projects 10%, Certifications 10%).
+  - Rejection Action: `"Open Notion Remediation Module →"` link.
+- **Offer Letters Tab**: Authenticated offer slips with CTC, joining dates, and document checklists.
 
-#### 5. Interview Schedule (`/student/interviews`)
-- **Vertical Timeline**:
-  - Upcoming interview rounds with animated timeline nodes on a left border track.
-  - Displays company, date, time slot, interview mode (Virtual Teams / On-Campus Lab), and assigned assessment panel.
-  - Dynamically populates whenever a corporate recruiter books a candidate from the Recruiter portal!
-- **Placement Cell Tips Card**:
-  - Guidelines on technical review, the STAR behavioral framework, and audio/video prerequisites.
+#### 5. Confirmed Interview Schedule (`/student/interviews`)
+- **Vertical Timeline Thread**: Upcoming rounds on a 2px ochre line with animated nodes, date stamps, company titles, interview modes (Virtual Teams / Lab), and assessment panels.
+- **Synchronized Integration**: Dynamically adds interview rounds scheduled by corporate recruiters in real-time.
+- **Cell Guidelines**: Numbered recommendations in Newsreader italic.
 
 ---
 
 ### 4.3 Central Placement Cell (Admin Portal)
 
 #### 1. Command Center (`/admin/command-center`)
-- **Header Action**: *"Authorize New Drive"* button opening a drawer with conflict pre-validation.
-- **4 Macro Metrics**: Eligible Students (1,420), Active Recruiters (42), Overall Placed % (78.4%), Highest CTC (₹34.0 LPA).
-- **Recharts Analytics Engine**:
-  - **Chart 1 (Bar)**: Branch-Wise Placement Conversion rate (CSE 82%, IT 76%, ECE 64%, EEE 58%, ME 49%, CE 41%) with custom Ochre bars and themed tooltip.
-  - **Chart 2 (Line)**: 5-year historical package growth (2022 to 2026) comparing Average CTC vs Highest CTC with dashed ink line and solid ochre points.
-- **Offers Pipeline Strip**: Quick overview pill showing counts of Offered, Accepted, Pending, and Missing Docs.
+- **Masthead**: `01 · PLACEMENT DIRECTORATE · BPUT CENTRAL CAMPUS`, title `"Placement Command Center."`, action button *"+ Authorize New Drive"*.
+- **Macro StatStrip**: 1,420 Students, 42 Recruiters, 78.4% Placed, ₹34.0 LPA Highest.
+- **Ruled Recharts Analytics**:
+  - **Branch Conversion**: BarChart with CSE (82%), IT (76%), ECE (64%), EEE (58%), ME (49%), CE (41%). Custom dark ink tooltip and Newsreader italic editorial annotation.
+  - **Package Trajectory (2022–2026)**: LineChart comparing Average vs Highest CTC. Ochre end-point highlight and editorial annotation.
+- **Offers Funnel Strip**: Ruled single row showing: `Offered 16 → Accepted 11 → Pending 05 → Docs Pending 03`.
 
-#### 2. Academic Verification Queue (`/admin/verification`)
-- **Queue Table**: Displays students requesting academic audits, their reported CGPA, discipline, and submission date.
-- **PDF Audit Drawer**: Clicking *"View Transcript PDF"* slides open an audit panel with an embedded official BPUT transcript seal and DigiLocker validation tag.
-- **Approve / Reject Action (Signature Animation)**:
-  - **Approve**: The table row flashes `jade-tint`, a green checkmark is drawn via SVG stroke inside the action cell, the row collapses its height to 0 after 650ms, and the pending count decrements. The student's badge across the app updates to `Verified`!
-  - **Reject**: The row shakes horizontally 3 times, flashes `brick-tint`, and collapses.
-  - **Empty State**: When all items are approved, an animated `All caught up!` checkmark illustrates that the queue is clear.
+#### 2. Credential Verification Queue (`/admin/verification`)
+- **Queue Register**: Students awaiting audit with roll numbers, disciplines, and reported CGPAs.
+- **PDF Slip Drawer**: Displays official university grade transcript preview with DigiLocker API seal.
+- **Stamp & Collapse Interaction**:
+  - Clicking **Approve**: Row flashes `jade-tint`, drops an authentic green `<Stamp tone="jade">VERIFIED</Stamp>` into the cell, and collapses its height to 0 after 650ms.
+  - Clicking **Reject**: Row shakes horizontally, drops a red `<Stamp tone="brick">REJECTED</Stamp>`, and collapses.
+  - Decrements pending counter and updates student profile badge across all portals.
 
-#### 3. Recruiter Partners (`/admin/recruiters`)
-- Table of 8 corporate hiring partners (Microsoft, TCS, Cognizant, Infosys, L&T, Tata Motors, Tech Mahindra, Capgemini).
-- Columns for drives hosted, students hired, average CTC, and visual engagement percentage progress bars.
+#### 3. Recruiter Engagement Register (`/admin/recruiters`)
+- Table of 8 corporate partners detailing drives hosted, total hires, average CTC, and visual engagement meter bars.
 
-#### 4. Drives Calendar & Conflict Resolver (`/admin/drives`)
-- **Automated Conflict Detector**:
-  - Detects that **Cognizant Technology** requested Nov 02 (09:00 - 12:00) in **Computing Lab 4**, clashing with **Tech Mahindra** (10:00 - 13:00).
-- **Timeline Visualizer (Signature Feature)**:
-  - An interactive 9:00 to 17:00 time axis showing horizontal slot blocks.
-  - The 2-hour collision window (10:00 - 12:00) is rendered with a pulsing, hatched brick-red overlay labeled `CLASH (10:00-12:00)`.
+#### 4. Drives Calendar & Clash Resolver (`/admin/drives`)
+- **Scheduling Clash Alert**: Identifies that Cognizant (09:00 - 12:00) overlaps with Tech Mahindra (10:00 - 13:00) in Computing Lab 4.
+- **Multi-Resource Allocation Grid**:
+  - Displays three parallel venue tracks: `Computing Lab 2`, `Computing Lab 4`, and `Seminar Hall A`.
+  - The 2-hour collision in Lab 4 is rendered with a hatched brick overlay labeled `CLASH`.
 - **1-Click Auto-Mitigate**:
-  - Clicking *"Resolve Conflict"* slides the Cognizant bar smoothly into an open window (`14:00 - 17:00, Computing Lab 2`).
-  - The red clash hatching fades away.
-  - The conflict banner morphs into a Jade celebration banner: `Resolved: moved to 14:00 - 17:00, Computing Lab 2`.
-  - The drive status across Student and Admin portals turns from `Conflict` to `Verified`!
+  - Clicking **Resolve Clash** triggers spring animation: the Cognizant bar visibly slides into `Computing Lab 2` at `14:00 - 17:00`.
+  - Clash hatching vanishes; status banner turns jade; a `RESOLVED` stamp drops onto the Cognizant bar; updates the drive across all portals.
 
-#### 5. Early Warning & At-Risk Analytics (`/admin/at-risk`)
-- Proactive predictive table listing students flagged with low CGPA ($<7.0$), weak mock interview scores ($<60$), or 3 consecutive drive rejections.
-- Displays a visual Risk Severity Bar (e.g. 92% Critical, 84% High).
-- **Assign Mentor (Signature Interaction)**:
-  - Clicking opens an inline mentor picker popover (*Dr. R. Mishra*, *Prof. P. K. Sahoo*, *Dr. S. Panda*).
-  - Selecting a mentor smoothly morphs the button into an emerald badge: `Mentor: Dr. R. Mishra` and dispatches a notification.
+#### 5. At-Risk Early Warning Analytics (`/admin/at-risk`)
+- Predictive table identifying candidates with CGPA $<7.0$, mock scores $<60$, or 3 consecutive rejections.
+- `<MarginNote>` explaining the classifier benchmarks with `<Mark>` highlights.
+- **Assign Mentor**: Inline popover to assign faculty advisors (*Dr. R. Mishra*, *Prof. P. K. Sahoo*, *Dr. S. Panda*). Transforms into an official `Mentor: Dr. R. Mishra` stamp.
 
 #### 6. Offers & Documentation Compliance (`/admin/offers`)
-- Tracks the post-selection funnel (Offered, Accepted, Deferred, Withdrawn).
-- Displays document completion ratios (e.g. `3/4 verified`) with segmented mini progress meters.
-- **Send Reminder Button**: Dispatches an automated email/SMS prompt and sets `reminderSent: true`, reflecting in the student's offer checklist.
+- StatStrip for Total Offers (8), Accepted (5), Pending Decision (2), Deferred/Withdrawn (1).
+- Document completion ratios with segmented progress bars.
+- **Send Reminder**: Dispatches notification and flags `reminderSent: true` on student record.
 
 ---
 
 ### 4.4 Corporate Recruiter Portal
 
 #### 1. Talent Overview (`/recruiter/overview`)
-- Active drive banner for *Microsoft India University Recruitment* (342 applicants).
-- **Hiring Funnel Visualizer**:
-  - 4 horizontal tapered progress bars representing candidate conversion:
-    $$\text{Total Applicants (342)} \longrightarrow \text{AI Match } >85\% \text{ (48)} \longrightarrow \text{Interviews (12)} \longrightarrow \text{Offers (16)}$$
-  - Each bar animates sequentially on scroll with an Ochre gradient fill.
-- **Post JNF Drawer**: Form to configure new roles, CTC brackets, cut-off CGPA, and required skill tags.
+- Masthead for *Microsoft India University Recruitment* (Associate SDE Drive).
+- **StatStrip**: Total Applicants (342), AI Match > 85% (48), Interviews Booked (12), Offers Extended (16).
+- **Selection Funnel**: 4 horizontal ruled bars showing conversion drops from Applicants $\rightarrow$ Matches $\rightarrow$ Interviews $\rightarrow$ Offers.
 
 #### 2. Active Job Postings (`/recruiter/jobs`)
-- Cards for open postings (*SDE-1*, *Cloud Solutions Architect Trainee*, *Data & Applied AI Fellow*).
-- Displays application counts, qualified candidate pools, and deadlines.
+- Ruled list of active JNFs (*SDE-1*, *Cloud Solutions Architect Trainee*, *Data & AI Fellow*) with compensation brackets, application volumes, and status stamps.
 
-#### 3. Candidate Pipeline & AI Match (`/recruiter/pipeline`) *(Hero Recruiter Screen)*
-- **Stream Tabs**: Filter by *All Qualified*, *CSE / IT*, or *ECE*.
-- **Semantic Match Ranking**:
-  - Candidates are automatically ranked descending by their `aiMatch` score ($94\%$ down to $72\%$).
-  - High matches feature an Ochre sparkle with an ambient pulsing shimmer.
-- **View Bio Drawer (Signature Animation)**:
-  - Clicking slides open a 560px profile drawer.
-  - Top callout highlights the AI Match justification sentence:
-    > *"Highly Recommended: Candidate possesses verified proficiency in **React**, **Python**, and **Data Structures**, exceeding the required mock benchmarks..."*
-  - An animated Ochre underline draws itself sequentially under the words **React**, **Python**, and **Data Structures**!
-  - Verified skill chips pop in with staggered springs.
-  - Clean resume skeleton viewer.
+#### 3. Ranked Candidate Pipeline (`/recruiter/pipeline`) *(Hero Screen)*
+- **Stream Tabs**: All Qualified, CSE / IT Cohort, ECE Discipline.
+- **Semantic Fit Ranking**: Candidates ranked by `aiMatch` percentage ($94\%$ down to $72\%$) with 60px mini match bars. Zero cheesy sparkles.
+- **View Bio Drawer**:
+  - Candidate header with roll number and discipline.
+  - `<MarginNote label="01 · AI MATCH JUSTIFICATION" strong>`: where `<Mark>React</Mark>`, `<Mark>Python</Mark>`, and `<Mark>Data Structures</Mark>` highlighter marks animate sequentially!
+  - `02 · VERIFIED TECHNICAL STACK`: clean mono skill tags with check marks.
+  - `03 · AUTHENTICATED METRICS`: verified CGPA and project counts.
 - **Schedule Slot Popover**:
-  - Opens a menu of conflict-free slots on Nov 05, 2026.
-  - Automatically identifies and disables conflicting slots (*"Clashes with TCS Drive in Lab 4"*).
-  - Booking a slot locks the candidate, updates the scheduled count, and syncs immediately to the student's personal interview calendar!
+  - Conflict-free slots menu on Nov 05, 2026.
+  - Detects and disables overlapping slots (*"CLASH: TCS"*).
+  - Booking locks the slot, updates recruiter counts, and immediately pushes the session to the student's personal interview timeline!
 
-#### 4. Interview Slots Grid (`/recruiter/slots`)
-- A weekly interactive matrix (Monday to Friday $\times$ 4 daily time slots).
-- Booked candidate cards show names and roles with verified green checkmarks.
-- Empty slots can be clicked to reserve an immediate interview window.
+#### 4. Synchronized Interview Slots (`/recruiter/slots`)
+- Weekly calendar grid (Monday to Friday $\times$ 4 time slots).
+- Booked candidate cards show names and roles with verified checkmarks. Empty slots can be clicked to reserve an immediate window.
 
 #### 5. Hiring Analytics (`/recruiter/analytics`)
-- Recharts visualizations for:
-  - *Applicants by Branch* (CSE, IT, ECE, Others).
-  - *AI Match Score Distribution Histogram* (90-100%, 80-89%, 70-79%, 60-69%, <60%).
-- Key metric cards: Average AI Match (78.2%), Offer Acceptance Rate (88.5%), and Time-to-Hire (12 Days).
+- StatStrip for Average AI Match (78.2%), Offer Acceptance (88.5%), and Time-to-Hire (12 Days).
+- Ruled bar charts for discipline distribution and AI match score spread.
 
 ---
 
-## 5. Global Layouts, Shells & System-Wide UI
+## 5. Global Navigation & System Utilities
 
-### 5.1 AppShell Architecture (`src/components/layout/AppShell.jsx`)
-- **Desktop Sidebar (250px)**:
-  - Deep Ink background (`#14161C`) with soft bone text.
-  - Active item features an animated 3px Ochre pill marker sliding vertically between routes using Framer Motion's `layoutId="sidebarActiveMarker"`.
-  - Icon-only collapse below 1024px; mobile drawer with slide-in animation.
-- **Sticky Header**:
-  - Left: Brand mark with sparkling icon + Tenant context subtext (Student, Admin Directorate, or Recruiter TA).
-  - Center: Global Search trigger with `Ctrl+K` keyboard shortcut pill.
+### 5.1 AppShell (`src/components/layout/AppShell.jsx`)
+- **Desktop Sidebar (240px)**: Deep Ink background (`#14161C`) with bone text. Navigation items numbered in mono (`01`, `02`, `03`). Active item marked by a 3px Ochre vertical pill indicator sliding with Framer Motion `layoutId="sidebarActiveMarker"`.
+- **Sticky Header (56px)**:
+  - Left: Clean wordmark `CampusLink.register` + mono tenant slug (`01 · STUDENT DESK`, `02 · PLACEMENT DIRECTORATE`, `03 · CORPORATE TA DESK`).
+  - Center: Global search trigger (`Ctrl+K`).
   - Right:
-    - **Demo Role Switcher Segmented Control**: 3-button pill (`Student | Admin | Recruiter`) allowing judges to jump between portals in one click.
-    - **Notification Bell**: Features an unread Ochre dot and a subtle swing animation whenever a new event is emitted.
-    - **User Avatar**: Inked circular badge with initials.
+    - **Demo Role Switcher**: Segmented mono caps control (`STUDENT | ADMIN | RECRUITER`) allowing instantaneous portal switching with preserved state.
+    - **Notification Bell**: Features an unread dot and a gentle rocking swing animation ($-12^\circ \rightarrow +12^\circ \rightarrow 0^\circ$) on new event arrival.
+    - **User Avatar**: Circular monogram badge.
+- **[`JudgeGuide.jsx`](file:///c:/Users/zahid/OneDrive/Desktop/Hackathons/BPUT2026/src/components/layout/JudgeGuide.jsx)**: Floating walkthrough checklist embedded at root.
 
-### 5.2 Global Command Palette (`Ctrl+K`) (`CommandPalette.jsx`)
-- Triggered by pressing `Ctrl+K` (or `Cmd+K` on Mac) anywhere in the application or clicking the search bar.
-- Centered modal dialog with backdrop blur.
-- Live filtering across all portal destinations, actions, drives, and student verification tasks.
-- Keyboard navigation (Arrow Up/Down, Enter to select, Escape to dismiss).
+### 5.2 Command Palette (`CommandPalette.jsx`)
+- Triggered by `Ctrl+K` or clicking the search bar.
+- Rapid fuzzy search across all portal routes, candidate pipelines, verification queues, and drive schedules.
 
-### 5.3 Real-Time Notification Popover (`NotificationPopover.jsx`)
-- Opens from the header bell.
-- Groups real-time platform events into categories: *Shortlisting*, *Drives*, *Deadlines*, and *Offers*.
-- Displays relative timestamps (*"2 hours ago"*, *"Just now"*), unread dot indicators, and a *"Mark all read"* action.
-
-### 5.4 Toast Notification Dispatcher (`src/components/ui/Toast.jsx`)
-- Built on React Context (`ToastProvider` + `useToast`).
-- Fixed bottom-center presentation with a gentle slide-up spring (`y: 16 -> 0`).
-- Auto-dismisses after 3.2 seconds.
-- Four semantic color tones: Jade (success), Brick (alert), Ochre (pending), Ink (neutral).
-
-### 5.5 React Error Boundary (`src/components/ui/ErrorBoundary.jsx`)
-- Wraps the entire application tree.
-- Prevents component render crashes from unmounting the page.
-- Renders an in-theme recovery card with an *"Reload Page"* button in the Odisha Ink palette.
+### 5.3 Notification Popover (`NotificationPopover.jsx`)
+- Accessible from the header bell.
+- Organizes live events by category (*Shortlisting*, *Drives*, *Deadlines*, *Offers*) with relative timestamps and a "Mark all read" action.
 
 ---
 
-## 6. Shared Reactive State & Mock API Architecture
+## 6. Shared Reactive Store & Cross-Portal Data Sync
 
-### 6.1 Reactive Store (`src/lib/store.jsx`)
-The demo uses a unified React Context store with live cross-portal event propagation:
+The entire application runs on a shared, reactive in-memory state engine (`src/lib/store.jsx`). It ensures that **actions in one portal immediately update the other two portals in real-time**:
 
 ```mermaid
-flowchart TD
-    Store["src/lib/store.jsx (Unified In-Memory State)"]
-    
-    StudentPortal["Student Portal (/student/*)"]
-    AdminPortal["Admin Portal (/admin/*)"]
-    RecruiterPortal["Recruiter Portal (/recruiter/*)"]
-    
-    Store <--> StudentPortal
-    Store <--> AdminPortal
-    Store <--> RecruiterPortal
-```
+sequenceDiagram
+    participant Admin as Admin Portal
+    participant Store as Reactive Store (store.jsx)
+    participant Student as Student Portal
+    participant Recruiter as Recruiter Portal
 
-#### The 5 Live Cross-Portal Synchronizations:
-1. **Admin Verification $\rightarrow$ Student Badge**:
-   When Admin clicks "Approve" on Ananya Sharma in `/admin/verification`, `currentStudent.verified` becomes `true`. Navigating to `/student/overview` instantly shows the green `Verified by Placement Cell` badge and a confirmation notification.
-2. **Conflict Resolution $\rightarrow$ Schedule Sync**:
-   When Admin clicks "Resolve Conflict" on the Cognizant drive in `/admin/drives`, the drive slot is updated to `14:00 - 17:00, Lab 2`. The new slot appears in `/student/drives` and the Admin calendar.
-3. **Student Application $\rightarrow$ Recruiter Pipeline**:
-   When Student applies to a drive in `/student/drives`, the applicant is pushed into `pipeline` in `/recruiter/pipeline` with their calculated AI Fit Score.
-4. **Recruiter Slot Booking $\rightarrow$ Student Calendar**:
-   When Recruiter books an interview slot for a candidate in `/recruiter/pipeline`, the interview is automatically inserted into `studentInterviews` in `/student/interviews`.
-5. **Admin Offer Reminder $\rightarrow$ Student Checklist**:
-   When Admin clicks "Send Reminder" in `/admin/offers`, the student's offer record flags `reminderSent: true` and shows a "Reminder received from Cell" badge.
+    Note over Admin,Recruiter: Event 1: Credential Verification
+    Admin->>Store: approveStudent('s-1')
+    Store->>Student: currentStudent.verified = true
+    Note over Student: Badge turns 'VERIFIED' + Notif dispatched
+
+    Note over Admin,Recruiter: Event 2: Conflict Mitigation
+    Admin->>Store: resolveDriveConflict('d-2')
+    Store->>Student: Drive moved to 14:00-17:00 Lab 2
+    Store->>Admin: Clash hatching removed; timeline bar slides
+
+    Note over Admin,Recruiter: Event 3: Drive Application
+    Student->>Store: applyToDrive('d-1')
+    Store->>Recruiter: New candidate appended to AI Pipeline
+
+    Note over Admin,Recruiter: Event 4: Slot Booking
+    Recruiter->>Store: scheduleInterviewSlot('s-1', '10:00-10:45 AM')
+    Store->>Student: Interview added to Student Interviews timeline
+```
 
 ---
 
-### 6.2 Mock API Layer (`src/api/index.js`)
-Components do not write directly to data files. Every view calls asynchronous service functions:
+## 7. Swappable Mock API Layer (`src/api/index.js`)
+
+All UI components interact strictly with asynchronous API wrappers in `src/api/index.js`:
 - `studentApi`: `getProfile()`, `submitProfile()`, `getDrives()`, `applyToDrive()`, `getApplications()`, `getInterviews()`
 - `adminApi`: `getVerificationQueue()`, `approveStudent()`, `rejectStudent()`, `getDrives()`, `resolveConflict()`, `getAtRiskStudents()`, `assignMentor()`, `getRecruiterPartners()`
 - `recruiterApi`: `getPipeline()`, `scheduleSlot()`, `getAnalytics()`
 - `offersApi`: `getOffers()`, `sendReminder()`
 - `notificationsApi`: `getNotifications()`
 
-Every call simulates network latency (400ms–700ms) and returns deep-cloned JSON objects. **When the backend team finishes their REST/GraphQL API, only this file needs to be modified.**
+Every API call returns deep-copied data after a simulated network delay of 400ms–700ms. **When the backend team deploys real endpoints, only `src/api/index.js` needs to be replaced with `fetch` calls. Zero component changes are required.**
 
 ---
 
-## 7. Current Animation Engine & Mechanics
+## 8. Verified Performance & Code Quality
 
-### 7.1 Motion Parameters
-- **Physics Easing**: `cubic-bezier(0.22, 1, 0.36, 1)` (snappy ease-out with smooth deceleration).
-- **Durations**:
-  - Micro-interactions: `150ms` (button hovers, tap feedback)
-  - Standard transitions: `300ms` (drawers, tab underlines, popovers)
-  - Scene reveals: `700ms`–`900ms` (ScoreDial sweep, timeline slide)
-- **GPU Rules**: Only `transform`, `opacity`, and SVG `strokeDashoffset` / `strokeDasharray` are animated to ensure 60fps performance on laptops and projectors.
-- **Accessibility**: All components check Framer Motion's `useReducedMotion()`. If reduced motion is requested, transitions resolve instantaneously without looping effects.
-
-### 7.2 Catalog of Signature Animations
-
-| Location | Trigger | Signature Animation Behavior |
-| :--- | :--- | :--- |
-| **Landing Hero** | Page Load | Headline reveals word-by-word with a clipping mask; ambient ochre glow breathes in the background. |
-| **Student Overview** | Click Gap Chip | Chip checks with SVG stroke animation; ScoreDial sweeps arc from 72 to 80; ladder marker slides to "Ready" with a pulse ring. |
-| **Student Drives** | Click Apply | Button displays "Matching..."; an Ochre laser scan line sweeps horizontally across the card (0.85s); button morphs into a fit score badge. |
-| **Student Applications** | Expand Row | AI explanation text types out dynamically (20ms/char); 5 factor breakdown bars fill sequentially with staggered delays. |
-| **Admin Verification** | Click Approve | Row flashes `jade-tint`, draws a green SVG checkmark, then smoothly collapses its height to 0 (600ms); pending count decrements. |
-| **Admin Verification** | Click Reject | Row shakes horizontally ($\pm 8\text{px}$ spring), flashes `brick-tint`, and collapses. |
-| **Admin Drives** | Click Resolve Conflict | Cognizant timeline bar slides horizontally from Lab 4 to Lab 2; red clash hatching fades out; status banner morphs from brick to jade. |
-| **Admin At-Risk** | Assign Mentor | Mentor selection button morphs into an emerald chip (`Mentor: Dr. R. Mishra`) with a slide-in spring. |
-| **Recruiter Pipeline** | Tab Switch | Candidate rows re-order with physical layout springs (`layoutId`). |
-| **Recruiter Bio** | Open Bio Drawer | Drawer slides from right; three key technical skills (*React*, *Python*, *Data Structures*) have an Ochre underline drawn underneath them sequentially. |
-| **Global AppShell** | Route Change | Sidebar active marker slides between items using layout springs; page enters with fade and 8px upward rise. |
-| **Notification Bell** | State Change | Bell icon rocks gently ($-12^\circ \rightarrow +12^\circ \rightarrow 0^\circ$, 500ms) when a cross-portal notification arrives. |
+- **Vite Production Build**: Verified with exit code 0 (`dist/index.html`, `dist/assets/*.css`, `dist/assets/*.js`).
+- **Zero Warnings**: No unused variables, clean React 18 hooks.
+- **Git State**: Clean working tree committed locally on `main` branch (`59d57de`).
+- **Offline Reliability**: Google Fonts pre-cached; local fallbacks configured.
+- **Reduced Motion Support**: All motion components honor `useReducedMotion()`.
 
 ---
 
-## 8. Master Enhancement Roadmap (Guide for Claude Prompts)
+## 9. Next Steps for Planning with Claude
 
-This section provides concrete directions for the user and Claude to plan the **next wave of UI/UX enhancements, visual polish, and advanced animations**:
-
-### Phase A: Next-Level Micro-Interactions & Visual Polish
-1. **Interactive Cursor / Glow Trail**:
-   - Add a subtle, low-opacity Ochre spotlight glow that follows the mouse cursor on cards and the landing page hero.
-2. **Audio / Sound Design (Tactile Feedback)**:
-   - Optional, tasteful sound effects using the Web Audio API (synthetic subtle click on tab change, soft success chime on conflict resolved, gentle pop when skill chip is clicked).
-3. **Interactive Confetti on Offer Acceptance**:
-   - Canvas-based confetti burst utilizing the Odisha Ink color palette (Ochre, Jade, and Bone particles) when an offer is marked as "Accepted".
-4. **Animated SVG Crest / University Emblem**:
-   - An interactive geometric BPUT university seal in the header or landing page with rotating SVG orbit lines.
-
----
-
-### Phase B: Advanced AI & Visualization Capabilities
-1. **Interactive Student Readiness Spider / Radar Chart**:
-   - Add a 6-axis Recharts or SVG Radar Chart on `/student/overview`:
-     - Axis: *Core DSA*, *System Architecture*, *Communication Skills*, *Academic Consistency*, *Verified Projects*, *Industry Certifications*.
-     - Overlay the student's polygon against the recruiter's minimum benchmark polygon.
-2. **Candidate Comparison Mode (Recruiter Portal)**:
-   - Checkbox selection in `/recruiter/pipeline` allowing a side-by-side modal comparison of 2 or 3 candidates with skill diff highlights.
-3. **Live AI Assistant Floating Drawer / Chatbot**:
-   - A floating pill button in the bottom right (*"CampusLink AI Assistant"*).
-   - Students can ask questions like: *"Why was I rejected for Microsoft SDE?"* or *"What skills do I need for TCS Digital?"* with simulated streaming answers.
-4. **Heatmap Calendar for Placement Season**:
-   - A GitHub-style intensity heatmap on the Admin Command Center showing placement drive density across the 90-day season.
-
----
-
-### Phase C: Polish for Live Hackathon Presentation
-1. **"Tour Mode" / Guided Demo Walkthrough**:
-   - A button in the header (*"Start 90-Second Demo Walkthrough"*) that highlights each required feature in sequence with tooltips pointing judges to the key innovations.
-2. **Exportable PDF Report Generator**:
-   - Add a *"Download Official Placement Audit Report (PDF)"* button in the Admin portal that compiles a printable summary of the season's analytics.
-3. **Dark Mode Variant ("Night Lagoon" / Option B from design spec)**:
-   - An optional theme toggle switching from the warm Bone background to deep forest lagoon (`#0B1714` background with lime accent `#C9F25B`).
-
----
-
-## 9. Summary for Claude Prompting
-
-When pasting this document into Claude to generate future enhancement prompts:
-- Instruct Claude to strictly maintain the **Odisha Ink** token system (`bone`, `paper`, `ink`, `line`, `ochre`, `jade`, `brick`).
-- Direct Claude to build on top of `src/lib/store.jsx` to preserve real-time cross-portal data synchronization.
-- Emphasize that all animations must use **Framer Motion** with GPU-accelerated attributes (`transform`, `opacity`, and SVG stroke properties).
-- Ensure that the single-accent design constraint (Ochre as the only accent color) remains intact.
-
+This document encapsulates the complete v3.0 architecture. When prompting Claude for further refinements:
+1. Reference the **"The Register"** metaphor (ruled parchment, decision stamps, margin notes with `<Mark>`).
+2. Maintain the **Odisha Ink** token constraints (no purple gradients, no glassmorphism, single Ochre accent).
+3. Do not modify `src/lib/store.jsx` or break the 5 cross-portal live synchronizations.
+4. Keep the **Judge's Guide (`GUIDE 0/6`)** synchronized with any new features you introduce.
