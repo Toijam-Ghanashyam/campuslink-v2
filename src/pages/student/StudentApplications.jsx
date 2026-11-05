@@ -1,99 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ChevronDown,
-  Sparkles,
-  ExternalLink,
-  CheckCircle2,
-  Clock,
-  FileText,
-  AlertCircle,
-  Award,
-  Calendar,
-} from 'lucide-react';
+import { ChevronDown, ExternalLink, CheckCircle2, Clock, FileText, ArrowRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { Masthead } from '../../components/ui/Masthead';
 import { Tabs } from '../../components/ui/Tabs';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
-import { Callout } from '../../components/ui/Callout';
+import { Stamp } from '../../components/ui/Stamp';
+import { Mark } from '../../components/ui/Mark';
+import { MarginNote } from '../../components/ui/MarginNote';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { cn } from '../../lib/utils';
-
-// Typewriter component for the AI explanation
-function TypewriterText({ text, onComplete }) {
-  const [displayed, setDisplayed] = useState('');
-
-  useEffect(() => {
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < text.length) {
-        setDisplayed(text.slice(0, index + 1));
-        index++;
-      } else {
-        clearInterval(interval);
-        onComplete && onComplete();
-      }
-    }, 20);
-
-    return () => clearInterval(interval);
-  }, [text, onComplete]);
-
-  return <span>{displayed}</span>;
-}
 
 export function StudentApplications() {
   const { applications, offers } = useStore();
   const [activeTab, setActiveTab] = useState('applications');
-  const [expandedAppId, setExpandedAppId] = useState('app-1'); // Default open Microsoft for instant demo wow!
-  const [showFactorBars, setShowFactorBars] = useState({});
+  const [expandedAppId, setExpandedAppId] = useState('app-1');
 
   const studentOffers = offers.filter((o) => o.studentId === 's-1' || o.studentName.includes('Ananya')) || [];
 
   const tabs = [
     { id: 'applications', label: 'My Applications', count: applications.length },
-    { id: 'offers', label: 'Verified Offers & Docs', count: studentOffers.length },
+    { id: 'offers', label: 'Offer Letters & Docs', count: studentOffers.length },
   ];
 
   const toggleExpand = (id) => {
     setExpandedAppId((prev) => (prev === id ? null : id));
   };
 
+  const stages = ['Applied', 'Screened', 'Interview', 'Offer'];
+
   return (
     <PageTransition className="space-y-6">
-      {/* Title */}
-      <div>
-        <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">
-          Applications & Placement Status
-        </h1>
-        <p className="text-sm text-ink-soft mt-1">
-          Review transparent AI shortlisting factors, detailed feedback diagnostic, and verified corporate offers.
-        </p>
-      </div>
+      <Masthead
+        context="04 · APPLICATION REGISTRATION & AUDIT"
+        title="Application Log & Decisions."
+        lede="Inspect transparent shortlisting factor weightages, verified rejection diagnostics, and authenticated offer documentation."
+      />
 
-      {/* Tabs */}
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
       {/* Tab 1: Applications */}
       {activeTab === 'applications' && (
-        <div className="space-y-4">
+        <div className="divide-y divide-line border-y border-line">
           {applications.map((app) => {
             const isExpanded = expandedAppId === app.id;
-            const barsReady = showFactorBars[app.id];
+            const currentStageIndex = app.status === 'Shortlisted' ? 2 : app.status === 'Rejected' ? 1 : 1;
 
             return (
-              <Card key={app.id} className="p-0 overflow-hidden border-line">
+              <div key={app.id} className="transition-colors">
                 {/* Header Row */}
                 <div
                   onClick={() => toggleExpand(app.id)}
-                  className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-bone/40 transition-colors select-none"
+                  className="py-4 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-bone/40 select-none"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2.5 mb-1">
-                      <h3 className="font-display font-semibold text-lg text-ink">
+                  <div className="flex-1 space-y-0.5">
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="font-display font-medium text-xl text-ink">
                         {app.company}
                       </h3>
-                      <Badge
+                      <Stamp
                         tone={
                           app.status === 'Shortlisted'
                             ? 'jade'
@@ -101,29 +65,46 @@ export function StudentApplications() {
                             ? 'brick'
                             : 'ochre'
                         }
-                        size="sm"
                       >
                         {app.status}
-                      </Badge>
+                      </Stamp>
                     </div>
-                    <p className="text-xs sm:text-sm text-ink-soft">
-                      {app.role} · CTC: <span className="text-ink font-semibold">{app.ctc}</span>
+                    <p className="font-sans text-xs text-ink-soft">
+                      {app.role} · Package: <span className="font-mono text-ink font-semibold">{app.ctc}</span>
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  {/* Stage thread on 2px line */}
+                  <div className="hidden md:flex items-center gap-1.5 font-mono text-[10.5px]">
+                    {stages.map((st, sIdx) => {
+                      const isComplete = sIdx <= currentStageIndex;
+                      return (
+                        <div key={st} className="flex items-center gap-1.5">
+                          <span className={cn(isComplete ? 'text-ink font-bold' : 'text-ink-soft/50')}>
+                            {st}
+                          </span>
+                          {sIdx < stages.length - 1 && (
+                            <span className="text-line">→</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Fit Score & Chevron */}
+                  <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
-                      <span className="text-[11px] uppercase tracking-wider block font-semibold text-ink-soft">
-                        AI Fit Score
+                      <span className="font-mono text-[10px] uppercase text-ink-soft block">
+                        AI FIT
                       </span>
-                      <span className="font-display font-bold text-lg text-ink tabular-nums">
+                      <span className="font-mono font-bold text-sm text-ink tabular-nums">
                         {app.fitScore}%
                       </span>
                     </div>
 
                     <button
                       type="button"
-                      className="w-8 h-8 rounded-lg bg-bone border border-line flex items-center justify-center text-ink-soft hover:text-ink transition-colors"
+                      className="w-7 h-7 rounded flex items-center justify-center text-ink-soft hover:text-ink transition-colors"
                     >
                       <ChevronDown
                         className={cn('w-4 h-4 transition-transform duration-200', isExpanded && 'rotate-180')}
@@ -132,75 +113,54 @@ export function StudentApplications() {
                   </div>
                 </div>
 
-                {/* Expanded AI Explanation Drawer */}
+                {/* Expanded Section: Margin Note + Why This Score Bars */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      className="border-t border-line bg-paper p-6 space-y-6"
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden bg-bone/30 border-t border-line px-5 py-5 space-y-5"
                     >
-                      {/* AI Explanation Banner */}
-                      <div className="p-4 rounded-xl bg-ochre-tint/40 border border-ochre/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-ochre-deep" />
-                          <h4 className="font-semibold text-xs sm:text-sm text-ink">
-                            Explainable AI Shortlist Breakdown
-                          </h4>
-                          <span className="text-[11px] text-ochre-deep font-semibold ml-auto">
-                            Level: {app.level}
-                          </span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-ink/90 leading-relaxed font-sans">
-                          <TypewriterText
-                            text={app.explanation}
-                            onComplete={() =>
-                              setShowFactorBars((prev) => ({ ...prev, [app.id]: true }))
-                            }
-                          />
-                        </p>
-                      </div>
+                      {/* Margin Note with Highlighters */}
+                      <MarginNote label={`AI EVALUATION DIAGNOSTIC · LEVEL: ${app.level.toUpperCase()}`} strong>
+                        {app.status === 'Rejected' ? (
+                          <>
+                            Below Threshold: The student's CGPA meets the cut-off, but the verified skills matrix shows a significant gap in{' '}
+                            <Mark delay={0.3}>cloud infrastructure</Mark> &amp; distributed system design, and the{' '}
+                            <Mark delay={0.6}>mock interview benchmark</Mark> is below the recruiter's threshold of 85.
+                          </>
+                        ) : (
+                          <>
+                            {app.explanation}
+                          </>
+                        )}
+                      </MarginNote>
 
-                      {/* Factor Bars */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                            Decision Weightage & Factor Alignment
-                          </span>
-                          <span className="text-[11px] text-ink-soft">
-                            Benchmark Minimum: 75/100
-                          </span>
-                        </div>
+                      {/* Factor Weightage Bars */}
+                      <div className="space-y-2 pt-1 max-w-2xl">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft block font-semibold">
+                          DECISION FACTOR WEIGHTAGE &amp; ALIGNMENT
+                        </span>
 
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {app.breakdown?.map((factor, fIdx) => (
                             <div key={fIdx} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium text-ink">
+                              <div className="flex items-center justify-between font-mono text-[11px]">
+                                <span className="text-ink">
                                   {factor.factor} <span className="text-ink-soft">({factor.weight}% weight)</span>
                                 </span>
-                                <span className="font-mono font-semibold text-ink">
-                                  {factor.score}/100
-                                </span>
+                                <strong className="text-ink">{factor.score}/100</strong>
                               </div>
-                              <div className="h-2 w-full bg-bone rounded-full overflow-hidden border border-line/40">
+                              <div className="h-1.5 w-full bg-line/60 rounded-full overflow-hidden">
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{ width: `${factor.score}%` }}
-                                  transition={{
-                                    duration: 0.6,
-                                    delay: fIdx * 0.1,
-                                    ease: [0.22, 1, 0.36, 1],
-                                  }}
+                                  transition={{ duration: 0.5, delay: fIdx * 0.08 }}
                                   className={cn(
                                     'h-full rounded-full',
-                                    factor.score >= 80
-                                      ? 'bg-jade'
-                                      : factor.score >= 60
-                                      ? 'bg-ochre'
-                                      : 'bg-brick'
+                                    factor.score >= 80 ? 'bg-jade' : factor.score >= 60 ? 'bg-ochre' : 'bg-brick'
                                   )}
                                 />
                               </div>
@@ -209,107 +169,74 @@ export function StudentApplications() {
                         </div>
                       </div>
 
-                      {/* Remediation Roadmap Button for Rejected */}
+                      {/* Remediation Action Link */}
                       {app.status === 'Rejected' && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 }}
-                          className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-bone/60 p-4 rounded-xl border border-line"
-                        >
-                          <div>
-                            <p className="text-xs font-semibold text-ink">
-                              Personalized Remediation Plan Available
-                            </p>
-                            <p className="text-[11px] text-ink-soft">
-                              Follow the 4-week module to qualify for the Microsoft Spring Off-Campus Pool.
-                            </p>
-                          </div>
+                        <div className="pt-2 flex items-center gap-2 font-mono text-xs">
+                          <span className="text-ink-soft">Actionable Roadmap:</span>
                           <a
                             href="https://notion.so"
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-bone text-xs font-medium hover:bg-ink/90 transition-colors shrink-0"
+                            className="text-ink font-semibold hover:text-ochre-deep inline-flex items-center gap-1 underline underline-offset-4"
                           >
-                            <span>Open Notion Remediation Roadmap</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <span>Open Notion Remediation Module</span>
+                            <ArrowRight className="w-3 h-3" />
                           </a>
-                        </motion.div>
+                        </div>
                       )}
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </Card>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Tab 2: Offers & Documents */}
+      {/* Tab 2: Offer Letters */}
       {activeTab === 'offers' && (
-        <div className="space-y-4">
-          {studentOffers.length === 0 ? (
-            <Card className="p-10 text-center text-ink-soft">
-              <Award className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No confirmed offers received yet.</p>
-              <p className="text-xs mt-1">Offers extended by recruiters appear here with compliance document checklists.</p>
-            </Card>
-          ) : (
-            studentOffers.map((offer) => (
-              <Card key={offer.id} className="p-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-line">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-display font-semibold text-xl text-ink">
-                        {offer.company}
-                      </h3>
-                      <Badge tone="jade" size="sm">
-                        {offer.status}
-                      </Badge>
-                      {offer.reminderSent && (
-                        <Badge tone="ochre" size="sm">
-                          Reminder Received from Cell
-                        </Badge>
+        <div className="space-y-6">
+          {studentOffers.map((offer) => (
+            <div
+              key={offer.id}
+              className="bg-paper rounded-object border border-line p-6 shadow-object space-y-4 max-w-2xl"
+            >
+              <div className="flex items-start justify-between border-b border-line pb-4">
+                <div>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft block">
+                    AUTHENTICATED OFFER RECORD · BPUT SEASON 2026
+                  </span>
+                  <h3 className="font-display font-medium text-2xl text-ink mt-0.5">
+                    {offer.company}
+                  </h3>
+                  <p className="font-mono text-xs text-ink-soft mt-0.5">
+                    CTC: <strong className="text-ink font-display text-base">{offer.ctc}</strong> · Joining: {offer.joiningDate}
+                  </p>
+                </div>
+                <Stamp tone="jade">{offer.status}</Stamp>
+              </div>
+
+              <div>
+                <span className="font-mono text-[10.5px] uppercase tracking-wider text-ink-soft font-semibold block mb-2">
+                  Joining Document Checklist
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
+                  {offer.documents.map((doc, dIdx) => (
+                    <div key={dIdx} className="p-2.5 bg-bone/50 rounded-xs border border-line flex items-center justify-between">
+                      <span className="text-ink">{doc.name}</span>
+                      {doc.status === 'verified' ? (
+                        <span className="text-jade font-semibold">✓ Done</span>
+                      ) : (
+                        <span className="text-ochre-deep font-semibold">Pending</span>
                       )}
                     </div>
-                    <p className="text-xs text-ink-soft mt-1">
-                      Package: <strong className="text-ink">{offer.ctc}</strong> · Expected Joining: {offer.joiningDate}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-
-                <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-soft mb-3">
-                    Joining Documentation Checklist
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {offer.documents.map((doc, dIdx) => (
-                      <div
-                        key={dIdx}
-                        className="p-3 bg-bone/40 rounded-xl border border-line flex items-center justify-between text-xs"
-                      >
-                        <span className="font-medium text-ink">{doc.name}</span>
-                        {doc.status === 'verified' ? (
-                          <span className="text-jade font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="text-ochre-deep font-semibold flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            Pending Upload
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </PageTransition>
   );
 }
-

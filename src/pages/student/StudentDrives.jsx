@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Filter, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { Masthead } from '../../components/ui/Masthead';
 import { Tabs } from '../../components/ui/Tabs';
-import { Badge } from '../../components/ui/Badge';
+import { Stamp } from '../../components/ui/Stamp';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { cn } from '../../lib/utils';
@@ -40,10 +40,9 @@ export function StudentDrives() {
   const handleApply = async (drive) => {
     setMatchingDriveId(drive.id);
     try {
-      // Simulate scan line animation duration (800ms)
       await new Promise((r) => setTimeout(r, 850));
       const result = applyToDrive(drive.id);
-      toast(`AI Evaluation Logged: ${result.fitScore}% Fit!`, 'jade');
+      toast(`Evaluation Logged: ${result.fitScore}% Fit calculated!`, 'jade');
     } catch {
       toast('Failed to process application', 'brick');
     } finally {
@@ -53,151 +52,118 @@ export function StudentDrives() {
 
   return (
     <PageTransition className="space-y-6">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">
-            Campus Placement Drives
-          </h1>
-          <p className="text-sm text-ink-soft mt-1">
-            Browse corporate recruitment drives authorized by BPUT Central Placement Cell.
-          </p>
-        </div>
+      <Masthead
+        context="03 · PLACEMENT DRIVES REGISTER"
+        title="Authorized Placement Drives."
+        lede="Review active recruitment notices approved by BPUT Central Placement Cell. Submitting an application computes an explainable skill embedding match."
+        action={
+          <div className="relative w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter company or role..."
+              className="w-full bg-paper pl-9 pr-3 py-1.5 rounded-control border border-line font-sans text-xs text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-1 focus:ring-ink"
+            />
+          </div>
+        }
+      />
 
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search company or role..."
-            className="w-full bg-paper pl-9 pr-3 py-1.5 rounded-xl border border-line text-xs text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-ochre"
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
-      {/* Drive Cards / Table */}
-      <div className="space-y-3.5">
+      {/* Ruled Drives Register (Editorial 96px Rows) */}
+      <div className="divide-y divide-line border-y border-line">
         {filteredDrives.map((drive) => {
           const application = applications.find((a) => a.driveId === drive.id);
           const isMatching = matchingDriveId === drive.id;
 
           return (
-            <Card
+            <div
               key={drive.id}
               className={cn(
-                'p-5 transition-all relative overflow-hidden',
-                drive.status === 'Conflict' && 'border-brick/40 bg-brick-tint/10'
+                'py-5 px-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative overflow-hidden transition-colors',
+                drive.status === 'Conflict' ? 'bg-brick-tint/15' : 'hover:bg-bone/40'
               )}
             >
-              {/* SIGNATURE ANIMATION: Thin ochre scan line sweep */}
+              {/* Laser Scan Line Sweep */}
               {isMatching && (
                 <motion.div
                   initial={{ left: '-10%' }}
                   animate={{ left: '110%' }}
-                  transition={{ duration: 0.8, ease: 'easeInOut' }}
+                  transition={{ duration: 0.85, ease: 'easeInOut' }}
                   className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-ochre/40 to-transparent pointer-events-none z-20"
                 />
               )}
 
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Left: Company & Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <h3 className="font-display font-semibold text-lg text-ink">
-                      {drive.company}
-                    </h3>
-                    <Badge tone={drive.stream === 'Core Engg' ? 'ink' : 'ochre'} size="sm">
-                      {drive.stream}
-                    </Badge>
-                    {drive.status === 'Conflict' && (
-                      <Badge tone="brick" size="sm" dot>
-                        Schedule Conflict (Admin Resolving)
-                      </Badge>
-                    )}
-                  </div>
-
-                  <p className="text-sm font-medium text-ink-soft mb-2">
-                    {drive.role}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-ink-soft">
-                    <span>
-                      Package: <strong className="text-ink">{drive.ctcString}</strong>
-                    </span>
-                    <span>
-                      Drive Date: <strong className="text-ink">{drive.date}</strong> ({drive.slot})
-                    </span>
-                    <span>
-                      Cut-off: <strong className="text-ink">{drive.minCgpa} CGPA</strong>
-                    </span>
-                    <span>
-                      Venue: <strong className="text-ink">{drive.venue}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Action or Status Badge */}
-                <div className="flex items-center gap-3 shrink-0">
-                  {application ? (
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <span className="text-[11px] uppercase tracking-wider block font-semibold text-ink-soft">
-                          Fit Score
-                        </span>
-                        <span className="font-display font-bold text-sm text-ink">
-                          {application.fitScore}% Match
-                        </span>
-                      </div>
-                      <Badge
-                        tone={
-                          application.status === 'Shortlisted'
-                            ? 'jade'
-                            : application.status === 'Rejected'
-                            ? 'brick'
-                            : 'ochre'
-                        }
-                        size="md"
-                      >
-                        {application.status}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <Button
-                      variant={drive.status === 'Conflict' ? 'secondary' : 'primary'}
-                      icon={Sparkles}
-                      loading={isMatching}
-                      onClick={() => handleApply(drive)}
-                    >
-                      {isMatching ? 'Matching...' : 'Apply (AI Match)'}
-                    </Button>
+              {/* Left Column: Role & Discipline */}
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="font-display font-medium text-xl text-ink">
+                    {drive.company}
+                  </h3>
+                  <span className="font-mono text-[10px] uppercase text-ink-soft bg-bone px-1.5 py-0.2 rounded-xs border border-line">
+                    {drive.stream}
+                  </span>
+                  {drive.status === 'Conflict' && (
+                    <Stamp tone="brick">CLASH</Stamp>
                   )}
                 </div>
+
+                <p className="font-sans text-xs text-ink-soft font-medium">
+                  {drive.role}
+                </p>
+
+                {/* Key Skills */}
+                <div className="font-mono text-[11px] text-ink-soft/80 flex flex-wrap items-center gap-1.5 pt-1">
+                  <span>Skills:</span>
+                  <span>{drive.skillsRequired.join(' · ')}</span>
+                </div>
               </div>
 
-              {/* Required Skills Row */}
-              <div className="mt-3 pt-3 border-t border-line/50 flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-ink-soft uppercase tracking-wider mr-2">
-                  Key Skills:
+              {/* Middle Column: Package, Date & Cut-off */}
+              <div className="flex flex-wrap lg:flex-col lg:items-end gap-x-6 gap-y-1 font-mono text-xs text-ink-soft shrink-0">
+                <span className="text-ink font-bold font-display text-base">
+                  {drive.ctcString}
                 </span>
-                {drive.skillsRequired.map((skill, sIdx) => (
-                  <span
-                    key={sIdx}
-                    className="text-[11px] px-2 py-0.5 rounded-md bg-bone text-ink border border-line"
-                  >
-                    {skill}
-                  </span>
-                ))}
+                <span>Date: <strong className="text-ink">{drive.date}</strong></span>
+                <span>Venue: {drive.venue}</span>
+                <span>Cut-off: {drive.minCgpa} CGPA</span>
               </div>
-            </Card>
+
+              {/* Right Column: Actions / Stamps */}
+              <div className="flex items-center gap-3 shrink-0 lg:pl-4">
+                {application ? (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-ink">
+                      FIT {application.fitScore}%
+                    </span>
+                    <Stamp
+                      tone={
+                        application.status === 'Shortlisted'
+                          ? 'jade'
+                          : application.status === 'Rejected'
+                          ? 'brick'
+                          : 'ochre'
+                      }
+                    >
+                      {application.status}
+                    </Stamp>
+                  </div>
+                ) : (
+                  <Button
+                    variant={drive.status === 'Conflict' ? 'secondary' : 'primary'}
+                    loading={isMatching}
+                    onClick={() => handleApply(drive)}
+                  >
+                    {isMatching ? 'Evaluating...' : 'Apply (AI Match)'}
+                  </Button>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
     </PageTransition>
   );
 }
-

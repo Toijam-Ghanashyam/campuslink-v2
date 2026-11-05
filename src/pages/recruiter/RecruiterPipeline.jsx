@@ -1,21 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Sparkles,
-  Calendar,
-  CheckCircle2,
-  AlertTriangle,
-  User,
-  FileText,
-  Clock,
-  ShieldCheck,
-  Check,
-  ChevronRight,
-} from 'lucide-react';
+import { Calendar, Clock, FileText, ArrowRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { Masthead } from '../../components/ui/Masthead';
 import { Tabs } from '../../components/ui/Tabs';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
+import { Stamp } from '../../components/ui/Stamp';
+import { Mark } from '../../components/ui/Mark';
+import { MarginNote } from '../../components/ui/MarginNote';
 import { Button } from '../../components/ui/Button';
 import { Drawer } from '../../components/ui/Drawer';
 import { useToast } from '../../components/ui/Toast';
@@ -57,177 +48,162 @@ export function RecruiterPipeline() {
 
   return (
     <PageTransition className="space-y-6">
-      {/* Title */}
-      <div>
-        <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">
-          Candidate Pipeline & Semantic AI Match
-        </h1>
-        <p className="text-sm text-ink-soft mt-1">
-          BPUT candidates ranked by vector skill-embedding similarity against Microsoft SDE profile criteria.
-        </p>
-      </div>
+      <Masthead
+        context="03 · CANDIDATE PIPELINE · MICROSOFT SDE"
+        title="Ranked Candidate Pipeline."
+        lede="Candidates pre-screened and ranked by semantic skill embedding similarity against Microsoft SDE profile benchmarks."
+      />
 
-      {/* Tabs */}
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
-      {/* Main Table */}
-      <Card className="p-0 overflow-hidden border-line">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-line bg-bone/60 text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
-                <th className="py-3.5 px-5">Candidate & Roll No.</th>
-                <th className="py-3.5 px-5">Discipline & CGPA</th>
-                <th className="py-3.5 px-5">AI Match Ranking</th>
-                <th className="py-3.5 px-5">Pipeline Stage</th>
-                <th className="py-3.5 px-5 text-right">Recruitment Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line/60">
-              <AnimatePresence>
-                {filtered.map((candidate) => (
-                  <motion.tr
-                    key={candidate.id}
-                    layout
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="hover:bg-bone/40 transition-colors"
-                  >
-                    <td className="py-4 px-5">
-                      <p className="font-semibold text-ink">{candidate.name}</p>
-                      <p className="text-xs font-mono text-ink-soft">{candidate.rollNo}</p>
-                    </td>
+      {/* Ruled Candidate Register Table */}
+      <div className="overflow-x-auto border-y border-line">
+        <table className="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr className="border-b border-line bg-bone/60 font-mono text-[10.5px] uppercase tracking-wider text-ink-soft">
+              <th className="py-3 px-4">Candidate &amp; Roll No.</th>
+              <th className="py-3 px-4">Discipline &amp; CGPA</th>
+              <th className="py-3 px-4">Semantic Fit</th>
+              <th className="py-3 px-4">Pipeline Stage</th>
+              <th className="py-3 px-4 text-right">Recruitment Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            <AnimatePresence>
+              {filtered.map((candidate) => (
+                <motion.tr
+                  key={candidate.id}
+                  layout
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="hover:bg-bone/40 transition-colors"
+                >
+                  <td className="py-3.5 px-4">
+                    <p className="font-display font-medium text-base text-ink">{candidate.name}</p>
+                    <p className="font-mono text-xs text-ink-soft">{candidate.rollNo}</p>
+                  </td>
 
-                    <td className="py-4 px-5 text-xs">
-                      <span className="font-semibold text-ink">{candidate.branch}</span>
-                      <p className="text-ink-soft font-mono mt-0.5">{candidate.cgpa} CGPA</p>
-                    </td>
+                  <td className="py-3.5 px-4 font-sans text-xs">
+                    <span className="font-semibold text-ink">{candidate.branch}</span>
+                    <p className="font-mono text-ink-soft text-[11px]">{candidate.cgpa} CGPA</p>
+                  </td>
 
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Sparkles className="w-4 h-4 text-ochre fill-current stroke-none" />
-                          {/* Faint shimmer sweep */}
-                          <motion.div
-                            animate={{ opacity: [0.2, 0.8, 0.2] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                            className="absolute inset-0 bg-ochre/30 rounded-full blur-sm"
-                          />
-                        </div>
-                        <span className="font-display font-bold text-base text-ink tabular-nums">
-                          {candidate.aiMatch}% Fit
-                        </span>
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-center gap-2 font-mono text-xs">
+                      <strong className="text-ink font-bold tabular-nums">
+                        {candidate.aiMatch}%
+                      </strong>
+                      <div className="h-1.5 w-16 bg-line rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-ochre"
+                          style={{ width: `${candidate.aiMatch}%` }}
+                        />
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    <td className="py-4 px-5">
-                      <Badge
-                        tone={
-                          candidate.pipelineStatus.includes('R2')
-                            ? 'jade'
-                            : candidate.pipelineStatus.includes('R1')
-                            ? 'ochre'
-                            : 'ink'
-                        }
-                        size="sm"
+                  <td className="py-3.5 px-4">
+                    <Stamp
+                      tone={
+                        candidate.pipelineStatus.includes('R2')
+                          ? 'jade'
+                          : candidate.pipelineStatus.includes('R1')
+                          ? 'ochre'
+                          : 'ink'
+                      }
+                    >
+                      {candidate.interviewSlot ? 'SLOT LOCKED' : candidate.pipelineStatus}
+                    </Stamp>
+                    {candidate.interviewSlot && (
+                      <span className="block font-mono text-[10px] text-ink-soft mt-0.5">
+                        {candidate.interviewSlot}
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="py-3.5 px-4 text-right relative">
+                    <div className="flex items-center justify-end gap-3 font-mono text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBioCandidate(candidate)}
+                        className="text-ink hover:text-ochre-deep font-semibold underline underline-offset-4"
                       >
-                        {candidate.interviewSlot ? 'Slot Booked' : candidate.pipelineStatus}
-                      </Badge>
-                      {candidate.interviewSlot && (
-                        <span className="block text-[10px] text-ink-soft mt-0.5">
-                          {candidate.interviewSlot}
-                        </span>
-                      )}
-                    </td>
+                        View Bio →
+                      </button>
 
-                    <td className="py-4 px-5 text-right relative">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="relative inline-block text-left">
                         <Button
                           size="sm"
-                          variant="secondary"
-                          onClick={() => setSelectedBioCandidate(candidate)}
+                          variant={candidate.interviewSlot ? 'ghost' : 'primary'}
+                          disabled={Boolean(candidate.interviewSlot)}
+                          onClick={() =>
+                            setActiveSlotPopoverId((prev) => (prev === candidate.id ? null : candidate.id))
+                          }
                         >
-                          View Bio
+                          {candidate.interviewSlot ? 'Booked' : 'Schedule Slot'}
                         </Button>
 
-                        <div className="relative inline-block text-left">
-                          <Button
-                            size="sm"
-                            variant={candidate.interviewSlot ? 'ghost' : 'primary'}
-                            icon={Calendar}
-                            disabled={Boolean(candidate.interviewSlot)}
-                            onClick={() =>
-                              setActiveSlotPopoverId((prev) => (prev === candidate.id ? null : candidate.id))
-                            }
-                          >
-                            {candidate.interviewSlot ? 'Booked' : 'Schedule Slot'}
-                          </Button>
+                        {/* Slot Booking Popover (L2 Object) */}
+                        <AnimatePresence>
+                          {activeSlotPopoverId === candidate.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                              className="absolute right-0 top-10 w-72 bg-paper rounded-object border border-line shadow-object z-40 p-3 text-left space-y-2 font-mono text-xs"
+                            >
+                              <div className="border-b border-line pb-1.5">
+                                <span className="text-[10px] uppercase font-semibold text-ink-soft block">
+                                  CONFLICT-FREE SLOTS (NOV 05, 2026)
+                                </span>
+                              </div>
 
-                          {/* Slot Booking Popover */}
-                          <AnimatePresence>
-                            {activeSlotPopoverId === candidate.id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 4 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 4 }}
-                                className="absolute right-0 top-10 w-72 bg-paper rounded-2xl border border-line shadow-2xl z-40 p-3 text-left space-y-2"
-                              >
-                                <div className="border-b border-line pb-2">
-                                  <span className="text-[11px] uppercase font-semibold text-ink-soft block">
-                                    Conflict-Free Slots (Nov 05, 2026)
-                                  </span>
-                                  <p className="text-[10px] text-ink-soft">
-                                    Synced with central venue & candidate availability
-                                  </p>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                  {availableSlots.map((slot, sIdx) => (
-                                    <button
-                                      key={sIdx}
-                                      type="button"
-                                      disabled={!slot.available}
-                                      onClick={() => handleBookSlot(candidate, slot)}
-                                      className={cn(
-                                        'w-full text-left p-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-between border',
-                                        slot.available
-                                          ? 'border-line hover:border-ochre hover:bg-ochre-tint/40 text-ink cursor-pointer'
-                                          : 'border-line/40 bg-bone/40 text-ink-soft/50 cursor-not-allowed'
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <Clock className="w-3.5 h-3.5 text-ink-soft" />
-                                        <span>{slot.time}</span>
-                                      </div>
-                                      {!slot.available && (
-                                        <span className="text-[9px] text-brick font-semibold">
-                                          Clash: TCS
-                                        </span>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                              <div className="space-y-1">
+                                {availableSlots.map((slot, sIdx) => (
+                                  <button
+                                    key={sIdx}
+                                    type="button"
+                                    disabled={!slot.available}
+                                    onClick={() => handleBookSlot(candidate, slot)}
+                                    className={cn(
+                                      'w-full text-left p-2 rounded-control text-xs transition-colors flex items-center justify-between border',
+                                      slot.available
+                                        ? 'border-line hover:border-ink hover:bg-bone/40 text-ink cursor-pointer'
+                                        : 'border-line/40 bg-bone/30 text-ink-soft/40 cursor-not-allowed'
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock className="w-3 h-3 text-ink-soft" />
+                                      <span>{slot.time}</span>
+                                    </div>
+                                    {!slot.available && (
+                                      <span className="text-[9px] text-brick font-semibold">
+                                        CLASH: TCS
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
+          </tbody>
+        </table>
+      </div>
 
       {/* Candidate Bio Drawer */}
       <Drawer
         open={Boolean(selectedBioCandidate)}
         onClose={() => setSelectedBioCandidate(null)}
-        width="max-w-2xl"
+        width="max-w-xl"
         title={selectedBioCandidate?.name}
         subtitle={`${selectedBioCandidate?.branch} · BPUT Class of 2026`}
         footer={
@@ -250,81 +226,50 @@ export function RecruiterPipeline() {
         }
       >
         <div className="space-y-6">
-          {/* AI Match Explanation Box */}
-          <div className="p-4 rounded-xl bg-ochre-tint/50 border border-ochre/40 space-y-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-ochre-deep" />
-              <h4 className="font-semibold text-sm text-ink">
-                AI Match Justification ({selectedBioCandidate?.aiMatch}% Fit)
-              </h4>
-            </div>
-            <p className="text-xs sm:text-sm text-ink leading-relaxed">
-              Highly Recommended: Candidate possesses verified proficiency in{' '}
-              <span className="underline decoration-ochre decoration-2 underline-offset-4 font-semibold">
-                React
-              </span>
-              ,{' '}
-              <span className="underline decoration-ochre decoration-2 underline-offset-4 font-semibold">
-                Python
-              </span>
-              , and{' '}
-              <span className="underline decoration-ochre decoration-2 underline-offset-4 font-semibold">
-                Data Structures
-              </span>
-              , exceeding the required mock interview benchmarks and CGPA cut-off.
-            </p>
-          </div>
+          {/* AI Justification Margin Note with Highlighters */}
+          <MarginNote label={`01 · AI MATCH JUSTIFICATION · ${selectedBioCandidate?.aiMatch}% FIT`} strong>
+            Highly Recommended: Candidate possesses verified proficiency in{' '}
+            <Mark delay={0.3}>React</Mark>, <Mark delay={0.6}>Python</Mark>, and{' '}
+            <Mark delay={0.9}>Data Structures</Mark>, comfortably exceeding the mock benchmark cut-off and academic criteria.
+          </MarginNote>
 
-          {/* Verified Skills Tags */}
+          {/* Verified Skills */}
           <div>
-            <h5 className="text-xs uppercase tracking-wider font-semibold text-ink-soft mb-2.5">
-              Verified Technical Stack Competencies
-            </h5>
-            <div className="flex flex-wrap gap-2">
-              {selectedBioCandidate?.verifiedSkills.map((skill, idx) => (
-                <motion.span
+            <span className="font-mono text-[10.5px] uppercase tracking-wider text-ink-soft font-semibold block mb-2">
+              02 · VERIFIED TECHNICAL STACK
+            </span>
+            <div className="flex flex-wrap gap-1.5 font-mono text-xs">
+              {selectedBioCandidate?.verifiedSkills.map((skill) => (
+                <span
                   key={skill}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="px-3 py-1 rounded-lg bg-bone text-ink text-xs font-semibold border border-line flex items-center gap-1.5"
+                  className="px-2.5 py-1 rounded-control bg-bone text-ink border border-line"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-jade" />
-                  <span>{skill}</span>
-                </motion.span>
+                  ✓ {skill}
+                </span>
               ))}
             </div>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-3 p-4 bg-bone/50 rounded-xl border border-line text-center text-xs">
-            <div>
-              <span className="text-ink-soft block uppercase text-[10px]">CGPA</span>
-              <strong className="font-display text-base text-ink">{selectedBioCandidate?.cgpa}</strong>
+          {/* Academic Slip */}
+          <div className="p-4 bg-bone/40 rounded-object border border-line font-mono text-xs space-y-2">
+            <span className="text-[10px] uppercase text-ink-soft block font-semibold">
+              03 · AUTHENTICATED METRICS
+            </span>
+            <div className="flex justify-between">
+              <span>Cumulative CGPA:</span>
+              <strong className="text-ink">{selectedBioCandidate?.cgpa} / 10.00</strong>
             </div>
-            <div>
-              <span className="text-ink-soft block uppercase text-[10px]">Projects</span>
-              <strong className="font-display text-base text-ink">{selectedBioCandidate?.projectsCount} Repos</strong>
+            <div className="flex justify-between">
+              <span>Verified Project Repositories:</span>
+              <strong className="text-ink">{selectedBioCandidate?.projectsCount} Repos</strong>
             </div>
-            <div>
-              <span className="text-ink-soft block uppercase text-[10px]">Experience</span>
-              <strong className="text-ink block truncate">{selectedBioCandidate?.experienceYears}</strong>
+            <div className="flex justify-between">
+              <span>Prior Industry Experience:</span>
+              <strong className="text-ink">{selectedBioCandidate?.experienceYears}</strong>
             </div>
-          </div>
-
-          {/* Verified Resume Container Placeholder */}
-          <div className="p-6 rounded-xl border-2 border-dashed border-line bg-paper text-center space-y-2">
-            <FileText className="w-8 h-8 text-ochre-deep mx-auto stroke-[1.5]" />
-            <h5 className="text-xs font-semibold text-ink">
-              Verified Academic Resume PDF Attached
-            </h5>
-            <p className="text-[11px] text-ink-soft max-w-sm mx-auto">
-              Scanned & authenticated against university records. Zero misattributed projects or grade discrepancies.
-            </p>
           </div>
         </div>
       </Drawer>
     </PageTransition>
   );
 }
-

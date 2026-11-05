@@ -1,4 +1,6 @@
 import React from 'react';
+import { Stamp } from './Stamp';
+import { Tag } from './Tag';
 import { cn } from '../../lib/utils';
 
 export function Badge({
@@ -8,40 +10,51 @@ export function Badge({
   size = 'md',
   dot = false,
 }) {
-  const tones = {
-    jade: 'bg-jade-tint text-jade border-jade/20',
-    brick: 'bg-brick-tint text-brick border-brick/20',
-    ochre: 'bg-ochre-tint text-ochre-deep border-ochre/25 font-semibold',
-    ink: 'bg-bone text-ink border-line',
-  };
+  const text = typeof children === 'string' ? children.trim() : '';
+  const lower = text.toLowerCase();
 
+  // Decision words render as authentic ink Stamps!
+  if (
+    lower.includes('verified') ||
+    lower.includes('approved') ||
+    lower.includes('resolved') ||
+    lower.includes('accepted')
+  ) {
+    return <Stamp tone="jade" className={className}>{text}</Stamp>;
+  }
+
+  if (
+    lower.includes('rejected') ||
+    lower.includes('conflict') ||
+    lower.includes('clash') ||
+    lower.includes('withdrawn')
+  ) {
+    return <Stamp tone="brick" className={className}>{text}</Stamp>;
+  }
+
+  if (
+    lower.includes('shortlisted') ||
+    lower.includes('offered') ||
+    lower.includes('active hiring')
+  ) {
+    return <Stamp tone="ochre" className={className}>{text}</Stamp>;
+  }
+
+  if (lower.includes('locked')) {
+    return <Stamp tone="ink" className={className}>{text}</Stamp>;
+  }
+
+  // All other informational tags render as plain mono Tag with dot
   const dotColors = {
     jade: 'bg-jade',
     brick: 'bg-brick',
     ochre: 'bg-ochre',
-    ink: 'bg-ink',
-  };
-
-  const sizes = {
-    sm: 'text-[11px] px-2 py-0.5 gap-1.5',
-    md: 'text-xs px-2.5 py-1 gap-1.5',
-    lg: 'text-sm px-3 py-1.5 gap-2',
+    ink: 'bg-ink-soft',
   };
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center font-medium rounded-full border tracking-wide select-none',
-        tones[tone] || tones.ink,
-        sizes[size],
-        className
-      )}
-    >
-      {dot && (
-        <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', dotColors[tone])} />
-      )}
+    <Tag dot={dot} dotColor={dotColors[tone] || 'bg-ochre'} className={className}>
       {children}
-    </span>
+    </Tag>
   );
 }
-

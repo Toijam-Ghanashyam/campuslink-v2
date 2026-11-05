@@ -17,10 +17,10 @@
   --brick-tint: #F8E1DC;
 }
 
-/* Custom polished scrollbar */
+/* Custom polished institutional scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -28,7 +28,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(91, 95, 107, 0.25);
+  background: rgba(91, 95, 107, 0.22);
   border-radius: 9999px;
 }
 
@@ -36,12 +36,26 @@
   background: rgba(20, 22, 28, 0.45);
 }
 
-/* Base styles */
+/* Base Body with physical paper texture */
 body {
   background-color: var(--bone);
   color: var(--ink);
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Instrument Sans', 'Manrope', -apple-system, sans-serif;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* 4% Subtle Archival Paper Grain Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
 }
 
 /* Focus styles */
@@ -50,21 +64,38 @@ body {
   outline-offset: 2px;
 }
 
-/* Heading display styling */
+/* Typographic Display */
 h1, h2, h3, .font-display {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Newsreader', 'Fraunces', Georgia, serif;
 }
 
-/* Numerical alignment */
+/* Precision Tabular Numerals */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle pattern for hero background */
-.hero-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(20, 22, 28, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(20, 22, 28, 0.04) 1px, transparent 1px);
+/* Mono utility labels */
+.label-mono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
 }
 
+.data-mono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Collision hatched pattern */
+.hatch-brick {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(196, 67, 47, 0.12),
+    rgba(196, 67, 47, 0.12) 6px,
+    rgba(196, 67, 47, 0.28) 6px,
+    rgba(196, 67, 47, 0.28) 12px
+  );
+}

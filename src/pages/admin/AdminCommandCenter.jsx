@@ -10,21 +10,20 @@ import {
   Line,
   CartesianGrid,
 } from 'recharts';
-import { Plus, Users, Building2, TrendingUp, Award, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { Card } from '../../components/ui/Card';
-import { MetricCard } from '../../components/ui/MetricCard';
+import { Masthead } from '../../components/ui/Masthead';
+import { StatStrip } from '../../components/ui/StatStrip';
 import { Button } from '../../components/ui/Button';
 import { Drawer } from '../../components/ui/Drawer';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 
 export function AdminCommandCenter() {
-  const { analytics, drives } = useStore();
+  const { analytics } = useStore();
   const { toast } = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // New Drive Form State
   const [formCompany, setFormCompany] = useState('');
   const [formRole, setFormRole] = useState('');
   const [formDate, setFormDate] = useState('2026-11-25');
@@ -45,94 +44,60 @@ export function AdminCommandCenter() {
 
   return (
     <PageTransition className="space-y-8">
-      {/* Top Banner Card */}
-      <Card className="p-6 bg-paper border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs uppercase tracking-wider font-semibold text-ochre-deep block mb-1">
-            Central Placement Directorate
-          </span>
-          <h1 className="font-display font-semibold text-2xl sm:text-3xl text-ink tracking-tight">
-            Placement Season 2026 Command Center
-          </h1>
-          <p className="text-xs sm:text-sm text-ink-soft mt-1">
-            Overseeing 1,420 registered students, 42 corporate hiring partners, and active drive schedules.
-          </p>
-        </div>
+      {/* Editorial Masthead */}
+      <Masthead
+        context="01 · PLACEMENT DIRECTORATE · BPUT CENTRAL CAMPUS"
+        title="Placement Command Center."
+        lede="Overseeing 1,420 registered candidates across 6 engineering disciplines and 42 active corporate recruitment partners."
+        action={
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={() => setDrawerOpen(true)}
+          >
+            Authorize New Drive
+          </Button>
+        }
+      />
 
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => setDrawerOpen(true)}
-          className="shrink-0"
-        >
-          Authorize New Drive
-        </Button>
-      </Card>
+      {/* Ruled Macro StatStrip */}
+      <StatStrip
+        items={[
+          { label: 'ELIGIBLE STUDENTS', value: analytics.overview.totalStudents, hint: '1,180 verified placement ready' },
+          { label: 'ACTIVE RECRUITERS', value: analytics.overview.activeRecruiters, hint: '42 authorized JNFs' },
+          { label: 'OVERALL PLACED %', value: analytics.overview.placementPercentage, suffix: '%', decimals: 1, hint: 'Target benchmark: 85%' },
+          { label: 'HIGHEST CTC', value: analytics.overview.highestPackage, prefix: '₹', suffix: ' LPA', decimals: 1, hint: 'Average: 9.4 LPA' },
+        ]}
+      />
 
-      {/* 4 Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <MetricCard
-          label="Eligible Students"
-          value={analytics.overview.totalStudents}
-          icon={Users}
-          hint="1,180 verified placement ready"
-        />
-        <MetricCard
-          label="Active Recruiters"
-          value={analytics.overview.activeRecruiters}
-          icon={Building2}
-          hint="42 authorized JNFs"
-        />
-        <MetricCard
-          label="Overall Placed %"
-          value={analytics.overview.placementPercentage}
-          suffix="%"
-          decimals={1}
-          icon={TrendingUp}
-          hint="Target benchmark: 85%"
-        />
-        <MetricCard
-          label="Highest CTC"
-          value={analytics.overview.highestPackage}
-          prefix="₹"
-          suffix=" LPA"
-          decimals={1}
-          icon={Award}
-          hint="Average: 9.4 LPA"
-        />
-      </div>
-
-      {/* Recharts Analytics Charts Side-by-Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        {/* Chart 1: Branch Conversion */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="text-xs uppercase tracking-wider font-semibold text-ink-soft">
-                Branch-Wise Conversion
-              </span>
-              <h3 className="font-display font-semibold text-lg text-ink">
-                Placement Conversion Rates (%)
-              </h3>
-            </div>
-            <span className="text-xs text-jade font-semibold">CSE Leading @ 82%</span>
+      {/* Two Recharts Charts in Ruled Grid (No Card Boxes!) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start pt-2">
+        {/* Chart 1: Branch Conversion (Left 6 cols) */}
+        <div className="lg:col-span-6 space-y-3">
+          <div className="border-b border-line pb-2 flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+              01 · BRANCH-WISE CONVERSION (%)
+            </span>
+            <span className="font-mono text-[10px] text-jade uppercase font-semibold">
+              CSE: 82% LEADING
+            </span>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={analytics.branchConversion}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
                 <XAxis
                   dataKey="branch"
-                  tick={{ fill: '#5B5F6B', fontSize: 12, fontFamily: 'Manrope' }}
+                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
                   axisLine={{ stroke: '#E6DFCF' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 12, fontFamily: 'Manrope' }}
+                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
                   axisLine={{ stroke: '#E6DFCF' }}
                   tickLine={false}
                   domain={[0, 100]}
@@ -142,14 +107,10 @@ export function AdminCommandCenter() {
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-paper p-2.5 rounded-lg border border-line shadow-lg text-xs font-medium">
-                          <p className="font-semibold text-ink">{payload[0].payload.branch}</p>
-                          <p className="text-ochre-deep font-display font-bold text-sm">
-                            {payload[0].value}% Placed
-                          </p>
-                          <p className="text-ink-soft text-[10px]">
-                            {payload[0].payload.placed} of {payload[0].payload.total} candidates
-                          </p>
+                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px] space-y-0.5">
+                          <p className="font-bold">{payload[0].payload.branch}</p>
+                          <p className="text-ochre">{payload[0].value}% Placed</p>
+                          <p className="text-bone/60">{payload[0].payload.placed} of {payload[0].payload.total} candidates</p>
                         </div>
                       );
                     }
@@ -158,45 +119,44 @@ export function AdminCommandCenter() {
                 />
                 <Bar
                   dataKey="conversion"
-                  fill="#E8A33D"
-                  radius={[6, 6, 0, 0]}
-                  isAnimationActive={true}
-                  animationDuration={1000}
+                  fill="#14161C"
+                  radius={[3, 3, 0, 0]}
+                  animationDuration={900}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+          <p className="font-serif italic text-xs text-ink-soft pt-1">
+            Civil and Mechanical convert at roughly half the rate of Computer Science and IT.
+          </p>
+        </div>
 
-        {/* Chart 2: Package Growth Trends */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="text-xs uppercase tracking-wider font-semibold text-ink-soft">
-                Compensation Trajectory
-              </span>
-              <h3 className="font-display font-semibold text-lg text-ink">
-                Package Trend 2022 - 2026
-              </h3>
-            </div>
-            <span className="text-xs text-ink-soft">Avg vs Highest LPA</span>
+        {/* Chart 2: Historical Package Trends (Right 6 cols) */}
+        <div className="lg:col-span-6 space-y-3">
+          <div className="border-b border-line pb-2 flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+              02 · COMPENSATION TRAJECTORY (LPA)
+            </span>
+            <span className="font-mono text-[10px] text-ochre-deep uppercase font-semibold">
+              HIGHEST: ₹34.0 LPA
+            </span>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={analytics.packageTrend}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
                 <XAxis
                   dataKey="year"
-                  tick={{ fill: '#5B5F6B', fontSize: 12, fontFamily: 'Manrope' }}
+                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
                   axisLine={{ stroke: '#E6DFCF' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 12, fontFamily: 'Manrope' }}
+                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
                   axisLine={{ stroke: '#E6DFCF' }}
                   tickLine={false}
                 />
@@ -204,14 +164,10 @@ export function AdminCommandCenter() {
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-paper p-2.5 rounded-lg border border-line shadow-lg text-xs font-medium space-y-1">
-                          <p className="font-semibold text-ink">Season {payload[0].payload.year}</p>
-                          <p className="text-ink">
-                            Highest: <strong className="font-display font-bold">₹{payload[1]?.value} LPA</strong>
-                          </p>
-                          <p className="text-ochre-deep">
-                            Average: <strong className="font-display font-bold">₹{payload[0]?.value} LPA</strong>
-                          </p>
+                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px] space-y-0.5">
+                          <p className="font-bold">Season {payload[0].payload.year}</p>
+                          <p className="text-ochre">Highest: ₹{payload[1]?.value} LPA</p>
+                          <p className="text-bone/80">Average: ₹{payload[0]?.value} LPA</p>
                         </div>
                       );
                     }
@@ -221,53 +177,55 @@ export function AdminCommandCenter() {
                 <Line
                   type="monotone"
                   dataKey="avg"
-                  stroke="#E8A33D"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#E8A33D', r: 4 }}
-                  activeDot={{ r: 6 }}
-                  name="Average CTC"
+                  stroke="#14161C"
+                  strokeWidth={2}
+                  dot={{ fill: '#14161C', r: 3 }}
+                  name="Average"
                 />
                 <Line
                   type="monotone"
                   dataKey="highest"
-                  stroke="#14161C"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  dot={{ fill: '#14161C', r: 4 }}
-                  name="Highest CTC"
+                  stroke="#E8A33D"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#E8A33D', r: 4 }}
+                  name="Highest"
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+          <p className="font-serif italic text-xs text-ink-soft pt-1">
+            Highest package has increased 2.1x since 2022 due to cloud infrastructure and AI roles.
+          </p>
+        </div>
       </div>
 
-      {/* Offers Pipeline Quick Strip */}
-      <Card className="p-4 bg-bone/40 border-line">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Award className="w-4 h-4 text-ochre-deep" />
-            <span className="text-xs uppercase tracking-wider font-semibold text-ink">
-              Offers & Post-Selection Pipeline Status:
-            </span>
+      {/* Offers Pipeline Strip (Single Ruled Row with Arrows) */}
+      <div className="border-t border-line pt-6">
+        <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft block mb-3">
+          03 · OFFERS &amp; JOINING FUNNEL STATUS
+        </span>
+        <div className="p-4 bg-bone/50 border border-line rounded-object flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+          <div>
+            <span className="text-ink-soft block text-[10px]">TOTAL OFFERED</span>
+            <strong className="font-display text-2xl text-ink">16</strong>
           </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <span className="px-3 py-1 rounded-full bg-paper border border-line text-ink font-medium">
-              Offered: <strong className="font-semibold text-ink">16</strong>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-jade-tint text-jade border border-jade/20 font-medium">
-              Accepted: <strong className="font-semibold">11</strong>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-ochre-tint text-ochre-deep border border-ochre/25 font-medium">
-              Pending: <strong className="font-semibold">5</strong>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-brick-tint text-brick border border-brick/20 font-medium">
-              Docs Pending: <strong className="font-semibold">3</strong>
-            </span>
+          <span className="text-line text-lg hidden sm:inline">→</span>
+          <div>
+            <span className="text-jade block text-[10px]">ACCEPTED OFFERS</span>
+            <strong className="font-display text-2xl text-jade">11</strong>
+          </div>
+          <span className="text-line text-lg hidden sm:inline">→</span>
+          <div>
+            <span className="text-ochre-deep block text-[10px]">PENDING DECISION</span>
+            <strong className="font-display text-2xl text-ochre-deep">05</strong>
+          </div>
+          <span className="text-line text-lg hidden sm:inline">→</span>
+          <div>
+            <span className="text-brick block text-[10px]">DOCS PENDING</span>
+            <strong className="font-display text-2xl text-brick">03</strong>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Authorize New Drive Drawer */}
       <Drawer
@@ -281,14 +239,14 @@ export function AdminCommandCenter() {
               Cancel
             </Button>
             <Button variant="primary" onClick={handleCreateDrive}>
-              Validate & Authorize
+              Validate &amp; Authorize
             </Button>
           </>
         }
       >
-        <form onSubmit={handleCreateDrive} className="space-y-4 text-xs">
+        <form onSubmit={handleCreateDrive} className="space-y-4 font-sans text-xs">
           <div>
-            <label className="block uppercase tracking-wider font-semibold text-ink-soft mb-1">
+            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
               Recruiting Partner Name
             </label>
             <input
@@ -297,12 +255,12 @@ export function AdminCommandCenter() {
               value={formCompany}
               onChange={(e) => setFormCompany(e.target.value)}
               placeholder="e.g. Google India, Amazon Web Services..."
-              className="w-full p-2.5 rounded-xl border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-ochre"
+              className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
             />
           </div>
 
           <div>
-            <label className="block uppercase tracking-wider font-semibold text-ink-soft mb-1">
+            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
               Role Profile
             </label>
             <input
@@ -311,54 +269,36 @@ export function AdminCommandCenter() {
               value={formRole}
               onChange={(e) => setFormRole(e.target.value)}
               placeholder="e.g. Associate Cloud Engineer, SDE-1..."
-              className="w-full p-2.5 rounded-xl border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-ochre"
+              className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block uppercase tracking-wider font-semibold text-ink-soft mb-1">
+              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
                 Drive Date
               </label>
               <input
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-ochre"
+                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
               />
             </div>
             <div>
-              <label className="block uppercase tracking-wider font-semibold text-ink-soft mb-1">
+              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
                 Requested Venue
               </label>
               <input
                 type="text"
                 value={formVenue}
                 onChange={(e) => setFormVenue(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-ochre"
+                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block uppercase tracking-wider font-semibold text-ink-soft mb-1">
-              Eligible Disciplines
-            </label>
-            <input
-              type="text"
-              value={formBranches}
-              onChange={(e) => setFormBranches(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-line bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-ochre"
-            />
-          </div>
-
-          <div className="p-3 bg-ochre-tint/40 rounded-xl border border-ochre/30 text-ink leading-relaxed">
-            <span className="font-semibold block mb-0.5">Automated Pre-Check</span>
-            The conflict engine verifies availability of requested date and room against current scheduled drives.
           </div>
         </form>
       </Drawer>
     </PageTransition>
   );
 }
-

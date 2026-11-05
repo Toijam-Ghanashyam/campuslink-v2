@@ -21,18 +21,22 @@ export default {
         'brick-tint': '#F8E1DC',
       },
       fontFamily: {
-        display: ['Fraunces', 'serif'],
-        sans: ['Manrope', 'sans-serif'],
+        display: ['Newsreader', 'Fraunces', 'Georgia', 'serif'],
+        serif: ['Newsreader', 'Fraunces', 'Georgia', 'serif'],
+        sans: ['Instrument Sans', 'Manrope', '-apple-system', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       boxShadow: {
         subtle: '0 1px 2px rgba(20, 22, 28, 0.04)',
-        hover: '0 8px 24px -4px rgba(20, 22, 28, 0.08), 0 2px 6px -1px rgba(20, 22, 28, 0.04)',
+        object: '0 12px 32px -12px rgba(20, 22, 28, 0.14), 0 2px 6px -1px rgba(20, 22, 28, 0.04)',
       },
       borderRadius: {
-        '2xl': '16px',
+        control: '6px',
+        object: '10px',
+        stamp: '3px',
+        '2xl': '14px',
       }
     },
   },
   plugins: [],
 };
-

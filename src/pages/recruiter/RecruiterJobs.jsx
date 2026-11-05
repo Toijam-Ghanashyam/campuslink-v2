@@ -1,7 +1,6 @@
 import React from 'react';
-import { Briefcase, Users, Calendar, ArrowRight } from 'lucide-react';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
+import { Masthead } from '../../components/ui/Masthead';
+import { Stamp } from '../../components/ui/Stamp';
 import { Button } from '../../components/ui/Button';
 import { PageTransition } from '../../components/ui/PageTransition';
 
@@ -34,63 +33,53 @@ export function RecruiterJobs() {
       location: 'Hyderabad Campus',
       applicants: 142,
       shortlisted: 18,
-      status: 'Screening',
+      status: 'Active Hiring',
       deadline: 'Nov 12, 2026',
     },
   ];
 
   return (
     <PageTransition className="space-y-6">
-      <div>
-        <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">
-          Active Job Notification Forms (JNFs)
-        </h1>
-        <p className="text-sm text-ink-soft mt-1">
-          Open hiring profiles deployed across BPUT affiliated engineering colleges.
-        </p>
-      </div>
+      <Masthead
+        context="02 · JOB NOTIFICATION FORMS (JNFs)"
+        title="Active Recruitment Profiles."
+        lede="Open Job Notification Forms deployed across BPUT affiliated engineering colleges for Class of 2026."
+      />
 
-      <div className="space-y-4">
+      <div className="divide-y divide-line border-y border-line">
         {jobs.map((job) => (
-          <Card key={job.id} className="p-6 hover:border-line/80 transition-all">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <h3 className="font-display font-semibold text-xl text-ink">
-                    {job.title}
-                  </h3>
-                  <Badge tone="jade" size="sm">
-                    {job.status}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-ink-soft">
-                  Offered Package: <strong className="text-ink">{job.package}</strong> · Location: {job.location} · Deadline: {job.deadline}
-                </p>
-
-                <div className="flex items-center gap-6 mt-3 text-xs text-ink-soft">
-                  <span>
-                    Total Submissions: <strong className="text-ink">{job.applicants}</strong>
-                  </span>
-                  <span>
-                    AI Qualified Pool (&gt;85%): <strong className="text-ochre-deep font-semibold">{job.shortlisted}</strong>
-                  </span>
-                </div>
+          <div key={job.id} className="py-5 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-bone/40 transition-colors">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <h3 className="font-display font-medium text-xl text-ink">
+                  {job.title}
+                </h3>
+                <Stamp tone="ochre">
+                  {job.status}
+                </Stamp>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
-                <Button variant="secondary" size="sm">
-                  Edit JNF
-                </Button>
-                <Button variant="primary" size="sm">
-                  View Qualified Candidates
-                </Button>
+              <p className="font-sans text-xs text-ink-soft">
+                Package: <strong className="font-mono text-ink">{job.package}</strong> · Location: {job.location} · Deadline: {job.deadline}
+              </p>
+
+              <div className="flex items-center gap-6 pt-1 font-mono text-[11px] text-ink-soft">
+                <span>Submissions: <strong className="text-ink">{job.applicants}</strong></span>
+                <span>AI Qualified (&gt;85%): <strong className="text-ochre-deep font-bold">{job.shortlisted}</strong></span>
               </div>
             </div>
-          </Card>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="secondary" size="sm">
+                Edit JNF
+              </Button>
+              <Button variant="primary" size="sm">
+                View Qualified Pool →
+              </Button>
+            </div>
+          </div>
         ))}
       </div>
     </PageTransition>
   );
 }
-

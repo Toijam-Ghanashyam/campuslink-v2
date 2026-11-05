@@ -1,8 +1,6 @@
 import React from 'react';
-import { Building2, Award, Users, TrendingUp } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
+import { Masthead } from '../../components/ui/Masthead';
 import { PageTransition } from '../../components/ui/PageTransition';
 
 export function AdminRecruiters() {
@@ -11,74 +9,63 @@ export function AdminRecruiters() {
 
   return (
     <PageTransition className="space-y-6">
-      <div>
-        <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">
-          Corporate Recruiter Partners
-        </h1>
-        <p className="text-sm text-ink-soft mt-1">
-          Historical hiring metrics, corporate engagement ratings, and compensation trends across authorized companies.
-        </p>
-      </div>
+      <Masthead
+        context="03 · CORPORATE HIRING PARTNERS"
+        title="Recruiter Engagement Register."
+        lede="Historical recruitment conversion metrics, average compensation packages, and university engagement ratings across authorized companies."
+      />
 
-      <Card className="p-0 overflow-hidden border-line">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-line bg-bone/60 text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
-                <th className="py-3.5 px-5">Recruiter Partner</th>
-                <th className="py-3.5 px-5">Drives Hosted</th>
-                <th className="py-3.5 px-5">BPUT Students Hired</th>
-                <th className="py-3.5 px-5">Average Package</th>
-                <th className="py-3.5 px-5">Campus Engagement</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line/60">
-              {partners.map((partner) => (
-                <tr key={partner.id} className="hover:bg-bone/40 transition-colors">
-                  <td className="py-4 px-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-bone border border-line flex items-center justify-center text-ink font-semibold text-xs">
-                        {partner.company.charAt(0)}
-                      </div>
-                      <span className="font-semibold text-ink">{partner.company}</span>
+      <div className="overflow-x-auto border-y border-line">
+        <table className="w-full text-left text-sm border-collapse font-sans">
+          <thead>
+            <tr className="border-b border-line bg-bone/60 font-mono text-[10.5px] uppercase tracking-wider text-ink-soft">
+              <th className="py-3 px-4">Corporate Recruiter</th>
+              <th className="py-3 px-4">Drives Hosted</th>
+              <th className="py-3 px-4">BPUT Hires</th>
+              <th className="py-3 px-4">Average Package</th>
+              <th className="py-3 px-4">Engagement Index</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {partners.map((partner) => (
+              <tr key={partner.id} className="hover:bg-bone/40 transition-colors text-xs">
+                <td className="py-3.5 px-4 font-semibold text-ink text-sm">
+                  {partner.company}
+                </td>
+
+                <td className="py-3.5 px-4 font-mono text-ink">
+                  {partner.drives} drives
+                </td>
+
+                <td className="py-3.5 px-4">
+                  <span className="font-display font-bold text-base text-ink">
+                    {partner.hired}
+                  </span>
+                  <span className="font-mono text-[11px] text-ink-soft ml-1">offers</span>
+                </td>
+
+                <td className="py-3.5 px-4 font-mono font-bold text-ink">
+                  {partner.avgCtc}
+                </td>
+
+                <td className="py-3.5 px-4">
+                  <div className="flex items-center gap-2 max-w-[130px] font-mono text-xs">
+                    <div className="h-1.5 flex-1 bg-line rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-ochre rounded-full"
+                        style={{ width: `${partner.engagement}%` }}
+                      />
                     </div>
-                  </td>
-
-                  <td className="py-4 px-5 font-mono text-ink">
-                    {partner.drives} drives
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <span className="font-display font-bold text-base text-ink">
-                      {partner.hired}
+                    <span className="font-bold text-ink">
+                      {partner.engagement}%
                     </span>
-                    <span className="text-xs text-ink-soft font-normal ml-1">offers accepted</span>
-                  </td>
-
-                  <td className="py-4 px-5 font-semibold text-ink">
-                    {partner.avgCtc}
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <div className="flex items-center gap-3 max-w-[140px]">
-                      <div className="h-2 flex-1 bg-bone rounded-full overflow-hidden border border-line">
-                        <div
-                          className="h-full bg-ochre rounded-full"
-                          style={{ width: `${partner.engagement}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-mono font-semibold text-ink">
-                        {partner.engagement}%
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </PageTransition>
   );
 }
-

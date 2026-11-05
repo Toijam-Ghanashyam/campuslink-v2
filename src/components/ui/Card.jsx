@@ -6,13 +6,14 @@ export function Card({
   children,
   className,
   hover = false,
+  object = false,
   onClick,
   ...props
 }) {
   const Component = hover ? motion.div : 'div';
   const hoverProps = hover
     ? {
-        whileHover: { y: -3, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } },
+        whileHover: { y: -2, transition: { duration: 0.15 } },
       }
     : {};
 
@@ -20,8 +21,11 @@ export function Card({
     <Component
       onClick={onClick}
       className={cn(
-        'bg-paper rounded-2xl border border-line p-6 shadow-subtle relative overflow-hidden',
-        hover && 'cursor-pointer hover:border-ochre/50 transition-colors',
+        'relative overflow-hidden transition-all',
+        object
+          ? 'bg-paper rounded-object border border-line p-5 shadow-object'
+          : 'bg-paper rounded-object border border-line p-5 shadow-subtle',
+        hover && 'cursor-pointer hover:border-ink/40',
         className
       )}
       {...hoverProps}
@@ -31,4 +35,3 @@ export function Card({
     </Component>
   );
 }
-
