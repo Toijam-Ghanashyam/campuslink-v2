@@ -1,0 +1,254 @@
+The new identity: 'The Register'
+CampusLink should look like an institutional placement register that learned to explain itself: ruled paper, stamped decisions, margin notes. It suits a placement cell (stamps and registers are how Indian offices actually run), nobody else at the hackathon will look like it, and it is cleaner than cards because most boxes disappear.
+Six devices, used everywhere and nothing else:
+1. Ruled, not boxed. Hairline rules separate sections. Only 'objects' get a paper surface.
+2. Stamps for decisions. VERIFIED, REJECTED, SHORTLISTED, CLASH, RESOLVED, ACCEPTED. Rotated -2°, mono caps, 1.5 px border, they thud in when a decision happens.
+3. Margin notes for AI. An italic serif note with a small mono 'AI NOTE' label. Key phrases get a highlighter swipe behind them.
+4. The thread. One 2 px ochre line used for the landing pipeline, the application stage tracker and the interview timeline.
+5. Mono for data. Roll numbers, CTC, dates and scores in IBM Plex Mono; big numerals in Newsreader.
+6. Paper grain. A 4% noise overlay on the bone background so it never looks flat.
+The palette stays, used with more conviction: ochre appears as small solid areas (the thread, highlighter, match bars, button hover fill), and ink appears as full-bleed blocks for contrast (sidebar, the landing 'under the hood' section).
+10. Type and shape
+Role
+Font
+Used for
+Display
+Newsreader 400/500 + italic
+Hero up to 104 px, page titles 44 px, stat numerals 64 px, margin notes (italic)
+UI
+Instrument Sans 400/500/600
+Body 15 px, tables 14 px, buttons
+Data
+IBM Plex Mono 400/500
+Labels 11 px caps, IDs, CTC, dates, scores
+Install them with Fontsource (npm) so they work offline, because venue Wi-Fi is the most common way a live demo breaks. Radii: controls 6 px, paper objects 10 px, stamps 3 px, nothing above 12 px. Shadows: none on content; floating objects only.
+11. Verdict on the Phase A to C ideas in your spec
+Idea
+Verdict
+Cursor glow, sound effects, confetti, rotating seal
+Skip. These are the sloppiest items on the list and add risk
+Skill radar chart
+Optional. The overview is already busy; add it only if you remove something
+Candidate comparison mode
+Only if time remains after Step 10
+Chatbot
+Optional and last; the PS lists it, but keep it a small drawer
+Heatmap calendar
+Skip. The conflict timeline already tells that story
+Tour mode
+Replace with a small 'Judge's guide' checklist (Step 9)
+PDF report
+Skip
+Dark mode
+Skip. It doubles your QA
+Two things the PS actually grades that the build does not show yet: model evaluation and multi-campus scale (deliverables 9, 11 and 12). Step 9 adds a one-page AI Engine view and a campus switcher.
+12. Workflow
+One step at a time. Paste it, wait for the build to pass, open the app at 1440 x 900, check the 'what good looks like' table at the end, commit, then move on. Steps: 0 Safety, 1 Rules v3, 2 Foundation, 3 Landing, 4 Student, 5 Admin, 6 Recruiter, 7 Charts and data, 8 Motion, 9 Judge evidence, 10 QA and freeze.
+Step 0: Safety net
+Before changing anything: 1) If there is no git repository, run git init. Commit everything with the message 'v2 baseline', then create and switch to a branch named 'unslop'. 2) Run npm run build and confirm it passes. 3) Start the dev server and, with the browser, take screenshots at 1440x900 of /, /student/overview, /student/applications, /admin/drives and /recruiter/pipeline, and save them in a folder named _before. Do not modify any source file in this step.
+Step 1: Design system v3 (replace DESIGN_SYSTEM.md)
+Replace the contents of DESIGN_SYSTEM.md with the text below and treat it as the only design authority from now on. Change nothing else in this step. Reply with a 10-line summary of what changed.
+
+# CampusLink design system v3: 'The Register'
+Concept: an institutional placement register that learned to explain itself: ruled paper, stamped decisions, margin notes. Calm, specific, printed-feeling. Not a SaaS template. Never change src/lib/store.jsx, src/api or the data flow when restyling.
+
+STACK unchanged (Vite, React, Tailwind 3.4, react-router, framer-motion, recharts, lucide-react). Fonts through Fontsource (npm), imported in main.jsx so they work offline: Newsreader (variable, with italic), Instrument Sans (variable), IBM Plex Mono (400 and 500). If a package name fails, search npm for '@fontsource newsreader' and similar.
+
+COLOR TOKENS unchanged (bone, paper, ink, ink-soft, line, ochre, ochre-tint, ochre-deep, jade, jade-tint, brick, brick-tint). Ochre is the only accent; text on ochre is ink. Use ochre as small SOLID areas (thread, highlighter, match bars, hover fill), never as text on bone.
+
+TYPE: display = Newsreader, ui = Instrument Sans, mono = IBM Plex Mono.
+- display-xl: clamp(56px, 7vw, 104px), weight 400, line-height .98, tracking -0.025em.
+- Page title: Newsreader 44px / 1.05, weight 400. Section title: 28px, weight 500.
+- Stat numeral: Newsreader 64px, weight 400, tabular-nums.
+- Body: Instrument Sans 15px / 1.6. Table text: 14px.
+- Label: IBM Plex Mono 11px, uppercase, tracking .12em, ink-soft. Section labels are numbered ('01 - Readiness').
+- Data (IDs, roll numbers, CTC, dates, scores): IBM Plex Mono 13px.
+- Emphasis inside a headline = Newsreader italic. Never bold, never a different color.
+
+SURFACES, three levels only. L0 page = bone + a 4% paper grain (fixed overlay, SVG feTurbulence noise, pointer-events none). L1 = ruled sections: no background, no card, separated by 1px line rules; this is the default for all content. L2 = 'objects' (drawer, popover, command palette, score dial, record slip, offer letter): paper background, 1px line border, radius 10px, shadow 0 12px 32px -12px rgba(20,22,28,.18) only when floating.
+RADII: controls 6px, objects 10px, stamps 3px. Nothing above 12px. rounded-full only for avatars and the sidebar marker.
+
+COMPONENTS
+- Stamp({tone, children}): mono 11px caps, tracking .14em, 1.5px solid border in the tone color, radius 3px, transparent background, rotate(-2deg), padding 3px 8px. Used for decisions: VERIFIED, REJECTED, SHORTLISTED, CLASH, RESOLVED, ACCEPTED, OFFERED. Enter: scale 1.6 to 1, rotate -8deg to -2deg, opacity 0 to 1, spring (stiffness 520, damping 24); then the parent nudges down 2px and back (thud).
+- Tag({children, dot}): plain mono 12px text with an optional 6px colored dot, no box. For minor statuses (In Review, Pending, Technical Review) and skill lists.
+- MarginNote({label, children}): a mono label ('AI NOTE'), then italic Newsreader 17px text, max width 62ch, no background, no border. Key phrases wrapped in <Mark> get a highlighter swipe: an ochre rectangle at 55% opacity behind the lower 55% of the text, scaleX 0 to 1 from the left over 500ms, staggered.
+- Rule({strong, draw}): 1px line color (strong = 1px ink). With draw it scales from 0 to 1 horizontally on view (600ms, origin left).
+- StatStrip({items}): a row between two rules, items separated by vertical hairlines; each item = mono label, Newsreader 64px numeral (count-up), one-line hint. No cards.
+- Masthead({context, title, lede, action}): mono caps context line, page title, one-sentence lede in Newsreader italic 20px, optional action on the right.
+- Button: height 40px, radius 6px, Instrument Sans 600 14px. Primary = ink background, bone text; on hover an ochre layer rises from the bottom and the text stays ink. Secondary = 1px ink border; hover fills ink at 6%. Text links end with an arrow that moves 4px right on hover. No shadows.
+- DataTable: no zebra, no card. Header = mono label row between a strong rule above and a line rule below. Rows separated by line rules, 56px tall. Numeric columns right-aligned in mono. Hover = a 2px ochre tick on the left edge and bone darkened 3%.
+- Tabs: text tabs; the active one has a 2px ink underline that slides (layoutId); counts in mono.
+- Charts: hairline axes, only 3 horizontal gridlines in line color, mono 11px ticks, direct value labels, ONE highlighted element in ochre and the rest ink at 85%, no legend box, a one-line annotation under every chart.
+- Icons: lucide, 1.5px stroke, only in nav, buttons and form fields. Never in a tinted square or circle, never as decoration, never the Sparkles icon.
+
+LAYOUT: 12-column grid, content max width 1240px, 64px between sections, 32px between rows. Prefer asymmetry (7/5 or 8/4 columns) over equal columns. Every page starts with a Masthead.
+
+MOTION (framer-motion, ease [0.22,1,0.36,1], only transform, opacity and SVG strokes). Five motions only: (1) rules draw in, (2) stamps thud in, (3) highlighter swipes, (4) numbers roll or count up, (5) table rows slide in from the left (x -12 to 0, stagger 40ms). Page enter = rule draws, then title, then content rows. No generic fade-up on every block. No hover-lift on content. Respect reduced motion.
+
+COPY: concrete and short. Never use: seamless, powerful, empower, unlock, revolutionize, cutting-edge, next-gen, leverage, 'Welcome back', exclamation marks. Realistic Odia and Indian names, uneven CGPAs (7.84, 8.31, 9.02), no round-number data.
+
+BANNED: any gradient (the one hatch pattern in the Drives timeline excepted), glassmorphism, shadow-lg, rounded-2xl, icon tiles, pill badges above headings, centered hero, trust-badge rows, three equal cards with three bullets, left-border callouts, emoji, Sparkles icons, pulsing glows.
+
+QUALITY: after each task run npm run build, fix all warnings, keep the console clean, and run this check and fix every hit: grep -rnE 'rounded-2xl|rounded-3xl|shadow-lg|Sparkles|bg-gradient' src
+Step 2: Foundation
+Task 2 of 10: Foundation. Follow DESIGN_SYSTEM.md v3. Do NOT touch src/lib/store.jsx, src/api or src/data, and do not rename or remove any existing component export (pages must keep working). Change looks and add new components.
+
+1. Install Newsreader, Instrument Sans and IBM Plex Mono with Fontsource and import them in main.jsx. Remove the Google Fonts links from index.html. In tailwind.config.js set fontFamily display = Newsreader, sans = Instrument Sans, mono = IBM Plex Mono, and borderRadius control 6px, object 10px, stamp 3px.
+2. In src/index.css add: the 4% paper-grain overlay (fixed, pointer-events none, SVG feTurbulence data URI), utility classes .label (mono 11px caps, tracking .12em, ink-soft), .data (mono 13px, tabular-nums), .display-xl, .stat-numeral, and a thin custom scrollbar.
+3. New components in src/components/ui exactly as specified in DESIGN_SYSTEM.md: Stamp, Tag, Mark, MarginNote, Rule, StatStrip, Masthead.
+4. Restyle existing components without changing their props:
+ - Card: the default becomes a ruled section (no background, no border, a 1px line rule on top, padding 24px 0). Add the prop object={true} for the L2 paper object, and use it for everything floating: Drawer content, popovers, ScoreDial wrapper, command palette, notification popover.
+ - Badge: decision statuses (Verified, Rejected, Shortlisted, Conflict, Resolved, Accepted, Offered, Approved) render as Stamp; every other status (In Review, Pending, Technical Review, Shortlisted for R1/R2, flags) renders as Tag with a dot.
+ - Callout: when the tone is not brick render it as MarginNote; brick stays a full-width strip with a 1px brick border, brick-tint background, a mono label and radius 6px.
+ - Button, DataTable, Tabs, Drawer (L2) and Toast (ink background, bone text, mono 12px, radius 6px) per the spec.
+5. ScoreDial v2 (same props): a semicircle instrument. 61 tick marks every 3 degrees (every 10th longer) in ink-soft, a 6px ochre value arc over a 2px line-colored track, a 1.5px ink needle with a 5px hub that swings to the value with a spring (stiffness 90, damping 14, slight overshoot), the number under the hub in Newsreader 56px counting with the needle, mono scale labels 0, 50, 100, and the level name in mono caps under the number.
+6. Update the /kit route to show every component, run the grep check from DESIGN_SYSTEM.md and fix every hit, then run npm run build.
+Step 3: Landing page rebuild
+Task 3 of 10: Rebuild the landing page (src/pages/landing). Follow DESIGN_SYSTEM.md v3. Keep all routes and links. Delete the old hero glow, line pattern, icon cards and trust ticks.
+
+HEADER (64px): wordmark 'CampusLink' in Newsreader 24px (no logo mark). Right side: mono caps links 'Pipeline', 'Portals', 'Under the hood' and a primary button 'Open the demo →' (to /student/overview). A 1px rule under the header that draws in on load.
+
+HERO (12-col grid, min-height 88vh, left aligned):
+- Left 7 cols: mono caps line 'BPUT HACKATHON 2026 · PS10' (plain text, not a pill). H1 in display-xl: 'Every shortlist, explained.' with 'explained.' in italic and a Mark highlighter that swipes in at 900ms. Below, 18px Instrument Sans: 'CampusLink scores students, matches them to recruiters, schedules drives without clashes and says why, in one place instead of forty WhatsApp groups.' Then a primary button 'Open the demo →' and a text link 'See the pipeline ↓'. The headline reveals word by word (stagger 60ms, clipped).
+- Right 5 cols: 'the register', the product shown as two stacked paper objects. Object A (rotated 1.5deg): mono label 'CANDIDATE · MICROSOFT INDIA SDE', name 'Rohan Senapati' in Newsreader 28px, 'BPUT · Computer Science · CGPA 9.12' in mono, a match bar at 94%, then a MarginNote: 'Highly recommended: strong verified React, Python and Data Structures, above the mock-interview benchmark.' with those three phrases as Marks. A 'SHORTLISTED' Stamp thuds onto its corner 1.6s after load and repeats every 9 seconds (fade it out, then stamp again). Object B sits behind it, offset 24px down and right, rotated -2deg: mono label 'LAB 4 · 02 NOV', two mini timeline bars with a brick hatched overlap, the line 'Cognizant clashes with Tech Mahindra, 10:00-12:00' and a 'CLASH' Stamp. Static when reduced motion is on.
+
+PIPELINE (id='pipeline'): label '02 - THE PIPELINE', heading 'Six stages, one thread.' A horizontal 2px ochre thread with six numbered nodes (01 to 06, mono numerals inside 28px circles with an ink border and bone fill; each node fills ochre in sequence as the thread draws left to right on scroll, using useScroll). Under each node a Newsreader 20px title and a one-line description in Instrument Sans 14px:
+01 Profiling: A readiness score and skill gaps for every student.
+02 Matching: Fit scores with reasons, not just rankings.
+03 Scheduling: Clashes caught before a drive is approved.
+04 Notification: Shortlists, deadlines and offers pushed to the right people.
+05 Offer tracking: Letters, documents and joining status in one place.
+06 Analytics: Conversion by branch, and who is at risk of going unplaced.
+No icons, no cards. Below 1024px the thread turns vertical.
+
+PORTALS (id='portals'): label '03 - THREE DESKS', heading 'One register, three desks.' Three full-width ruled rows (not cards), each with: a roman numeral (I, II, III) in Newsreader 64px ink-soft; the name in Newsreader 32px; one sentence in Instrument Sans 16px; three mono caps keywords separated by dots; and 'Open →'.
+I Student: 'See your readiness, close skill gaps and understand every decision.' READINESS · AI MATCH · INTERVIEWS → /student/overview
+II Placement Cell: 'Verify records, schedule drives without clashes and catch at-risk students early.' VERIFICATION · CONFLICTS · AT-RISK → /admin/command-center
+III Recruiter: 'Rank candidates by verified fit and book interview slots in one click.' PIPELINE · BIO · SLOTS → /recruiter/overview
+Hover: an ochre fill sweeps across the row from the left (scaleX, origin left, 350ms) behind the text, the text stays ink, the arrow moves 8px.
+
+UNDER THE HOOD (id='hood'): a full-bleed ink section with bone text. Left 5 cols: label '04 - UNDER THE HOOD', heading 'Rules where rules are right, models where they are not.' and three short plain paragraphs titled 'Rule + ML hybrid scoring', 'Embedding-based matching', 'Conflict-aware scheduling'. Right 7 cols: an SVG architecture diagram with five sharp boxes (radius 4px, 1px bone border, mono labels): Data sources → Scoring & Matching → Scheduler → Notifications → Dashboards, joined by 1.5px arrows that draw in on view, plus a dashed return line labelled 'Outcomes retrain the models'. Below it a StatStrip on ink: 1,420 students · 42 recruiters · 78.4% placed, with the mono note 'SIMULATED CAMPUS DATA'.
+
+FOOTER: one mono caps line: 'Built for BPUT Hackathon · PS10 · Data shown is simulated'.
+Run build, check 1440px and 1024px, run the grep check.
+Step 4: Student portal pass
+Task 4 of 10: Student portal pass. Follow DESIGN_SYSTEM.md v3. Change layout, styling and copy only; keep every interaction, route and store connection working.
+
+SHELL (applies to all three portals now): the sidebar stays ink with the wordmark 'CampusLink' in Newsreader at the top; prefix each nav item with a mono number (01, 02, ...); the active item has the 3px ochre marker. The tenant label moves into the header as mono caps. The search box becomes a plain input with only a bottom rule and the hint 'Ctrl+K'. The role switcher becomes a text control in mono caps with the active role underlined in ink. Bell and avatar stay.
+
+OVERVIEW: Masthead(context 'STUDENT · 220101045', title 'Good morning, Ananya.', lede derived from the store, for example 'Your profile is verified. Closing two skill gaps would move you to Ready.'). StatStrip with the four metrics. Then a 7/5 grid:
+- Left 7: label '01 - READINESS'. The ScoreDial inside one L2 object, large (width 420). Under it the four levels drawn as a ruler: a 1px line with four ticks labelled in mono caps (NOT READY, DEVELOPING, READY, HIGHLY EMPLOYABLE) and the thresholds 65, 80, 90 beneath; the marker is a small ink triangle that slides.
+- Right 5: label '02 - CLOSE THE GAPS FOR MICROSOFT SDE'. Four ruled rows, each with a 20px circle checkbox, the gap name (16px) and the gain in mono ('+4'). Clicking toggles it: the circle fills ochre with a drawn check, the needle swings and the number counts; finished rows show an 'IN PROGRESS' Tag.
+Remove the separate metric cards, the chips and any icon tiles.
+
+PROFILE: Masthead. Left 5: a 'record slip' L2 object titled 'Academic record' with mono label/value pairs (COLLEGE ID, BRANCH, VERIFIED CGPA, BACKLOGS) separated by dotted rules, a small ink 'LOCKED' Stamp in the corner and the line 'Managed by the Placement Cell'. Right 7: '01 - SKILLS' as a wrapping list of 6px-radius outlined tags with an x, and an underlined add-skill input; '02 - RESUME' as a dashed 1px upload area, a filename row, and a right-aligned primary 'Submit for Verification'.
+
+DRIVES: Masthead, Tabs, and the search as an underlined input. Replace the cards or table with ruled rows (96px): left Newsreader 24px company with the role under it in Instrument Sans; middle the CTC in mono (16.5 - 21.0 LPA) and the deadline in mono with a countdown ('6 days left', brick when under 7 days); a ' · ' separated mono line of required skills; right the Apply button. A drive in conflict shows the CLASH stamp. Apply keeps the scan line (a 2px ochre line crossing the row), then the button is replaced by a 'FIT 72%' mono readout and a Tag.
+
+APPLICATIONS: Tabs. Each application is a ruled row: company (Newsreader 22px), role, a Stamp or Tag for status, the fit score as a mono number with a 60px match bar (2px ink track, ochre fill), and a stage thread of four nodes (Applied, Screened, Interview, Offer) on a 2px line, completed nodes filled ochre and the current node ringed. Expanding a row shows the MarginNote with the typewriter text (Mark on 'cloud infrastructure' and 'mock interview performance'); then 'Why this score': five thin 4px bars with the factor name, weight and score in mono at the ends (all bars ink, the lowest-scoring factor brick); then, for rejected rows only, the link 'Open Notion Remediation Roadmap →'. Offers tab: each offer is an L2 'offer letter' object with mono fields, a document checklist of ticks, and an ACCEPTED or OFFERED stamp.
+
+INTERVIEWS: Masthead; a vertical thread timeline (2px ochre line, mono dates on the left, company in Newsreader 22px, mode and panel in Instrument Sans); the tips become a plain numbered list in Newsreader italic.
+Run build, test every interaction, run the grep check.
+Step 5: Admin portal pass
+Task 5 of 10: Admin portal pass. Follow DESIGN_SYSTEM.md v3. Layout, styling and copy only; keep every interaction and store connection.
+
+COMMAND CENTER: Masthead(context 'PLACEMENT SEASON 2026 · BPUT CENTRAL CAMPUS', title 'Command Center', lede 'Overseeing 1,420 students and 42 hiring partners.', action = primary '+ Authorize New Drive'). StatStrip with the four metrics. Then a 7/5 grid: the Branch-wise conversion chart on the left and the Package trend chart on the right (remove the card frames now; chart styling comes in Task 7). Below, label '03 - OFFERS PIPELINE': one row of four mono figures joined by arrows (Offered 16 → Accepted 11 → Pending 5 → Documents pending 3).
+
+VERIFICATION: Masthead with the pending count in the lede. Ruled table per spec. Approve = the row flashes jade-tint, a 'VERIFIED' Stamp thuds into the Action cell and 900ms later the row collapses. Reject = the row shakes once, a 'REJECTED' Stamp thuds in, the row collapses. The transcript Drawer shows a plain placeholder page (grey lines for text, a seal circle, mono 'DIGILOCKER · SIMULATED').
+
+RECRUITER PARTNERS: ruled table; engagement as a 2px bar with a mono percentage.
+
+DRIVES CALENDAR: Masthead, Tabs. A conflict strip (brick) with the mono label 'SCHEDULING CONFLICT DETECTED' and the existing text. Replace the mini timeline with a resource timeline in one L2 object: hour axis 09:00 to 17:00 with hairline ticks and three resource rows (Computing Lab 2, Computing Lab 4, Seminar Hall); each drive is a bar with a 1px ink border, bone fill, radius 3px and the company name in mono. The Cognizant and Tech Mahindra bars overlap in Lab 4; the overlap is a brick hatched rectangle (repeating-linear-gradient is allowed here only) labelled 'CLASH 10:00-12:00'. Resolve Conflict: the Cognizant bar slides to Lab 2 at 14:00-17:00 with a spring, the hatch fades, the strip turns jade with 'Resolved: moved to 14:00-17:00, Computing Lab 2', and a 'RESOLVED' Stamp thuds onto the bar. The table below is ruled; Audit Status uses Stamp (Verified, Conflict).
+
+AT-RISK: the Early Warning text becomes a MarginNote with the criteria as Marks. Ruled table: student, branch, flags as mono Tags separated by dots, a risk score in mono with a 2px bar (brick above 80, ink otherwise), and Assign Mentor; after choosing, the button becomes the text 'Mentor: Dr. R. Mishra' with a small drawn check.
+
+OFFERS & JOINING: StatStrip of the four statuses, ruled table, documents as four small square ticks (filled = verified), Send reminder button.
+Run build, test every interaction, run the grep check.
+Step 6: Recruiter portal pass
+Task 6 of 10: Recruiter portal pass. Follow DESIGN_SYSTEM.md v3. Layout, styling and copy only; keep every interaction and store connection.
+
+OVERVIEW: Masthead(context 'MICROSOFT INDIA · CAMPUS HIRING', title 'Associate Software Engineer', lede '342 BPUT candidates applied. 48 match above 85%.', action = primary '+ Post New Job (JNF)'). StatStrip with the four metrics. Below it a funnel of five left-aligned horizontal bars of decreasing width (2px ink outline, ochre fill growing in sequence), stage names in mono caps on the left, values in Newsreader on the right, and the drop-off percentage between stages in mono ink-soft.
+
+JOBS: ruled rows (role in Newsreader 22px, CTC, applicants, status Tag).
+
+PIPELINE (the hero screen): Masthead, Tabs. Ruled table: candidate (name in Newsreader 18px, roll number in mono underneath), branch, CGPA (mono, right aligned), AI Match = a mono number plus a 72px 2px match bar (ink track, ochre fill; no sparkle icon anywhere), status Tag, actions: primary 'Schedule Slot' and the text link 'View Bio →'. Rows still re-order with layout animation. The Schedule Slot popover is an L2 object with four mono time chips; the disabled chip reads 'Clashes with TCS drive'.
+Bio Drawer: header with the name in Newsreader 32px and 'BPUT · Computer Science' in mono; '01 - AI NOTE' as a MarginNote where 'React', 'Python' and 'Data Structures' are Marks that swipe one after another; '02 - VERIFIED SKILLS' as mono tags separated by dots, each with a small tick; '03 - RESUME' as an L2 placeholder document with a VERIFIED stamp.
+
+SLOTS: a weekly grid built from hairlines; booked cells show the candidate surname in mono with a small ochre bar; booking pops the cell in.
+ANALYTICS: a StatStrip of three (Avg match, Offer acceptance, Time-to-hire) and the two charts (styled in Task 7).
+Run build, test every interaction, run the grep check.
+Step 7: Charts and data realism
+Task 7 of 10: Charts and data realism. Follow DESIGN_SYSTEM.md v3. Do not change the store or any api function name.
+
+A) Restyle every Recharts chart: no card frame; hairline axes; at most three horizontal gridlines in line color; mono 11px ticks; custom tooltip (small ink box, bone mono text); direct value labels on bars; no legend; ONE highlighted element in ochre and the rest ink at 85%; one annotation line under each chart in Newsreader italic 15px.
+ - Branch conversion: horizontal bars sorted high to low (CSE 82, IT 76, ECE 64, EEE 58, ME 49, CE 41), highlight CE, annotation 'Civil and Mechanical convert at roughly half the rate of CSE.'
+ - Package trend (LPA, 2022 to 2026): average in ink 4.8, 5.4, 6.1, 6.7, 7.2; highest in ochre 16.0, 19.5, 24.0, 28.5, 34.0. End labels on the last point ('Highest 34.0', 'Average 7.2'), a dot only on the last point, annotation 'Highest package is up 2.1x since 2022.'
+ - Recruiter: Applicants by branch (CSE 142, IT 88, ECE 61, Others 51) and AI match distribution (90-100: 26, 80-89: 88, 70-79: 112, 60-69: 78, below 60: 38; highlight the 80-100 bins). Compute Avg match from this distribution instead of hardcoding it, and show that value in the StatStrip.
+
+B) Make the recruiter funnel consistent: Applicants 342 > Eligible 261 > Shortlisted (AI match above 85%) 48 > Interviewed 31 > Offers 16. The StatStrip shows TOTAL APPLICANTS 342, AI MATCH > 85% 48, INTERVIEWS SCHEDULED 12 (hint 'upcoming, 31 completed') and OFFERS EXTENDED 16. Booking a slot still increases the scheduled count.
+
+C) Rewrite the mock data so it feels real (keep ids and shapes): 12 students with Odia and Indian names (Ananya Sharma is the logged-in student; also Rohan Senapati, Subham Mohapatra, Priyanka Behera, Debasish Nayak, Lipsa Mishra, Satyajit Panda, Ipsita Rout, Sambit Patra, Smruti Ranjan Sahoo, Biswajit Pradhan, Manas Swain); uneven CGPAs between 7.12 and 9.31 with no two the same; roll numbers like 2201010045 that vary by branch; realistic CTCs (3.6, 4.5, 6.2, 7.0, 12.5, 21.0 LPA); at-risk flags specific to each student ('Mock 45/100', '3 rejections', 'CGPA 6.4', '2 backlogs'); 8 notifications per role written as specific sentences ('Cognizant drive moved to 14:00, Lab 2.'); offers that mix Offered, Accepted, Deferred and Withdrawn with partial document progress (2/4, 3/4, 4/4).
+Run build and check every chart and table.
+Step 8: Motion choreography
+Task 8 of 10: Motion choreography. Follow DESIGN_SYSTEM.md v3. Animate only transform, opacity and SVG strokes.
+
+1. Create src/components/motion with: PageEnter (sequence: the Rule draws 0-500ms, the title rises 12px and fades 150-500ms, the lede fades 300-600ms, then content rows slide in from x -12 with a 40ms stagger starting at 400ms), RuleDraw, StampIn, HighlightMark, RowSlide, NumberRoll (integers roll their digits vertically, decimals count up).
+2. Apply PageEnter to every page's Masthead and first content block. Use RowSlide for every DataTable and ruled list, NumberRoll in every StatStrip, StampIn for every Stamp that appears after a user action (approve, reject, resolve, accepted) and for the hero artifact, HighlightMark for every Mark.
+3. Remove every generic whileInView fade-up on blocks, every hover-lift, every pulsing ring and every looping glow. Keep: the landing thread draw, pipeline node fills, the Apply scan line, the dial needle swing, bar fills, the drawer slide, page transitions and the bell swing.
+4. Add the stamp thud: when a Stamp lands, its parent moves down 2px and back in 120ms.
+5. With prefers-reduced-motion, every element renders in its final state immediately.
+6. Run grep -rnE 'whileInView|whileHover' src and give me a short list of every remaining hit with a one-line justification, removing the ones that are not justified.
+Step 9: Judge evidence
+Task 9 of 10: Judge evidence. Follow DESIGN_SYSTEM.md v3. Three additions, nothing else.
+
+A) New Admin page /admin/ai-engine (sidebar item '07 AI Engine'). Masthead(title 'AI Engine', lede 'How scores are made, and how well they perform.'). Sections:
+ 01 - SCORING: the five factor weights (Skills match 40, CGPA 20, Mock interview 20, Projects 10, Certifications 10) as ruled rows with a 2px weight bar.
+ 02 - MODELS: a ruled 4-row table (Component | Technique | Purpose): Readiness score | Rule + ML hybrid | Scores each student 0-100; Matching | Embedding similarity + eligibility rules | Ranks candidates per drive; Scheduler | Interval-overlap detection | Finds venue and student clashes; At-risk | Classifier on CGPA, mock score and rejections | Flags students for mentors.
+ 03 - EVALUATION: a StatStrip (Precision 0.87, Recall 0.82, F1 0.84, AUC 0.91) with the mono note 'SIMULATED TEST SET · 1,200 HISTORICAL PLACEMENTS · REPLACE WITH REAL RESULTS'; beside it a 2x2 confusion matrix as a mono grid (TP 412, FP 61, FN 90, TN 637) and a ruled list of top features with 2px bars (Mock score 0.27, Skill match 0.24, CGPA 0.17, Projects 0.12, Certifications 0.08, Backlogs 0.07).
+ 04 - SCALE: three plain sentences on multi-campus deployment (data partitioned by college_id, stateless services, per-campus and aggregate analytics).
+
+B) Campus switcher. In the Admin header the tenant label becomes a dropdown (L2 popover): 'BPUT - Central Campus', 'BPUT - North Campus', 'All campuses'. Switching reloads analyticsApi data for the Command Center (different mock numbers per campus; 'All campuses' sums them) and re-runs the number roll and the chart animations. For 'All campuses' also show a small ruled comparison table (campus, placed %, average CTC).
+
+C) Judge's guide. A small mono pill fixed bottom-left, 'GUIDE 0/6', that opens an L2 object listing six steps: 1 Tick a skill gap on Student Overview; 2 Apply (AI Match) on Microsoft; 3 Approve a student as Admin; 4 Resolve the Cognizant conflict; 5 Book a slot as Recruiter; 6 Check the new interview as Student. Each item has 'Go →' that navigates to the right page and ticks automatically (drawn ochre check) when the matching store event happens. Collapsed by default; hidden on the landing page.
+Run build and test A, B and C.
+Be honest in the room about the AI Engine numbers: they are simulated until your backend teammates run a real evaluation. Ask them for the real precision, recall and confusion matrix and swap them in. The 'SIMULATED' label stays until then.
+Step 10: QA and freeze
+Task 10 of 10: QA and freeze. Fix only; add no features.
+1. Run grep -rnE 'rounded-2xl|rounded-3xl|shadow-lg|shadow-xl|Sparkles|bg-gradient|text-gradient' src and fix every hit (the hatch in the Drives timeline is the only allowed repeating-linear-gradient).
+2. Find any hex color or Tailwind color class outside the design tokens and replace it with the nearest token.
+3. Find the banned words (seamless, powerful, empower, unlock, revolutionize, cutting-edge, leverage) and any exclamation marks in copy and rewrite them plainly.
+4. Test the five cross-portal effects with the role switcher: approve -> Verified badge; resolve conflict -> Verified drive; apply -> new pipeline candidate; book slot -> student interview; send reminder -> student offer note. Fix any regression.
+5. Turn the network off and reload: fonts and charts must still render. Run npm run build, then npm run preview and test the production build at 1440x900 and 1280x720.
+6. Test with prefers-reduced-motion on, keyboard-only navigation, and confirm there are no console warnings.
+7. Take screenshots of the same routes as in _before into a folder _after and list, per route, what changed in one line.
+8. Update README.md and BACKEND_CONTRACT.md for the AI Engine and campus switcher data (api shapes only).
+13. What good looks like after each step
+Step
+You should see
+2
+Buttons fill with ochre from below on hover, no tinted icon squares, a dial with ticks and a swinging needle
+3
+No centered hero. A stamped register page on the right, roman-numeral portal rows, a dark section with a drawn architecture diagram
+4
+Student Overview has no card boxes; gaps are ruled rows; applications show a four-node thread
+5
+Approving drops a VERIFIED stamp; the Drives timeline has three lab rows and a hatched clash that slides away
+6
+No sparkle icons anywhere; match bars instead; the bio drawer highlights the three skills
+7
+Annotated charts, offers lower than interviews, Odia names, uneven CGPAs
+8
+Pages enter in a sequence (rule, title, rows). Nothing floats up at random
+9
+An AI Engine page, a campus dropdown, a GUIDE pill bottom-left
+Four quick tests on any screen:
+1. Cover the wordmark. Could it be any SaaS product? If yes, there is still a template left.
+2. Squint. You should still see one clear hierarchy: big numeral or title, then labels, then data.
+3. Remove the icons in your head. The screen should still make sense.
+4. Five seconds on a stranger. Show a friend the landing page for five seconds and ask what it does. 'Explains placement decisions' is a pass.
+14. If something still looks generic
+• Still looks like cards: 'List every element that has a background or border and is not an L2 object. Remove its background and border and use a 1px rule instead. Change nothing else.'
+• Feels empty: 'Do not add elements. Increase type contrast only: page titles 44px, numerals 64px, labels 11px mono, section gaps 64px.'
+• Stamps feel cheesy: 'Reduce the stamp rotation to -1deg and the size to 10px. Use stamps only for decisions, never for plain status.'
+• Fonts missing or wrong: 'Check the Fontsource imports in main.jsx and the fontFamily config in tailwind.config.js. Open DevTools and confirm Newsreader, Instrument Sans and IBM Plex Mono are loaded.'
+• Something broke: 'Run git diff on the last step, find the regression, and fix it without reverting the design changes.' If it is worse than that, run git checkout on the last commit and repeat the step with a shorter prompt.
