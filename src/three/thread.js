@@ -16,3 +16,4 @@ export const threadCurve = new THREE.CatmullRomCurve3(
   'catmullrom',
   0.5
 );
+

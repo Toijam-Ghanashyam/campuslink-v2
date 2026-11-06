@@ -46,3 +46,4 @@ export function useFx() {
     matchMedia('(prefers-reduced-motion: reduce)').matches;
   return { mode: m, setMode: setFxMode, use3d: m === 'full' && detectWebGL() && !reduced };
 }
+

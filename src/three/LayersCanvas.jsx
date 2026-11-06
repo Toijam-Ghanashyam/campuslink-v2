@@ -7,3 +7,4 @@ export default function LayersCanvas({ visible, spread, labels }) {
     </SceneCanvas>
   );
 }
+

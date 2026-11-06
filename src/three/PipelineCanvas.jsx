@@ -7,3 +7,4 @@ export default function PipelineCanvas({ visible, progress, labels }) {
     </SceneCanvas>
   );
 }
+

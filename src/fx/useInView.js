@@ -13,3 +13,4 @@ export function useInView(ref, margin = '200px') {
   }, [ref, margin]);
   return visible;
 }
+
