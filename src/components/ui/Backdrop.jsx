@@ -22,59 +22,63 @@ export function Backdrop() {
     };
     window.addEventListener('resize', handleResize);
 
-    // Qronos Scene 2 vertical light streaks
-    const NUM_STREAKS = 64;
+    // Qronos Scene 2: Falling vertical light streaks (Brightened & Luminous)
+    const NUM_STREAKS = 72;
     const streaks = Array.from({ length: NUM_STREAKS }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      length: 50 + Math.random() * 145,
-      speed: 0.3 + Math.random() * 0.85,
-      opacity: 0.05 + Math.random() * 0.20,
-      hasHeadDot: Math.random() > 0.55,
+      length: 50 + Math.random() * 160,
+      speed: 0.32 + Math.random() * 0.82,
+      opacity: 0.12 + Math.random() * 0.32,
+      hasHeadDot: Math.random() > 0.40,
     }));
 
-    // Ambient floating micro-particles
-    const NUM_DOTS = 48;
+    // Ambient floating micro-dust particles
+    const NUM_DOTS = 54;
     const dots = Array.from({ length: NUM_DOTS }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      vy: 0.08 + Math.random() * 0.22,
-      size: 1 + Math.random() * 1.2,
-      alpha: 0.07 + Math.random() * 0.22,
+      vy: 0.08 + Math.random() * 0.18,
+      size: 1 + Math.random() * 1.4,
+      alpha: 0.12 + Math.random() * 0.32,
     }));
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
+      // 1. Falling light streaks with bright glowing head dots and fading tails
       for (const s of streaks) {
-        s.y -= s.speed;
-        if (s.y + s.length < 0) {
-          s.y = height + Math.random() * 90;
+        s.y += s.speed;
+        if (s.y - s.length > height) {
+          s.y = -Math.random() * 80;
           s.x = Math.random() * width;
         }
 
-        const grad = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.length);
-        grad.addColorStop(0, `rgba(255, 255, 255, ${s.opacity})`);
-        grad.addColorStop(0.35, `rgba(255, 255, 255, ${s.opacity * 0.55})`);
-        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        // Gradient from top (tail fading out) to bottom (bright head)
+        const grad = ctx.createLinearGradient(s.x, s.y - s.length, s.x, s.y);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        grad.addColorStop(0.55, `rgba(255, 255, 255, ${s.opacity * 0.5})`);
+        grad.addColorStop(1, `rgba(255, 255, 255, ${s.opacity})`);
 
         ctx.strokeStyle = grad;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x, s.y + s.length);
+        ctx.moveTo(s.x, s.y - s.length);
+        ctx.lineTo(s.x, s.y);
         ctx.stroke();
 
+        // Glowing white head point at the bottom of the streak
         if (s.hasHeadDot) {
-          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.42, s.opacity * 1.75)})`;
-          ctx.fillRect(s.x - 0.5, s.y - 0.5, 2, 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, s.opacity * 2.8)})`;
+          ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.8, 1.8);
         }
       }
 
+      // 2. Ambient drifting dust dots
       for (const d of dots) {
-        d.y -= d.vy;
-        if (d.y < 0) {
-          d.y = height;
+        d.y += d.vy;
+        if (d.y > height) {
+          d.y = 0;
           d.x = Math.random() * width;
         }
         ctx.fillStyle = `rgba(255, 255, 255, ${d.alpha})`;
@@ -104,13 +108,18 @@ export function Backdrop() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-0 bg-[#000000] overflow-hidden"
+      className="pointer-events-none fixed inset-0 -z-10 bg-[#000000] overflow-hidden select-none"
       aria-hidden="true"
     >
       <canvas ref={canvasRef} className="h-full w-full block opacity-90" />
       {/* Architectural vertical framing lines */}
       <div className="pointer-events-none fixed inset-y-0 left-4 lg:left-10 w-px bg-white/[0.08]" />
       <div className="pointer-events-none fixed inset-y-0 right-4 lg:right-10 w-px bg-white/[0.08]" />
+      <div className="pointer-events-none fixed inset-x-0 top-16 h-px bg-white/[0.08]" />
+
+      {/* Subtle architectural intersection crosshairs */}
+      <span className="pointer-events-none fixed left-4 lg:left-10 top-16 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-white/35 z-10 select-none">+</span>
+      <span className="pointer-events-none fixed right-4 lg:right-10 top-16 translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-white/35 z-10 select-none">+</span>
     </div>
   );
 }

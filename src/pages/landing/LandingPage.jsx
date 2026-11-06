@@ -187,15 +187,22 @@ export function LandingPage() {
         <header
           className={`sticky top-0 z-50 backdrop-blur-md border-b px-6 lg:px-12 h-16 flex items-center justify-between ${
             isNight
-              ? 'bg-black/75 border-white/[0.09]'
+              ? 'bg-black/80 border-white/[0.09]'
               : 'bg-bg/90 border-line'
           }`}
         >
-          <div className="flex items-baseline gap-1.5 select-none">
-            <span className="font-display font-medium text-2xl text-fg tracking-tight">
-              CampusLink
-            </span>
-            <span className="font-mono text-xs text-accent font-bold">.register</span>
+          <div className="flex items-center gap-2.5 select-none">
+            {isNight && (
+              <div className="w-6 h-6 rounded bg-white text-black font-bold flex items-center justify-center font-mono text-[11px] tracking-tight">
+                CL
+              </div>
+            )}
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-medium text-2xl text-fg tracking-tight">
+                CampusLink
+              </span>
+              <span className="font-mono text-xs text-accent font-bold">.register</span>
+            </div>
           </div>
 
           <nav className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-wider text-fg-soft">
@@ -211,10 +218,10 @@ export function LandingPage() {
               <button
                 type="button"
                 onClick={() => navigate('/student/overview')}
-                className="rounded-full border border-white/25 bg-black/80 px-4 py-2 font-mono text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2"
+                className="rounded-full border border-white/25 bg-black/80 px-5 py-2 font-mono text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
               >
-                <span>Launch Demo</span>
-                <span className="text-white/70">→</span>
+                <span>GET STARTED</span>
+                <span className="text-white/60">»</span>
               </button>
             ) : (
               <Button
@@ -228,7 +235,7 @@ export function LandingPage() {
           </div>
         </header>
 
-        {/* SCENE 1 WRAPPER: Full-Bleed Vortex Funnel in Dark Mode */}
+        {/* SCENE 1 WRAPPER: Full-Bleed 3D Vortex Funnel in Dark Mode (Matching Screenshot 1) */}
         <section
           ref={heroRef}
           onPointerMove={handleHeroPointerMove}
@@ -239,7 +246,7 @@ export function LandingPage() {
           {(use3d || isNight) && (
             <div
               className="absolute inset-0 z-0 pointer-events-none transition-transform duration-100 ease-out"
-              style={{ transform: 'translate3d(calc(var(--mx, 0) * -18px), 0, 0)' }}
+              style={{ transform: 'translate3d(calc(var(--mx, 0) * -16px), 0, 0)' }}
             >
               <Suspense fallback={null}>
                 <HeroCanvas visible={inView} />
@@ -247,165 +254,191 @@ export function LandingPage() {
             </div>
           )}
 
-          <div className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              {/* Left Column (7 cols): Editorial Typography */}
-              <div className="lg:col-span-7 space-y-6">
-                <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block">
-                  BPUT HACKATHON 2026 · PS10 PLACEMENT PLATFORM
+          {/* Centered Hero Content Hierarchy (Matching Screenshot 1) */}
+          <div className="pt-20 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10 text-center">
+            {/* Centered Eyebrow */}
+            <span
+              className={`font-mono text-xs uppercase tracking-[0.2em] font-semibold inline-block mb-4 ${
+                isNight ? 'text-zinc-400' : 'text-accent-deep'
+              }`}
+            >
+              BPUT HACKATHON 2026 · PS10 PLACEMENT REGISTER
+            </span>
+
+            {/* Centered Main Headline */}
+            <h1
+              className={`font-display font-normal text-4xl sm:text-6xl lg:text-7xl tracking-tight leading-[1.04] max-w-4xl mx-auto ${
+                isNight
+                  ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent drop-shadow-[0_2px_24px_rgba(0,0,0,0.85)]'
+                  : 'text-fg'
+              }`}
+            >
+              Every shortlist,{' '}
+              {isNight ? (
+                <span className="font-serif italic font-normal text-white">
+                  explained.
                 </span>
+              ) : (
+                <span className="font-serif italic font-normal text-fg">
+                  <Mark delay={0.4}>explained.</Mark>
+                </span>
+              )}
+            </h1>
 
-                <h1
-                  className={`font-display font-normal text-4xl sm:text-6xl tracking-tight leading-[1.04] ${
-                    isNight
-                      ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent'
-                      : 'text-fg'
-                  }`}
+            {/* Centered Subtitle */}
+            <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-2xl mx-auto mt-6">
+              CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
+            </p>
+
+            {/* Centered Dual Pill CTA Buttons (Matching Screenshot 1) */}
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
+              {isNight ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('desks');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-white hover:border-white/50 hover:bg-black/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.06)] flex items-center gap-2"
                 >
-                  Every shortlist,{' '}
-                  <span className="font-serif italic font-normal text-fg">
-                    <Mark delay={0.4}>explained.</Mark>
-                  </span>
-                </h1>
+                  <span>Open the Demo Desks</span>
+                  <span className="text-zinc-400">»</span>
+                </button>
+              ) : (
+                <Button
+                  size="lg"
+                  variant="primary"
+                  onClick={() => {
+                    const el = document.getElementById('desks');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  Open the Demo Desks →
+                </Button>
+              )}
 
-                <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-xl">
-                  CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
-                </p>
+              {isNight ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/overview')}
+                  className="rounded-full bg-white text-black px-7 py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)]"
+                >
+                  Launch System Demo
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('pipeline');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors"
+                >
+                  See the Pipeline ↓
+                </button>
+              )}
+            </div>
 
-                <div className="flex flex-wrap items-center gap-4 pt-2">
-                  <span
-                    ref={magOpen.ref}
-                    onPointerMove={magOpen.onPointerMove}
-                    onPointerLeave={magOpen.onPointerLeave}
-                    className="inline-block"
-                  >
-                    {isNight ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const el = document.getElementById('desks');
-                          el?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="rounded-full bg-white text-black font-mono text-xs font-semibold uppercase tracking-wider px-6 py-3.5 hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.2)]"
-                      >
-                        Open the Demo Desks →
-                      </button>
-                    ) : (
-                      <Button
-                        size="lg"
-                        variant="primary"
-                        onClick={() => {
-                          const el = document.getElementById('desks');
-                          el?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        Open the Demo Desks →
-                      </Button>
-                    )}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('pipeline');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className={
-                      isNight
-                        ? 'rounded-full border border-white/25 bg-black/60 backdrop-blur-md font-mono text-xs uppercase tracking-wider text-white hover:border-white/50 px-6 py-3.5 transition-all'
-                        : 'font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors'
-                    }
-                  >
-                    See the Pipeline ↓
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Column (5 cols): "The Physical Register" Artifacts with Parallax */}
-              <div
-                className="lg:col-span-5 relative py-6 transition-transform duration-100 ease-out"
-                style={{
-                  transform:
-                    'translate3d(calc(var(--mx, 0) * 34px), calc(var(--my, 0) * 22px), 0)',
-                }}
+            {/* Centered "Physical Register" Showcase Dock (Dual Cards over Lower Funnel) */}
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-6 pt-12 text-left transition-transform duration-100 ease-out"
+              style={{
+                transform:
+                  'translate3d(calc(var(--mx, 0) * 18px), calc(var(--my, 0) * 12px), 0)',
+              }}
+            >
+              {/* Slip A: Candidate Shortlist */}
+              <motion.div
+                ref={tiltA.ref}
+                onPointerMove={tiltA.onPointerMove}
+                onPointerLeave={tiltA.onPointerLeave}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className={`tilt rounded-object border p-6 shadow-object space-y-4 ${
+                  isNight
+                    ? 'bg-black/50 border-white/12 backdrop-blur-xl shadow-2xl'
+                    : 'glass-strong border-line'
+                }`}
               >
-                {/* Artifact B (Conflict Slip behind, rotated -2deg) */}
-                <div
-                  ref={tiltB.ref}
-                  onPointerMove={tiltB.onPointerMove}
-                  onPointerLeave={tiltB.onPointerLeave}
-                  style={{ '--rot': '-2deg' }}
-                  className={`tilt absolute top-0 right-4 w-[85%] rounded-object border p-5 shadow-subtle select-none opacity-85 ${
-                    isNight
-                      ? 'bg-[#0A0A0E]/90 border-white/15 backdrop-blur-md'
-                      : 'bg-surface border-line'
-                  }`}
-                >
-                  <div className="flex items-center justify-between border-b border-line pb-2 mb-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft">
-                      RESOURCE SCHEDULE · LAB 4
+                <div className="flex items-start justify-between border-b border-line pb-3">
+                  <div>
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-fg-soft block">
+                      CANDIDATE · MICROSOFT INDIA SDE
                     </span>
+                    <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
+                      Rohan Senapati
+                    </h3>
+                    <p className="font-mono text-xs text-fg-soft">
+                      BPUT · CSE · CGPA 9.12
+                    </p>
+                  </div>
+                  <Stamp tone="jade" rotate={-2}>SHORTLISTED</Stamp>
+                </div>
+
+                {/* Match bar */}
+                <div className="space-y-1">
+                  <div className="flex justify-between font-mono text-xs">
+                    <span className="text-fg-soft">AI Semantic Match</span>
+                    <strong className="text-fg font-mono">94% Fit</strong>
+                  </div>
+                  <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden border border-line">
+                    <div className="h-full bg-accent w-[94%]" />
+                  </div>
+                </div>
+
+                {/* Margin Note with Highlighters */}
+                <MarginNote label="AI MATCH JUSTIFICATION" strong>
+                  Highly recommended: Candidate possesses verified proficiency in{' '}
+                  <Mark delay={0.8}>React</Mark>, <Mark delay={1.1}>Python</Mark>, and{' '}
+                  <Mark delay={1.4}>Data Structures</Mark>, comfortably exceeding the mock benchmark.
+                </MarginNote>
+              </motion.div>
+
+              {/* Slip B: Resource Schedule Conflict */}
+              <div
+                ref={tiltB.ref}
+                onPointerMove={tiltB.onPointerMove}
+                onPointerLeave={tiltB.onPointerLeave}
+                className={`tilt rounded-object border p-6 shadow-object space-y-4 flex flex-col justify-between ${
+                  isNight
+                    ? 'bg-black/50 border-white/12 backdrop-blur-xl shadow-2xl'
+                    : 'bg-surface border-line'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between border-b border-line pb-3 mb-3">
+                    <div>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft block">
+                        RESOURCE SCHEDULE AUDIT
+                      </span>
+                      <h4 className="font-display font-medium text-lg text-fg mt-0.5">
+                        Lab 4 Multi-Recruiter Overlap
+                      </h4>
+                    </div>
                     <Stamp tone="brick" rotate={-3}>CLASH</Stamp>
                   </div>
-                  <div className="h-4 w-full bg-bg rounded hatch-brick my-2" />
-                  <p className="font-mono text-[11px] text-brick leading-tight">
-                    Cognizant overlaps with Tech Mahindra, 10:00-12:00
+                  <div className="h-4 w-full bg-bg rounded hatch-brick my-3" />
+                  <p className="font-mono text-xs text-brick leading-relaxed">
+                    Cognizant Campus Drive overlaps with Tech Mahindra, 10:00 - 12:00 in Lab 4 (60 terminals).
                   </p>
                 </div>
 
-                {/* Artifact A (Front Candidate Slip, rotated 1.5deg) */}
-                <motion.div
-                  ref={tiltA.ref}
-                  onPointerMove={tiltA.onPointerMove}
-                  onPointerLeave={tiltA.onPointerLeave}
-                  style={{ '--rot': '1.5deg' }}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className={`tilt relative z-10 w-full rounded-object border p-6 shadow-object space-y-4 ${
-                    isNight
-                      ? 'bg-[#09090C]/85 border-white/15 backdrop-blur-xl'
-                      : 'glass-strong border-line'
-                  }`}
-                >
-                  <div className="flex items-start justify-between border-b border-line pb-3">
-                    <div>
-                      <span className="font-mono text-[10px] uppercase tracking-widest text-fg-soft block">
-                        CANDIDATE · MICROSOFT INDIA SDE
-                      </span>
-                      <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
-                        Rohan Senapati
-                      </h3>
-                      <p className="font-mono text-xs text-fg-soft">
-                        BPUT · CSE · CGPA 9.12
-                      </p>
-                    </div>
-                    <Stamp tone="jade" rotate={-2}>SHORTLISTED</Stamp>
-                  </div>
-
-                  {/* Match bar */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between font-mono text-xs">
-                      <span className="text-fg-soft">AI Semantic Match</span>
-                      <strong className="text-fg font-mono">94% Fit</strong>
-                    </div>
-                    <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden border border-line">
-                      <div className="h-full bg-accent w-[94%]" />
-                    </div>
-                  </div>
-
-                  {/* Margin Note with Highlighters */}
-                  <MarginNote label="AI MATCH JUSTIFICATION" strong>
-                    Highly recommended: Candidate possesses verified proficiency in{' '}
-                    <Mark delay={0.8}>React</Mark>, <Mark delay={1.1}>Python</Mark>, and{' '}
-                    <Mark delay={1.4}>Data Structures</Mark>, comfortably exceeding the mock benchmark.
-                  </MarginNote>
-                </motion.div>
+                <div className="border-t border-line pt-3 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-fg-soft">Automated Mitigation Ready</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/drives')}
+                    className="font-mono text-[11px] uppercase tracking-wider text-accent font-semibold hover:underline"
+                  >
+                    1-Click Resolve →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Register Ticker sits over the flared floor of Scene 1 */}
+          {/* Register Ticker sits across the flared floor disc horizon of Scene 1 */}
           <div className="relative z-10">
             <RegisterTicker />
           </div>
@@ -706,45 +739,65 @@ export function LandingPage() {
           />
         </section>
 
-        {/* Qronos Scene 2 Closing CTA Banner (Dark Mode Showcase) */}
-        <section className="relative z-10 py-24 px-6 lg:px-12 max-w-[1240px] mx-auto text-center border-t border-line">
-          <h2
-            className={`font-display font-normal text-3xl sm:text-5xl tracking-tight max-w-2xl mx-auto leading-[1.1] ${
+        {/* Qronos Scene 2 Closing CTA Section (Matching Screenshot 2) */}
+        <section className="relative z-10 py-24 px-6 lg:px-12 max-w-[1240px] mx-auto">
+          <div
+            className={`relative rounded-2xl p-12 sm:p-20 text-center ${
               isNight
-                ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent'
-                : 'text-fg'
+                ? 'border border-white/10 bg-black/50 backdrop-blur-md shadow-2xl'
+                : 'border border-line bg-surface/60'
             }`}
           >
-            Stop babysitting spreadsheets.
-            <br />
-            Let the register own the drive.
-          </h2>
-          <p className="font-sans text-sm sm:text-base text-fg-soft max-w-lg mx-auto mt-4 leading-relaxed">
-            Turn every JNF, student verification, and interview slot into explainable, conflict-free placement workflows.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-            <button
-              type="button"
-              onClick={() => navigate('/student/overview')}
-              className={
+            {/* Architectural Corner '+' Crosshairs */}
+            <span className="absolute -top-2 -left-2 font-mono text-xs text-white/40 select-none">+</span>
+            <span className="absolute -top-2 -right-2 font-mono text-xs text-white/40 select-none">+</span>
+            <span className="absolute -bottom-2 -left-2 font-mono text-xs text-white/40 select-none">+</span>
+            <span className="absolute -bottom-2 -right-2 font-mono text-xs text-white/40 select-none">+</span>
+
+            <h2
+              className={`font-display font-normal text-3xl sm:text-5xl lg:text-6xl tracking-tight max-w-3xl mx-auto leading-[1.08] ${
                 isNight
-                  ? 'rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-6 py-3 font-mono text-xs uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all'
-                  : 'rounded-control border border-line bg-surface px-6 py-3 font-mono text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg transition-all'
-              }
+                  ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent'
+                  : 'text-fg'
+              }`}
             >
-              Get Started →
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/command-center')}
-              className={
-                isNight
-                  ? 'rounded-full bg-white text-black px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all'
-                  : 'rounded-control bg-btn text-btn-fg px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-all'
-              }
-            >
-              Open Command Center
-            </button>
+              Stop babysitting spreadsheets.
+              <br />
+              <span className={isNight ? 'text-zinc-400' : 'text-fg-soft'}>
+                Let the register own the drive.
+              </span>
+            </h2>
+
+            <p className="font-sans text-sm sm:text-base text-fg-soft max-w-xl mx-auto mt-6 leading-relaxed">
+              Turn every JNF, student verification, and interview slot into reliable work that carries its context forward.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+              <button
+                type="button"
+                onClick={() => navigate('/student/overview')}
+                className={
+                  isNight
+                    ? 'rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-white hover:border-white/50 hover:bg-black/90 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.06)]'
+                    : 'rounded-control border border-line bg-surface px-6 py-3 font-mono text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg transition-all'
+                }
+              >
+                <span>GET STARTED</span>
+                <span className="text-zinc-400">»</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/admin/command-center')}
+                className={
+                  isNight
+                    ? 'rounded-full bg-white text-black px-7 py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)]'
+                    : 'rounded-control bg-btn text-btn-fg px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-all'
+                }
+              >
+                REQUEST A DEMO
+              </button>
+            </div>
           </div>
         </section>
 

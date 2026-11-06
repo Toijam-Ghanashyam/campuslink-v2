@@ -1,0 +1,678 @@
+Here is a completely redesigned concept—"The Obsidian Prism Gate"—built specifically for CampusLink.register (src/components/ui/IntroOverlay.jsx):   What Changed & Why It Looks 10x Better:9-Shard Radial Crystalline Fracture (Instead of 5 Cluttered Boxes): The screen is a single monumental dark smoked-glass vault split by precision fracture seams radiating from the center.Monumental Etched Brand Typography: Instead of tiny side-aligned text, CampusLink.register, a live status telemetry bar (BPUT PS10 · AUTONOMOUS PLACEMENT ENGINE), architectural + crosshairs, and an interactive [ CLICK TO FRACTURE & ENTER → ] pill are rendered at 2x DPI and UV-mapped across the shards. When you move your mouse, each shard lifts toward the camera and splits the letters across physical 3D beveled glass edges.Live Transparent Reveal on Shatter: When clicked (or when Enter / Space is pressed), the dark backdrop fades out while the 3D WebGL canvas stays transparent—so your actual Landing Page (with the Scene 1 Vortex Funnel) is visible through the flying glass shards as they tumble past the camera.Plays on Every Reload: Removes the sessionStorage lock in your existing src/components/ui/IntroOverlay.jsx so every reload on the Landing Page plays the glass-shatter entrance again.   Part 1: Enhanced Master Prompt for Google AntigravityCopy and paste this entire prompt into Google Antigravity:Markdown# ROLE & OBJECTIVE
+You are a Principal WebGL / Three.js Creative Technologist. Replace `src/components/ui/IntroOverlay.jsx` in my React + Vite project (`CampusLink-Demo2`) with an interactive 3D WebGL **"Obsidian Smoked-Glass Shatter Gate"** that plays every time the Landing Page (`src/pages/landing/LandingPage.jsx`) loads or reloads.
+
+Do NOT use `sessionStorage` to block repeat plays—it must initialize and appear on **every page reload**, and cleanly unmount after shattering to reveal the live `LandingPage.jsx` underneath.
+
+---
+
+# VISUAL & INTERACTION DESIGN ("THE OBSIDIAN PRISM GATE")
+
+### 1. Scene & Camera Setup
+- **Full-Viewport Overlay:** `fixed inset-0 z-[100]`, with a `#030305` background layer that fades to `opacity: 0` over `0.45s` the instant the shatter is triggered, allowing the transparent Three.js WebGL canvas (`alpha: true`) to composite the flying glass shards directly over the live `LandingPage.jsx` DOM underneath.
+- **Camera:** `THREE.PerspectiveCamera(30, width / height, 10, 5000)` positioned on the Z-axis (`z = height / (2 * Math.tan(THREE.MathUtils.degToRad(15)))`) so `1 world unit = 1 CSS pixel` at `z = 0`.
+- **Renderer:** `ACESFilmicToneMapping`, `toneMappingExposure = 1.15`, `dpr = Math.min(window.devicePixelRatio, 2)`.
+- **Lighting & Environment:**
+  - `PMREMGenerator` + `RoomEnvironment` (`three/examples/jsm/environments/RoomEnvironment.js`), `scene.environmentIntensity = 0.55`.
+  - Top-left cool white-blue directional key light (`#dce8ff`, intensity `2.2`), bottom-right warm rim light (`#f59e0b`, intensity `1.1`) to catch the beveled glass cuts.
+
+### 2. Radial 9-Shard Fracture Pattern (Dynamic Breathing Cuts)
+- Construct a centered monolith slab (`width = 90vw`, `height = 84vh`, layout scale `S = slabWidth / 1600`).
+- Partition the slab into **9 interlocking polygonal glass shards** radiating from 4 internal fracture junctions around the center:
+  - Top edge split points: `t0 = 0.28`, `t1 = 0.72`
+  - Bottom edge split points: `b0 = 0.31`, `b1 = 0.69`
+  - Left/Right edge split points: `l0 = 0.48`, `r0 = 0.52`
+  - Inner central junction ring (surrounding the centerpiece logo):
+    - `J0 = (0.34, 0.38)`
+    - `J1 = (0.66, 0.36)`
+    - `J2 = (0.68, 0.64)`
+    - `J3 = (0.32, 0.62)`
+  - Define 9 closed convex/clean polygons (`Cells 0–8`) covering 100% of the slab:
+    - Center Core Shard (`Cell 0`): `[J0, J1, J2, J3]` (frames the main brand title)
+    - 8 surrounding shards radiating to the slab's outer perimeter.
+- **Organic Micro-Drift & Cursor Repulsion:**
+  - Each internal junction (`J0–J3`) and edge split point drifts slowly on independent sine waves (`±0.012` normalized units, periods `8–14s`) so the fracture seams feel alive.
+  - Vertices within `0.45` normalized distance of the cursor push gently outward (`up to 0.025`), expanding the shard under the pointer.
+
+### 3. Smoked Iridescent Glass Geometry & Shader
+- **Shard Extrusion:** Every shard is an inset polygon (`gap = 10 * S`, corner rounding `14 * S`) extruded via `THREE.ExtrudeGeometry` with `depth: 16 * S`, `bevelEnabled: true`, `bevelThickness: 3 * S`, `bevelSize: 2.5 * S`, `bevelSegments: 3`.
+- **Material (`THREE.MeshPhysicalMaterial`):**
+  - `color: #141419`, `roughness: 0.28`, `metalness: 0.08`, `clearcoat: 0.85`, `clearcoatRoughness: 0.1`, `specularIntensity: 0.85`.
+  - `iridescence: 0.65`, `iridescenceIOR: 1.32`, `iridescenceThicknessRange: [220, 620]`.
+  - When a shard is hovered, smoothly lerp its `iridescence` to `1.0` and `envMapIntensity` from `1.0` to `2.1`.
+- **Subsurface Cursor Glow (`onBeforeCompile`):**
+  - Inject a radial world-space glow into the fragment shader around `uPointerWorld`: a blend of electric lavender and warm amber `vec3(0.55, 0.48, 0.88) * 0.22 * exp(-1.8 * pow(dist / (280.0 * S), 2.0))` so moving the cursor illuminates the internal beveled seams like fiber-optic glass.
+
+### 4. High-DPI Brand Typography Printed Across the Shards
+- Generate a single high-resolution offscreen 2D Canvas (`slabWidth * 2` × `slabHeight * 2`) containing the monumental intro layout:
+  - **Outer Architectural Frame:** Subtle `1px` inner border (`rgba(255,255,255,0.08)`), corner `+` crosshairs, and top telemetry bar:
+    - Top-left: `SYS.INIT // BPUT PS10 ARCHITECTURE`
+    - Top-right: `STATUS: READY TO FRACTURE [60 FPS]`
+  - **Centerpiece Eyebrow:** `INSTITUTIONAL PLACEMENT REGISTER & AI ENGINE` (`12 * S` px, `JetBrains Mono`, `0.28em` letter-spacing, `rgba(255,255,255,0.5)`).
+  - **Monumental Website Title:** `CampusLink.register` centered across the central fracture junctions:
+    - `"CampusLink"` in `Plus Jakarta Sans` weight `600`, size `min(8.5% of slabWidth, 22% of slabHeight)`, tight tracking `-0.04em`, vertical metallic gradient (`#ffffff` → `#d4d4d8` → `#9ca3af`).
+    - `".register"` in warm amber/gold (`#f59e0b`) or luminous silver right beside it.
+  - **Subtitle:** `"Every shortlist, readiness score, and conflict-free schedule—explained."` in `rgba(255,255,255,0.62)`.
+  - **Interactive Trigger Pill (Bottom Center):** A sleek pill badge `[ CLICK ANYWHERE OR PRESS ENTER TO SHATTER → ]` with a subtle glowing border.
+- **UV Mapping to Shards:**
+  - Each shard carries a front-face `THREE.ShapeGeometry` (`0.6px` in front of the extruded top bevel) using a `MeshBasicMaterial({ map: canvasTexture, transparent: true })` whose UVs are normalized `(x / slabWidth, y / slabHeight)` to the master slab.
+  - When any shard lifts on hover or tumbles in 3D during the shatter, its exact slice of the `CampusLink.register` typography rides along on the glass face!
+
+### 5. Physics: Hover Spring & 3D Shatter Explosion
+- **Global Tilt:** The entire monolith tilts smoothly toward the cursor (`rotateY = mx * 6.5deg`, `rotateX = -my * 5deg`, exponential damping).
+- **Shard Hover Spring:** Raycast against the 9 shards. The hovered shard springs forward toward the camera (`z = +48 * S`, spring `k = 180, c = 18`) and tilts up to `±0.22 rad` based on the hit offset from the shard's centroid.
+- **Shatter Sequence (On Click / Enter / Space):**
+  - Trigger immediately on click anywhere on the overlay or pressing `Enter` / `Space`.
+  - Each shard receives an explosive 3D velocity vector radiating outward from the click point (or center):
+    - `vx, vy`: radial outward blast (`350 * S` to `780 * S` px/s)
+    - `vz`: forward surge toward/past the camera (`+480 * S` to `+920 * S` px/s)
+    - `gravity`: `-980 * S` px/s² on Y
+    - `angularVelocity`: `2.4` to `4.2 rad/s` around a random 3D axis per shard.
+  - Stagger outer shards by `0–45ms` after the core shard fractures.
+  - Simultaneously fade the overlay's dark background CSS color to transparent over `0.42s` while the 3D shards continue flying toward the camera for `0.88s`, then unmount the overlay completely (`setShow(false)`).
+Part 2: Ready-to-Use Drop-In Code (src/components/ui/IntroOverlay.jsx)If you want to test or drop this directly into your CampusLink-Demo2 project right now, replace the contents of src/components/ui/IntroOverlay.jsx with the complete Three.js implementation below:   JavaScriptimport React, { useEffect, useRef, useState, useCallback } from 'react';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+
+// Inset a convex 2D polygon by `insetDist` pixels and build a rounded THREE.Shape
+function createRoundedPolygonShape(pts, insetDist, cornerRadius) {
+  const n = pts.length;
+  // Compute centroid
+  let cx = 0, cy = 0;
+  for (const p of pts) {
+    cx += p.x;
+    cy += p.y;
+  }
+  cx /= n;
+  cy /= n;
+
+  // Inset vertices toward centroid
+  const insetPts = pts.map((p) => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    const shrink = Math.min(insetDist, len * 0.35);
+    return {
+      x: p.x - (dx / len) * shrink,
+      y: p.y - (dy / len) * shrink,
+    };
+  });
+
+  const shape = new THREE.Shape();
+  for (let i = 0; i < n; i++) {
+    const prev = insetPts[(i - 1 + n) % n];
+    const curr = insetPts[i];
+    const next = insetPts[(i + 1) % n];
+
+    const v1x = prev.x - curr.x;
+    const v1y = prev.y - curr.y;
+    const v2x = next.x - curr.x;
+    const v2y = next.y - curr.y;
+
+    const l1 = Math.hypot(v1x, v1y) || 1;
+    const l2 = Math.hypot(v2x, v2y) || 1;
+    const r = Math.min(cornerRadius, l1 * 0.32, l2 * 0.32);
+
+    const pStart = { x: curr.x + (v1x / l1) * r, y: curr.y + (v1y / l1) * r };
+    const pEnd = { x: curr.x + (v2x / l2) * r, y: curr.y + (v2y / l2) * r };
+
+    if (i === 0) {
+      shape.moveTo(pStart.x, pStart.y);
+    } else {
+      shape.lineTo(pStart.x, pStart.y);
+    }
+    shape.quadraticCurveTo(curr.x, curr.y, pEnd.x, pEnd.y);
+  }
+  shape.closePath();
+  return { shape, centroid: { x: cx, y: cy } };
+}
+
+// Draw the high-DPI CampusLink.register artwork that gets printed across the shards
+function createMasterPanelTexture(width, height, S, isHoveredCta) {
+  const dpr = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.floor(width * dpr));
+  canvas.height = Math.max(1, Math.floor(height * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, width, height);
+
+  // 1. Subtle architectural border & corner '+' crosshairs
+  const pad = Math.max(18, 28 * S);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.font = `500 ${Math.max(10, 12 * S)}px "JetBrains Mono", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const corners = [
+    [pad, pad],
+    [width - pad, pad],
+    [pad, height - pad],
+    [width - pad, height - pad],
+  ];
+  for (const [x, y] of corners) {
+    ctx.fillText('+', x, y);
+  }
+
+  // 2. Top Telemetry Bar
+  const topY = pad + Math.max(22, 28 * S);
+  ctx.font = `500 ${Math.max(9.5, 11 * S)}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+  ctx.textAlign = 'left';
+  ctx.fillText('BPUT HACKATHON 2026 // PS10 REGISTER', pad + 20, topY);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(245, 158, 11, 0.85)';
+  ctx.fillText('● MONOLITH ARMED · CLICK TO FRACTURE', width - pad - 20, topY);
+
+  // 3. Center Eyebrow
+  const centerY = height * 0.46;
+  ctx.textAlign = 'center';
+  ctx.font = `600 ${Math.max(10, 12.5 * S)}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.48)';
+  ctx.letterSpacing = '0.24em';
+  ctx.fillText('AUTONOMOUS PLACEMENT & SEMANTIC MATCHING ENGINE', width * 0.5, centerY - Math.max(54, 78 * S));
+  ctx.letterSpacing = '0px';
+
+  // 4. Monumental Website Name: "CampusLink.register"
+  const titleSize = Math.min(width * 0.082, height * 0.19);
+  ctx.font = `600 ${titleSize}px "Plus Jakarta Sans", -apple-system, sans-serif`;
+
+  const mainWord = 'CampusLink';
+  const suffixWord = '.register';
+  const mainWidth = ctx.measureText(mainWord).width;
+
+  ctx.font = `500 ${titleSize * 0.46}px "JetBrains Mono", monospace`;
+  const suffixWidth = ctx.measureText(suffixWord).width;
+
+  const totalWidth = mainWidth + suffixWidth + 8 * S;
+  const startX = (width - totalWidth) * 0.5;
+
+  // Draw "CampusLink" with metallic silver-white vertical gradient
+  ctx.font = `600 ${titleSize}px "Plus Jakarta Sans", -apple-system, sans-serif`;
+  ctx.textAlign = 'left';
+  const titleGrad = ctx.createLinearGradient(0, centerY - titleSize * 0.6, 0, centerY + titleSize * 0.4);
+  titleGrad.addColorStop(0, '#FFFFFF');
+  titleGrad.addColorStop(0.55, '#E4E4E7');
+  titleGrad.addColorStop(1, '#9CA3AF');
+  ctx.fillStyle = titleGrad;
+  ctx.fillText(mainWord, startX, centerY);
+
+  // Draw ".register" in luminous amber
+  ctx.font = `600 ${titleSize * 0.44}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = '#F59E0B';
+  ctx.fillText(suffixWord, startX + mainWidth + 8 * S, centerY - titleSize * 0.04);
+
+  // 5. Subtitle
+  ctx.textAlign = 'center';
+  ctx.font = `400 ${Math.max(13, 17 * S)}px "Plus Jakarta Sans", -apple-system, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.58)';
+  ctx.fillText(
+    'Every shortlist, readiness score, and conflict-free interview slot — explained in glass.',
+    width * 0.5,
+    centerY + Math.max(46, 62 * S)
+  );
+
+  // 6. Interactive CTA Pill at Bottom Center
+  const pillW = Math.max(250, 310 * S);
+  const pillH = Math.max(38, 44 * S);
+  const pillX = (width - pillW) * 0.5;
+  const pillY = height * 0.74;
+
+  ctx.beginPath();
+  ctx.roundRect(pillX, pillY, pillW, pillH, 999);
+  ctx.fillStyle = isHoveredCta ? '#36D67E' : 'rgba(255, 255, 255, 0.92)';
+  ctx.fill();
+
+  ctx.font = `600 ${Math.max(10.5, 12 * S)}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = '#050507';
+  ctx.fillText('ENTER SYSTEM · SHATTER GLASS →', width * 0.5, pillY + pillH * 0.52);
+
+  // 7. Bottom Corner Specs
+  const botY = height - pad - Math.max(18, 22 * S);
+  ctx.font = `500 ${Math.max(9.5, 11 * S)}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
+  ctx.textAlign = 'left';
+  ctx.fillText('© CAMPUSLINK LABS · ODISHA', pad + 20, botY);
+  ctx.textAlign = 'right';
+  ctx.fillText('KHR_MATERIALS_DISPERSION // REAL-TIME WEBGL', width - pad - 20, botY);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+export function IntroOverlay() {
+  const [show, setShow] = useState(true);
+  const [shattering, setShattering] = useState(false);
+  const mountRef = useRef(null);
+  const shatterTriggerRef = useRef(null);
+
+  const handleShatter = useCallback((clientX, clientY) => {
+    if (shatterTriggerRef.current) {
+      shatterTriggerRef.current(clientX, clientY);
+    }
+  }, []);
+
+  useEffect(() => {
+    const reduced =
+      typeof matchMedia !== 'undefined' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setShow(false);
+      return;
+    }
+
+    const container = mountRef.current;
+    if (!container || !show) return;
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    // 1. Scene, Camera (1 world unit = 1 CSS px at z=0), Renderer
+    const scene = new THREE.Scene();
+    const fov = 30;
+    const calcCameraZ = (h) => h / (2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)));
+    const camera = new THREE.PerspectiveCamera(fov, width / height, 10, 6000);
+    camera.position.set(0, 0, calcCameraZ(height));
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+
+    // 2. Studio PMREM Environment + Key & Rim Lights
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTex;
+    scene.environmentIntensity = 0.52;
+
+    const keyLight = new THREE.DirectionalLight(0xdce8ff, 2.2);
+    keyLight.position.set(-width * 0.4, height * 0.5, 600);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xf59e0b, 1.15);
+    rimLight.position.set(width * 0.45, -height * 0.4, 400);
+    scene.add(rimLight);
+
+    // 3. Monolith Slab Dimensions
+    const slabW = Math.min(width * 0.9, 1560);
+    const slabH = Math.min(height * 0.84, 880);
+    const S = slabW / 1600;
+
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    // Shared cursor glow uniform
+    const uPointerWorld = { value: new THREE.Vector3(0, 0, 0) };
+    const uGlowStrength = { value: 0.0 };
+
+    // 4. Create 9 Radial Shards around the Central Title Core
+    // Coordinates in normalized slab space [0..1, 0..1] (0,0 = bottom-left, 1,1 = top-right)
+    const basePts = {
+      BL: { x: 0, y: 0 },
+      B0: { x: 0.31, y: 0 },
+      B1: { x: 0.69, y: 0 },
+      BR: { x: 1, y: 0 },
+      R0: { x: 1, y: 0.48 },
+      TR: { x: 1, y: 1 },
+      T1: { x: 0.72, y: 1 },
+      T0: { x: 0.28, y: 1 },
+      TL: { x: 0, y: 1 },
+      L0: { x: 0, y: 0.52 },
+      // 4 Inner Core Junctions framing the brand name
+      J0: { x: 0.28, y: 0.34 },
+      J1: { x: 0.72, y: 0.34 },
+      J2: { x: 0.74, y: 0.68 },
+      J3: { x: 0.26, y: 0.68 },
+    };
+
+    const cellDefs = [
+      ['J0', 'J1', 'J2', 'J3'], // 0: Center Hero Core (CampusLink.register)
+      ['TL', 'L0', 'J3', 'T0'], // 1: Top-Left
+      ['T0', 'J3', 'J2', 'T1'], // 2: Top-Center
+      ['T1', 'J2', 'R0', 'TR'], // 3: Top-Right
+      ['J1', 'BR', 'R0', 'J2'], // 4: Bottom-Right Upper
+      ['B1', 'BR', 'J1'],       // 5: Bottom-Right Lower
+      ['B0', 'B1', 'J1', 'J0'], // 6: Bottom-Center (CTA Pill)
+      ['BL', 'B0', 'J0', 'L0'], // 7: Bottom-Left
+    ];
+
+    const masterTexture = createMasterPanelTexture(slabW, slabH, S, false);
+
+    const makeGlassMaterial = () => {
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color('#15151a'),
+        roughness: 0.32,
+        metalness: 0.06,
+        clearcoat: 0.78,
+        clearcoatRoughness: 0.12,
+        specularIntensity: 0.8,
+        iridescence: 0.58,
+        iridescenceIOR: 1.3,
+        iridescenceThicknessRange: [250, 650],
+        envMapIntensity: 1.1,
+      });
+
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uPointerWorld = uPointerWorld;
+        shader.uniforms.uGlowStrength = uGlowStrength;
+        shader.uniforms.uScale = { value: S };
+
+        shader.vertexShader =
+          `varying vec3 vWorldPos;\n` +
+          shader.vertexShader.replace(
+            `#include <worldpos_vertex>`,
+            `#include <worldpos_vertex>\nvWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+          );
+
+        shader.fragmentShader =
+          `uniform vec3 uPointerWorld;\nuniform float uGlowStrength;\nuniform float uScale;\nvarying vec3 vWorldPos;\n` +
+          shader.fragmentShader.replace(
+            `#include <dithering_fragment>`,
+            `float d = distance(vWorldPos.xy, uPointerWorld.xy);\n` +
+              `float glow = exp(-1.6 * pow(d / (300.0 * uScale), 2.0)) * uGlowStrength;\n` +
+              `gl_FragColor.rgb += vec3(0.46, 0.39, 0.68) * 0.22 * glow;\n` +
+              `#include <dithering_fragment>`
+          );
+      };
+      return mat;
+    };
+
+    const shards = cellDefs.map((keys, idx) => {
+      const polyPts = keys.map((k) => ({
+        x: (basePts[k].x - 0.5) * slabW,
+        y: (basePts[k].y - 0.5) * slabH,
+      }));
+
+      const { shape, centroid } = createRoundedPolygonShape(polyPts, 6.5 * S, 16 * S);
+
+      // Center shape around its own centroid so rotation tips around the shard's center
+      const localPts = polyPts.map((p) => ({ x: p.x - centroid.x, y: p.y - centroid.y }));
+      const { shape: localShape } = createRoundedPolygonShape(localPts, 6.5 * S, 16 * S);
+
+      const depth = 14 * S;
+      const extrudeGeo = new THREE.ExtrudeGeometry(localShape, {
+        depth,
+        bevelEnabled: true,
+        bevelThickness: 2.6 * S,
+        bevelSize: 2.4 * S,
+        bevelSegments: 3,
+        curveSegments: 8,
+      });
+
+      const glassMat = makeGlassMaterial();
+      const glassMesh = new THREE.Mesh(extrudeGeo, glassMat);
+      glassMesh.userData.shardIndex = idx;
+
+      // Printed text face just above the top bevel
+      const faceGeo = new THREE.ShapeGeometry(localShape, 8);
+      const posAttr = faceGeo.attributes.position;
+      const uvs = new Float32Array(posAttr.count * 2);
+      for (let i = 0; i < posAttr.count; i++) {
+        const wx = posAttr.getX(i) + centroid.x;
+        const wy = posAttr.getY(i) + centroid.y;
+        uvs[i * 2] = wx / slabW + 0.5;
+        uvs[i * 2 + 1] = wy / slabH + 0.5;
+      }
+      faceGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+      const faceMat = new THREE.MeshBasicMaterial({
+        map: masterTexture,
+        transparent: true,
+        depthWrite: false,
+      });
+      const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+      faceMesh.position.z = depth + 2.8 * S;
+
+      const group = new THREE.Group();
+      group.position.set(centroid.x, centroid.y, 0);
+      group.add(glassMesh);
+      group.add(faceMesh);
+      rootGroup.add(group);
+
+      // Fly-in initial state (on page load/reload)
+      const angle = Math.atan2(centroid.y, centroid.x);
+      const dist = Math.hypot(centroid.x, centroid.y);
+      group.position.z = 380 * S + idx * 30 * S;
+      group.rotation.set(
+        (Math.random() - 0.5) * 0.9,
+        (Math.random() - 0.5) * 0.9,
+        (Math.random() - 0.5) * 0.5
+      );
+
+      return {
+        idx,
+        group,
+        glassMesh,
+        glassMat,
+        faceGeo,
+        extrudeGeo,
+        centroid,
+        zPos: group.position.z,
+        zVel: 0,
+        rx: group.rotation.x,
+        ry: group.rotation.y,
+        rz: group.rotation.z,
+        // Shatter physics state
+        vx: Math.cos(angle) * (260 + dist * 0.85) * S,
+        vy: Math.sin(angle) * (240 + dist * 0.75) * S + 120 * S,
+        vz: (540 + Math.random() * 340) * S,
+        avx: (Math.random() - 0.5) * 5.2,
+        avy: (Math.random() - 0.5) * 5.2,
+        avz: (Math.random() - 0.5) * 3.4,
+        delay: idx === 0 ? 0 : 0.025 * idx,
+      };
+    });
+
+    // 5. Pointer Raycasting & Interaction State
+    const raycaster = new THREE.Raycaster();
+    const pointerNDC = new THREE.Vector2(0, 0);
+    let pointerActive = false;
+    let hoveredIdx = -1;
+    let isShattering = false;
+    let shatterElapsed = 0;
+    let introElapsed = 0;
+
+    const handlePointerMove = (e) => {
+      pointerActive = true;
+      pointerNDC.x = (e.clientX / width) * 2 - 1;
+      pointerNDC.y = -(e.clientY / height) * 2 + 1;
+
+      uPointerWorld.value.set(
+        (e.clientX - width * 0.5),
+        -(e.clientY - height * 0.5),
+        20
+      );
+    };
+
+    const handlePointerLeave = () => {
+      pointerActive = false;
+      hoveredIdx = -1;
+    };
+
+    // Trigger the 3D shatter explosion
+    shatterTriggerRef.current = (clickX = width * 0.5, clickY = height * 0.5) => {
+      if (isShattering) return;
+      isShattering = true;
+      setShattering(true);
+
+      const impactX = clickX - width * 0.5;
+      const impactY = -(clickY - height * 0.5);
+
+      shards.forEach((s) => {
+        const dx = s.centroid.x - impactX;
+        const dy = s.centroid.y - impactY;
+        const angle = Math.atan2(dy, dx);
+        const dist = Math.hypot(dx, dy);
+        s.vx = Math.cos(angle) * (320 + dist * 0.95) * S + (Math.random() - 0.5) * 140 * S;
+        s.vy = Math.sin(angle) * (300 + dist * 0.85) * S + 160 * S;
+        s.vz = (580 + Math.random() * 380) * S;
+      });
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+        shatterTriggerRef.current(width * 0.5, height * 0.5);
+      }
+    };
+
+    const handleResize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      camera.aspect = width / height;
+      camera.position.z = calcCameraZ(height);
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerleave', handlePointerLeave);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+
+    // 6. Animation Loop
+    const clock = new THREE.Clock();
+    let frameId;
+
+    const animate = () => {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      introElapsed += dt;
+
+      // Global block tilt toward pointer
+      const targetRotY = pointerActive && !isShattering
+        ? THREE.MathUtils.degToRad(pointerNDC.x * 7.0 - 1.0)
+        : 0;
+      const targetRotX = pointerActive && !isShattering
+        ? THREE.MathUtils.degToRad(-pointerNDC.y * 5.5 + 0.8)
+        : 0;
+
+      rootGroup.rotation.y = THREE.MathUtils.damp(rootGroup.rotation.y, targetRotY, 6, dt);
+      rootGroup.rotation.x = THREE.MathUtils.damp(rootGroup.rotation.x, targetRotX, 6, dt);
+
+      uGlowStrength.value = THREE.MathUtils.damp(
+        uGlowStrength.value,
+        pointerActive && !isShattering ? 1.0 : 0.0,
+        6,
+        dt
+      );
+
+      if (!isShattering) {
+        // Raycast to find hovered shard
+        if (pointerActive && introElapsed > 0.45) {
+          raycaster.setFromCamera(pointerNDC, camera);
+          const hits = raycaster.intersectObjects(shards.map((s) => s.glassMesh));
+          hoveredIdx = hits.length > 0 ? hits[0].object.userData.shardIndex : -1;
+        } else {
+          hoveredIdx = -1;
+        }
+
+        // Spring each shard into place + hover lift & tip
+        shards.forEach((s) => {
+          const isHovered = s.idx === hoveredIdx;
+          const targetZ = isHovered ? 50 * S : 0;
+
+          // Spring physics (k=170, c=19)
+          const force = 170 * (targetZ - s.zPos) - 19 * s.zVel;
+          s.zVel += force * dt;
+          s.zPos += s.zVel * dt;
+          s.group.position.z = s.zPos;
+
+          // Tip shard away from pointer on hover
+          let targetRx = 0;
+          let targetRy = 0;
+          if (isHovered) {
+            const dx = (uPointerWorld.value.x - s.centroid.x) / (220 * S);
+            const dy = (uPointerWorld.value.y - s.centroid.y) / (220 * S);
+            targetRy = THREE.MathUtils.clamp(dx * 0.18, -0.24, 0.24);
+            targetRx = THREE.MathUtils.clamp(-dy * 0.18, -0.24, 0.24);
+          }
+
+          s.rx = THREE.MathUtils.damp(s.rx, targetRx, 10, dt);
+          s.ry = THREE.MathUtils.damp(s.ry, targetRy, 10, dt);
+          s.rz = THREE.MathUtils.damp(s.rz, 0, 10, dt);
+          s.group.rotation.set(s.rx, s.ry, s.rz);
+
+          // Boost iridescence and reflections on hover
+          s.glassMat.iridescence = THREE.MathUtils.damp(
+            s.glassMat.iridescence,
+            isHovered ? 1.0 : 0.55,
+            8,
+            dt
+          );
+          s.glassMat.envMapIntensity = THREE.MathUtils.damp(
+            s.glassMat.envMapIntensity,
+            isHovered ? 1.95 : 1.05,
+            8,
+            dt
+          );
+        });
+      } else {
+        // Shatter Explosion Physics
+        shatterElapsed += dt;
+        shards.forEach((s) => {
+          const t = Math.max(0, shatterElapsed - s.delay);
+          if (t <= 0) return;
+
+          s.vy -= 920 * S * dt; // Gravity
+          s.group.position.x += s.vx * dt;
+          s.group.position.y += s.vy * dt;
+          s.group.position.z += s.vz * dt;
+
+          s.group.rotation.x += s.avx * dt;
+          s.group.rotation.y += s.avy * dt;
+          s.group.rotation.z += s.avz * dt;
+        });
+
+        if (shatterElapsed >= 0.88) {
+          setShow(false);
+          return;
+        }
+      }
+
+      renderer.render(scene, camera);
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerleave', handlePointerLeave);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+      shards.forEach((s) => {
+        s.extrudeGeo.dispose();
+        s.faceGeo.dispose();
+        s.glassMat.dispose();
+      });
+      masterTexture.dispose();
+      envTex.dispose();
+      pmrem.dispose();
+      renderer.dispose();
+    };
+  }, [show]);
+
+  if (!show) return null;
+
+  return (
+    <div
+      onClick={(e) => handleShatter(e.clientX, e.clientY)}
+      className={`fixed inset-0 z-[100] cursor-pointer select-none transition-colors duration-500 ${
+        shattering ? 'bg-transparent pointer-events-none' : 'bg-[#050507]'
+      }`}
+      aria-label="CampusLink Intro Glass Monolith — Click anywhere to shatter and enter"
+    >
+      <div ref={mountRef} className="w-full h-full" />
+    </div>
+  );
+}
+How It Works Together on Your Landing Page:When you open or reload the Landing Page: IntroOverlay mounts immediately at z-[100] (bg-[#050507]). The 8 outer smoked-glass shards and the central core shard fly in and lock together into a thick, beveled obsidian monolith with CampusLink.register printed across the fracture lines.While moving your cursor: The whole glass slab tilts toward your pointer, a lavender subsurface glow illuminates the beveled cuts, and whichever shard is under your cursor springs toward the camera (+50px), tipping and refracting its slice of the CampusLink.register title.When you click anywhere (or press Enter): The #050507 background turns transparent immediately while the 9 thick glass shards explode outward and tumble past the camera—revealing your Qronos Dark Mode Vortex Landing Page spinning directly behind the flying shards!

@@ -163,7 +163,7 @@ export function StudentOverview() {
                   <div
                     className={cn(
                       'w-4 h-4 rounded-xs border flex items-center justify-center transition-colors',
-                      item.inProgress ? 'bg-ochre border-ochre text-ink' : 'border-line bg-paper'
+                      item.inProgress ? 'bg-ochre border-ochre text-btn-fg' : 'border-line bg-paper'
                     )}
                   >
                     {item.inProgress && (

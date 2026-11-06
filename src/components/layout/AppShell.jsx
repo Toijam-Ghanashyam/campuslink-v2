@@ -117,7 +117,7 @@ export function AppShell({ role = 'student', children }) {
     <div
       className={cn(
         'min-h-screen text-fg flex flex-col antialiased relative',
-        isNight ? 'bg-black/40' : 'bg-bg'
+        isNight ? 'bg-transparent' : 'bg-bg'
       )}
     >
       <PageTurnWipe ref={wipeRef} />
@@ -226,7 +226,7 @@ export function AppShell({ role = 'student', children }) {
       </header>
 
       {/* Main Body */}
-      <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
+      <div className="flex-1 flex max-w-[1440px] w-full mx-auto relative z-10">
         {/* Left Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col w-60 bg-sidebar text-sidebar-fg border-r border-line shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] p-3.5 justify-between">
           <div>
@@ -334,7 +334,7 @@ export function AppShell({ role = 'student', children }) {
         </AnimatePresence>
 
         {/* Main Content Viewport */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto relative z-10">
           <div className="max-w-[1180px] mx-auto">
             {children}
           </div>
