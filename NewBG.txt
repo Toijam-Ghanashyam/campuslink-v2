@@ -1,0 +1,3444 @@
+To implement the **Qronos** two-stage dark mode background architecture inside your **CampusLink-Demo2** codebase, you can split the visual effects into two dedicated canvas layers controlled by your existing theme system (`src/theme/ThemeProvider.jsx`):
+
+* **Scene 1 (Hero Vortex Funnel — Landing Page Hero Only):** A 3D parametric swirling torus/funnel of orbital rings and flowing particles that flares out at the top and bottom while pinching behind the hero headline, replacing `src/three/HeroCanvas.jsx` inside `src/pages/landing/LandingPage.jsx`.
+
+
+* **Scene 2 (Ambient Vertical Light Streaks & Architectural Grid — Below-the-Fold & All Portals):** A low-distraction field of vertical 1px gradient light trails, subtle floating dust particles, `+` intersection crosshairs, and diagonal hatched section dividers, integrated into `src/components/ui/Backdrop.jsx` and `src/components/layout/AppShell.jsx` so your content across the rest of the Landing Page and the Student, Recruiter, and Admin dashboards remains completely legible.
+
+
+
+---
+
+## Part 1: Direct Code Implementation for `CampusLink-Demo2`
+
+### 1. Scene 1: Hero Vortex Funnel (`src/three/HeroCanvas.jsx`)
+
+Replace or update `src/three/HeroCanvas.jsx` with this high-performance 3D projection canvas that renders the swirling hourglass/funnel vortex with a flared base disc and a central readability vignette in Dark Mode:
+
+```jsx
+import React, { useEffect, useRef } from 'react';
+import { useTheme } from '../theme/ThemeProvider';
+
+export default function HeroCanvas({ className = '' }) {
+  const canvasRef = useRef(null);
+  const { theme } = useTheme?.() || { theme: 'dark' };
+  const isDark = theme === 'dark' || document.documentElement.classList.contains('dark');
+
+  useEffect(() => {
+    if (!isDark) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let animationFrameId;
+    let width = (canvas.width = canvas.parentElement.clientWidth || window.innerWidth);
+    let height = (canvas.height = canvas.parentElement.clientHeight || window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Parametric funnel helper: maps normalized vertical progress t in [0, 1] to radius & Y
+    // t = 0 is top wide mouth, t = 0.58 is narrow throat, t = 1.0 is wide bottom floor disc
+    const getFunnelProfile = (t) => {
+      let radius;
+      let y;
+      if (t < 0.65) {
+        // Upper funnel tapering down into the throat
+        const u = t / 0.65; // 0 -> 1
+        y = -height * 0.58 + u * (height * 0.82);
+        radius = width * 0.045 + Math.pow(1 - u, 2.15) * (width * 0.42);
+      } else {
+        // Lower throat flaring rapidly into the horizontal floor plane
+        const u = (t - 0.65) / 0.35; // 0 -> 1
+        y = height * 0.24 + Math.pow(u, 0.7) * (height * 0.24);
+        radius = width * 0.045 + Math.pow(u, 1.45) * (width * 0.68);
+      }
+      return { y, radius };
+    };
+
+    // Create flowing particles spiraling along the vortex
+    const NUM_PARTICLES = 900;
+    const particles = Array.from({ length: NUM_PARTICLES }, () => ({
+      t: Math.random(),
+      angle: Math.random() * Math.PI * 2,
+      speedT: 0.0006 + Math.random() * 0.0012,
+      speedAngle: 0.012 + Math.random() * 0.018,
+      size: Math.random() < 0.8 ? 1.1 : 1.9,
+      alpha: 0.18 + Math.random() * 0.55,
+    }));
+
+    let time = 0;
+
+    const render = () => {
+      time += 0.012;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, width, height);
+
+      const cx = width * 0.5;
+      const cy = height * 0.46;
+      const tilt = 0.28; // Perspective vertical compression of rings
+
+      // 1. Draw dense swirling orbital spline rings
+      const NUM_RINGS = 78;
+      for (let i = 0; i < NUM_RINGS; i++) {
+        const t = ((i / NUM_RINGS) + time * 0.025) % 1;
+        const { y, radius } = getFunnelProfile(t);
+
+        // Fade rings near top/bottom edges
+        const edgeFade = Math.sin(t * Math.PI);
+        const alpha = Math.max(0.03, edgeFade * 0.22);
+
+        ctx.beginPath();
+        const segments = 64;
+        for (let s = 0; s <= segments; s++) {
+          const theta = (s / segments) * Math.PI * 2 + time * (1.2 - t * 0.6) + t * 8;
+          // Subtle organic wave distortion in the vortex
+          const wobble = Math.sin(theta * 3 + time * 2 + t * 12) * (radius * 0.035);
+          const r = radius + wobble;
+
+          const px = cx + Math.cos(theta) * r;
+          const py = cy + y + Math.sin(theta) * r * tilt;
+
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.lineWidth = 0.85;
+        ctx.stroke();
+      }
+
+      // 2. Draw longitudinal twisting Meridian strands
+      const NUM_STRANDS = 36;
+      for (let s = 0; s < NUM_STRANDS; s++) {
+        const baseAngle = (s / NUM_STRANDS) * Math.PI * 2;
+        ctx.beginPath();
+        const steps = 50;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const { y, radius } = getFunnelProfile(t);
+          const theta = baseAngle + t * 7.5 - time * 1.4;
+          const px = cx + Math.cos(theta) * radius;
+          const py = cy + y + Math.sin(theta) * radius * tilt;
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+        ctx.lineWidth = 0.75;
+        ctx.stroke();
+      }
+
+      // 3. Draw spiraling luminous particles
+      for (const p of particles) {
+        p.t += p.speedT;
+        if (p.t > 1) p.t -= 1;
+        p.angle += p.speedAngle * (1.4 - p.t * 0.6);
+
+        const { y, radius } = getFunnelProfile(p.t);
+        const px = cx + Math.cos(p.angle) * radius;
+        const py = cy + y + Math.sin(p.angle) * radius * tilt;
+
+        // Depth cue: particles in front (sin > 0) are brighter
+        const depthBoost = (Math.sin(p.angle) + 1) * 0.5;
+        const finalAlpha = p.alpha * (0.35 + depthBoost * 0.65) * Math.sin(p.t * Math.PI);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${finalAlpha})`;
+        ctx.fillRect(px, py, p.size, p.size);
+      }
+
+      // 4. Central soft dark vignette behind hero text for crisp readability
+      const textMask = ctx.createRadialGradient(cx, cy - height * 0.04, 10, cx, cy - height * 0.04, width * 0.32);
+      textMask.addColorStop(0, 'rgba(0, 0, 0, 0.58)');
+      textMask.addColorStop(0.6, 'rgba(0, 0, 0, 0.22)');
+      textMask.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = textMask;
+      ctx.fillRect(0, 0, width, height);
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isDark]);
+
+  if (!isDark) return null;
+
+  return (
+    <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+      <canvas ref={canvasRef} className="h-full w-full block" />
+      {/* Bottom fade into Scene 2 */}
+      <div className="
+        pointer-events-none absolute inset-x-0 bottom-0 h-32
+        bg-gradient-to-t from-black via-black/70 to-transparent
+      " />
+    </div>
+  );
+}
+
+```
+
+---
+
+### 2. Scene 2: Ambient Vertical Light Streaks & Grid (`src/components/ui/Backdrop.jsx`)
+
+Update `src/components/ui/Backdrop.jsx` so that in Dark Mode it renders the subtle vertical falling/rising light streaks, floating micro-dust particles, and architectural hairline borders with `+` crosshairs:
+
+```jsx
+import React, { useEffect, useRef } from 'react';
+import { useTheme } from '../../theme/ThemeProvider';
+
+export default function Backdrop({ className = '' }) {
+  const canvasRef = useRef(null);
+  const { theme } = useTheme?.() || { theme: 'dark' };
+  const isDark = theme === 'dark' || document.documentElement.classList.contains('dark');
+
+  useEffect(() => {
+    if (!isDark) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let animationFrameId;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Vertical light streaks (Qronos Scene 2 style)
+    const NUM_STREAKS = 65;
+    const streaks = Array.from({ length: NUM_STREAKS }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      length: 45 + Math.random() * 140,
+      speed: 0.35 + Math.random() * 0.95,
+      opacity: 0.05 + Math.random() * 0.22,
+      hasHeadDot: Math.random() > 0.55,
+    }));
+
+    // Subtle ambient micro-dots
+    const NUM_DOTS = 50;
+    const dots = Array.from({ length: NUM_DOTS }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vy: 0.1 + Math.random() * 0.25,
+      size: 1 + Math.random() * 1.2,
+      alpha: 0.08 + Math.random() * 0.25,
+    }));
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw vertical streaks
+      for (const s of streaks) {
+        s.y -= s.speed; //缓慢 upward drift (change to += for downward rain)
+        if (s.y + s.length < 0) {
+          s.y = height + Math.random() * 80;
+          s.x = Math.random() * width;
+        }
+
+        const grad = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.length);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${s.opacity})`);
+        grad.addColorStop(0.3, `rgba(255, 255, 255, ${s.opacity * 0.6})`);
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x, s.y + s.length);
+        ctx.stroke();
+
+        if (s.hasHeadDot) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.45, s.opacity * 1.8)})`;
+          ctx.fillRect(s.x - 0.5, s.y - 0.5, 2, 2);
+        }
+      }
+
+      // Draw floating micro-dots
+      for (const d of dots) {
+        d.y -= d.vy;
+        if (d.y < 0) {
+          d.y = height;
+          d.x = Math.random() * width;
+        }
+        ctx.fillStyle = `rgba(255, 255, 255, ${d.alpha})`;
+        ctx.fillRect(d.x, d.y, d.size, d.size);
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isDark]);
+
+  if (!isDark) {
+    // Keep your existing light-mode backdrop intact
+    return <div className={`pointer-events-none fixed inset-0 -z-10 ${className}`} />;
+  }
+
+  return (
+    <div className={`pointer-events-none fixed inset-0 -z-10 bg-[#000000] overflow-hidden ${className}`}>
+      {/* Vertical Light Streaks Canvas */}
+      <canvas ref={canvasRef} className="h-full w-full block opacity-90" />
+
+      {/* Architectural Outer Frame Rail Lines & Corner '+' Crosshairs */}
+      <div className="pointer-events-none fixed inset-y-0 left-6 md:left-12 w-px bg-white/[0.08]" />
+      <div className="pointer-events-none fixed inset-y-0 right-6 md:right-12 w-px bg-white/[0.08]" />
+      <div className="pointer-events-none fixed inset-x-0 top-16 h-px bg-white/[0.08]" />
+    </div>
+  );
+}
+
+```
+
+---
+
+### 3. Diagonal Hatched Divider Utility (`src/index.css`)
+
+In the Qronos video (`00:05`, `00:11`, `00:20`) and Scene 2 image, sections are separated by a bordered horizontal strip filled with 45-degree diagonal hatch lines and corner `+` crosshairs. Add this utility to `src/index.css`:
+
+```css
+.dark .qronos-hatch-divider {
+  position: relative;
+  height: 2.25rem;
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+```
+
+---
+
+### 4. Wiring Both Scenes in `LandingPage.jsx` and `AppShell.jsx`
+
+1. **In `src/pages/landing/LandingPage.jsx**`:
+
+
+* Mount `<Backdrop/>` once at the top level of the page so **Scene 2** (the vertical light streaks) sits fixed behind the entire page.
+
+
+* Wrap the **Hero section** in `<section className="relative min-h-[92vh] overflow-hidden bg-black">` and place `<HeroCanvas/>` (**Scene 1**) inside that Hero `<section>` with `z-0`, and your Hero content container with `relative z-10`. Because the Hero section has its own opaque `bg-black` wrapper, **Scene 1** dominates the first viewport, and as soon as you scroll past the Hero section, the transparent lower sections reveal **Scene 2** (`<Backdrop/>`) underneath.
+
+
+
+
+2. **In `src/components/layout/AppShell.jsx**`:
+
+
+* Ensure `<Backdrop/>` is rendered inside the root shell wrapper so every Student, Recruiter, and Admin view automatically gets **Scene 2** in Dark Mode without the distracting Hero vortex behind data tables and metrics.
+
+
+
+
+
+---
+
+## Part 2: Complete Master Prompt for Your AI Coding IDE
+
+Copy and paste the prompt below directly into **Cursor AI, Claude, or Google Antigravity** to apply this entire visual system across your `CampusLink-Demo2` project:
+
+```markdown
+# ROLE & OBJECTIVE
+You are a Principal Creative Frontend Engineer and Design Systems Architect. Your task is to upgrade the **Dark Mode** visual architecture of my React + Vite + Tailwind CSS project (`CampusLink-Demo2`) to match the **Qronos** monochrome obsidian SaaS design language while preserving 100% of my existing CampusLink content, routing, state (`src/lib/store.jsx`), mock data (`src/data/*`), and Light Mode theme.
+
+---
+
+# CORE VISUAL ARCHITECTURE (TWO-SCENE DARK MODE SYSTEM)
+
+When Dark Mode is active (`theme === 'dark'` via `src/theme/ThemeProvider.jsx`), the website must use a strict two-stage background strategy so that the Landing Page Hero has maximum visual impact while all scrollable content and dashboard pages remain effortless to read:
+
+### 1. SCENE 1: The Swirling 3D Vortex Funnel (Landing Page Hero ONLY)
+- **Where to use:** ONLY inside the first Hero section of `src/pages/landing/LandingPage.jsx` via `src/three/HeroCanvas.jsx`.
+- **Visual Spec:**
+  - Pure pitch-black (`#000000`) background canvas.
+  - A centered parametric 3D hourglass/tornado vortex made of 75+ glowing monochrome white/silver orbital spline rings (`rgba(255, 255, 255, 0.04)` to `0.24`), 36 longitudinal twisting meridian lines, and 900+ flowing white particles (`1px–2px`).
+  - **Geometry Profile:** Wide funnel mouth at the top edge of the viewport, pinching into a narrower spinning column directly behind the centered hero headline and CTA buttons, then flaring rapidly outward at the bottom into a wide horizontal perspective disc/floor plane behind the bottom stat/logo ticker strip.
+  - **Readability Guardrail:** Apply a subtle radial dark vignette (`rgba(0,0,0,0.55)` fading to transparent) over the throat of the vortex directly behind the Hero H1 and subtitle so the white/silver typography has crisp contrast, plus a bottom gradient fade (`from-black via-black/70 to-transparent`) that transitions seamlessly into Scene 2 as the user scrolls down.
+
+### 2. SCENE 2: Ambient Vertical Light Streaks & Architectural Grid (Below-the-Fold Landing Page + Entire AppShell)
+- **Where to use:** Fixed global background in `src/components/ui/Backdrop.jsx`, visible across ALL sections below the Hero on `src/pages/landing/LandingPage.jsx` AND across all authenticated/demo portal pages wrapped by `src/components/layout/AppShell.jsx` (`src/pages/student/*`, `src/pages/recruiter/*`, `src/pages/admin/*`).
+- **Visual Spec:**
+  - Pitch-black base (`#000000` / `#050507`).
+  - An HTML5 Canvas animation rendering 60–70 sparse, ultra-thin (`1px`) vertical light streaks (`45px` to `180px` tall) slowly drifting vertically with linear-gradient tails fading from `rgba(255, 255, 255, 0.22)` to `rgba(255, 255, 255, 0)`, accompanied by subtle `1.5px` glowing head dots and 50 slow-drifting micro-dust particles.
+  - **Architectural Framing:** Full-height `1px solid rgba(255, 255, 255, 0.08)` vertical guide rails on the left and right margins (`left-6 md:left-12` and `right-6 md:right-12`), horizontal hairline borders (`1px solid rgba(255, 255, 255, 0.08)`), small `+` crosshair markers at structural intersections, and `36px`-tall diagonal hatched divider strips (`repeating-linear-gradient(-45deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 8px)`) separating major Landing Page sections.
+
+---
+
+# STEP-BY-STEP IMPLEMENTATION INSTRUCTIONS FOR `CampusLink-Demo2`
+
+### Step 1: Update Dark Mode Tokens (`src/theme/tokens.js` & `src/styles/themes.base.css`)
+1. In Dark Mode ONLY, set surface tokens to deep obsidian monochrome:
+   - Background Primary: `#000000`
+   - Background Elevated / Card Surface: `rgba(10, 10, 12, 0.78)` with `backdrop-filter: blur(12px)`
+   - Surface Hover / Interactive: `rgba(22, 22, 26, 0.88)`
+   - Border Hairline: `rgba(255, 255, 255, 0.09)`
+   - Border Active / Highlight: `rgba(255, 255, 255, 0.24)`
+   - Text Primary: `#FFFFFF`
+   - Text Secondary: `#A1A1AA` (Zinc-400, crisp gradient/muted silver for secondary headline lines and body copy)
+   - Text Muted: `#71717A`
+2. Preserve all semantic status colors (emerald for verified/placed, amber for pending/queue, rose for at-risk) so data visualizations in `ScoreDial.jsx`, `Badge.jsx`, `AdminAtRisk.jsx`, and `RecruiterPipeline.jsx` remain clear.
+
+### Step 2: Rebuild `src/three/HeroCanvas.jsx` (Scene 1)
+1. Replace the existing `HeroCanvas.jsx` implementation in Dark Mode with the 3D parametric swirling Vortex Funnel canvas (orbital spline rings + longitudinal twisting strands + 900 spiraling particles + central readability vignette + bottom fade-to-black gradient).
+2. Ensure `requestAnimationFrame` cleans up properly on unmount and respects window resize events.
+3. If `theme !== 'dark'`, fall back to the existing light-mode behavior or return `null` cleanly.
+
+### Step 3: Rebuild `src/components/ui/Backdrop.jsx` (Scene 2)
+1. Implement the fixed full-viewport Vertical Light Streaks + Micro-Dust Canvas in `Backdrop.jsx` when Dark Mode is active.
+2. Add the architectural vertical guide rails (`1px` white/8% lines on left and right margins) and create a reusable `<SectionRuleCrosshair />` / `.qronos-hatch-divider` pattern in `src/components/ui/Rule.jsx` and `src/index.css` that renders the `1px` top/bottom border with `-45deg` diagonal hatching and corner `+` crosshairs at the left/right rail intersections.
+
+### Step 4: Refactor `src/pages/landing/LandingPage.jsx`
+1. Keep ALL existing CampusLink copy, stats, role switchers (Student / Recruiter / Admin / Judge Guide triggers), feature breakdowns, placement metrics, and interactive previews intact.
+2. Structure the Landing Page layout in Dark Mode as follows:
+   - **Top Navbar:** Floating/sticky glass bar with hairline bottom border (`border-white/10`), `+` corner crosshairs, centered navigation links, theme toggle, and a pill-shaped primary CTA button (`rounded-full border border-white/25 bg-black/80 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white hover:text-black transition`).
+   - **Hero Section (Scene 1 Active):** Full-viewport height (`min-h-[90vh]`), isolated `bg-black` container hosting `<HeroCanvas />` in the background. Center-align the CampusLink hero headline using a two-tone white-to-zinc-400 gradient (`bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent`), crisp muted subheadline, and dual pill CTA buttons:
+     - Secondary/Outline Pill: `rounded-full border border-white/25 bg-black/60 backdrop-blur-md text-white uppercase tracking-wider text-xs px-6 py-3` with `>>` chevron.
+     - Primary Solid Pill: `rounded-full bg-white text-black font-medium uppercase tracking-wider text-xs px-6 py-3 hover:bg-zinc-200`.
+   - **Bottom Hero Ticker (`RegisterTicker.jsx` / `StatStrip.jsx`):** Sits directly over the flared bottom floor disc of Scene 1 with semi-transparent monochrome badges/metrics.
+   - **Below-the-Fold Sections (Scene 2 Active):** Every section after the Hero must have a transparent section background so the fixed `<Backdrop />` (Scene 2 vertical light streaks) shines through behind the content. Separate major sections with the `.qronos-hatch-divider` strip.
+   - **Bottom CTA Section:** Mirror the Qronos Scene 2 CTA layout—centered bold two-line headline ("Stop babysitting placement spreadsheets..." / CampusLink equivalent), concise subcopy, and dual pill buttons floating directly over the Scene 2 vertical light-streak field, followed by the diagonal hatch divider and multi-column monochrome footer.
+
+### Step 5: Apply Scene 2 & Qronos Glass Cards Across `AppShell.jsx` and All Portals
+1. Verify `src/components/layout/AppShell.jsx` renders `<Backdrop />` (Scene 2) behind all Student (`StudentOverview`, `StudentDrives`, `StudentApplications`, `StudentInterviews`, `StudentProfile`), Recruiter (`RecruiterOverview`, `RecruiterJobs`, `RecruiterPipeline`, `RecruiterSlots`, `RecruiterAnalytics`), and Admin (`AdminCommandCenter`, `AdminDrives`, `AdminVerification`, `AdminAtRisk`, `AdminOffers`, `AdminRecruiters`) pages.
+2. Update `src/components/ui/Card.jsx`, `MetricCard.jsx`, `DataTable.jsx`, `Drawer.jsx`, `CommandPalette.jsx`, and `src/styles/glass.css` so that in Dark Mode:
+   - Cards use `bg-[#0A0A0C]/80 backdrop-blur-md border border-white/[0.08] rounded-xl shadow-2xl`.
+   - Card headers and table rows use `border-white/[0.06]` dividers and subtle macOS-style window header dots or clean monospace metadata badges where appropriate.
+   - Text inside cards, tables, and drawers maintains WCAG AAA/AA readability against the `#0A0A0C/80` card surface while the Scene 2 vertical streaks animate smoothly in the margins and gaps around the cards.
+
+---
+
+# CONSTRAINTS & QUALITY CHECKS
+- **Do NOT delete or mock out existing CampusLink features:** Keep all existing data imports (`src/data/*`), store actions (`src/lib/store.jsx`), `JudgeGuide.jsx`, `CommandPalette.jsx`, `IntroOverlay.jsx`, and role views working.
+- **Performance:** Use pure HTML5 2D Canvas (`requestAnimationFrame`) or lightweight Three.js for `HeroCanvas.jsx` and `Backdrop.jsx` so 60fps is maintained on laptops without GPU lag.
+- **Readability First:** Scene 1 (Vortex) must NEVER appear behind data tables, forms, or below-the-fold reading sections—only in the Landing Page Hero. Scene 2 (Vertical Streaks) must keep streak opacity capped at `<= 0.25` so body text and dashboard numbers are effortless to read.
+
+```
+
+Would you like me to also customize the exact `LandingPage.jsx` and `Card.jsx` files from your zip archive so you can drop them directly into `src/`?
+
+```python
+import zipfile
+
+with zipfile.ZipFile('CampusLink-Demo2.zip', 'r') as z:
+    for name in [
+        'CampusLink-Demo2/src/theme/ThemeProvider.jsx',
+        'CampusLink-Demo2/src/three/HeroCanvas.jsx',
+        'CampusLink-Demo2/src/components/ui/Backdrop.jsx',
+        'CampusLink-Demo2/src/components/ui/Card.jsx',
+        'CampusLink-Demo2/src/pages/landing/LandingPage.jsx',
+        'CampusLink-Demo2/src/components/layout/AppShell.jsx',
+        'CampusLink-Demo2/src/index.css',
+        'CampusLink-Demo2/src/styles/glass.css'
+    ]:
+        print(f"=== {name} ===")
+        print(z.read(name).decode('utf-8'))
+
+
+```
+
+```text
+=== CampusLink-Demo2/src/theme/ThemeProvider.jsx ===
+import { createContext, useContext, useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
+const Ctx = createContext(null);
+const KEY = 'cl-theme';
+export function ThemeProvider({ children }) {
+  const [theme, setThemeState] = useState(() => document.documentElement.dataset.theme || 'day');
+  const apply = useCallback((t) => {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem(KEY, t); } catch { /* ignore */ }
+    setThemeState(t);
+  }, []);
+  const toggle = useCallback(async (e) => {
+    const next = theme === 'night' ? 'day' : 'night';
+    const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!document.startViewTransition || reduce || !e) { apply(next); return; }
+    const x = e.clientX, y = e.clientY;
+    const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const vt = document.startViewTransition(() => { flushSync(() => apply(next)); });
+    await vt.ready;
+    document.documentElement.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+      { duration: 650, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' }
+    );
+  }, [theme, apply]);
+  return <Ctx.Provider value={{ theme, toggle }}>{children}</Ctx.Provider>;
+}
+export const useTheme = () => useContext(Ctx);
+
+
+=== CampusLink-Demo2/src/three/HeroCanvas.jsx ===
+import { SceneCanvas, HeroScene } from './Scenes.jsx';
+
+export default function HeroCanvas({ visible }) {
+  return (
+    <SceneCanvas visible={visible} camera={{ position: [0, 0, 8], fov: 50 }}>
+      <HeroScene />
+    </SceneCanvas>
+  );
+}
+
+
+=== CampusLink-Demo2/src/components/ui/Backdrop.jsx ===
+import React from 'react';
+
+export function Backdrop() {
+  return (
+    <div className="backdrop" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </div>
+  );
+}
+
+
+=== CampusLink-Demo2/src/components/ui/Card.jsx ===
+import React from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '../../lib/utils';
+
+export function Card({
+  children,
+  className,
+  hover = false,
+  object = false,
+  onClick,
+  ...props
+}) {
+  const Component = hover ? motion.div : 'div';
+  const hoverProps = hover
+    ? {
+        whileHover: { y: -2, transition: { duration: 0.15 } },
+      }
+    : {};
+
+  return (
+    <Component
+      onClick={onClick}
+      className={cn(
+        'relative overflow-hidden transition-all',
+        object
+          ? 'glass-strong rounded-object p-5 shadow-object'
+          : 'bg-surface rounded-object border border-line p-5 shadow-subtle',
+        hover && 'cursor-pointer hover:border-ink/40',
+        className
+      )}
+      {...hoverProps}
+      {...props}
+    >
+      {children}
+    </Component>
+  );
+}
+
+=== CampusLink-Demo2/src/pages/landing/LandingPage.jsx ===
+import React, { useRef, useState, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useSpring,
+  useMotionValueEvent,
+  useTransform,
+} from 'framer-motion';
+import { ReactLenis } from 'lenis/react';
+import 'lenis/dist/lenis.css';
+import {
+  ArrowRight,
+  UserCheck,
+  Building2,
+  Briefcase,
+  Layers as LayersIcon,
+  CalendarCheck,
+  BellRing,
+  Award,
+  BarChart3,
+  Cpu,
+  Brain,
+  ShieldCheck,
+  CheckCircle2,
+} from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { Stamp } from '../../components/ui/Stamp';
+import { Mark } from '../../components/ui/Mark';
+import { MarginNote } from '../../components/ui/MarginNote';
+import { Rule } from '../../components/ui/Rule';
+import { StatStrip } from '../../components/ui/StatStrip';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { IntroOverlay } from '../../components/ui/IntroOverlay';
+import { RegisterTicker } from '../../components/ui/RegisterTicker';
+import { useTilt, useMagnetic } from '../../fx/useTilt';
+import { useInView } from '../../fx/useInView';
+import { useFx, setFxMode } from '../../fx/useFx';
+import { useStore } from '../../lib/store';
+import { JudgeGuide } from '../../components/layout/JudgeGuide';
+
+const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
+const PipelineCanvas = lazy(() => import('../../three/PipelineCanvas.jsx'));
+const LayersCanvas = lazy(() => import('../../three/LayersCanvas.jsx'));
+
+const STEPS = [
+  'Profiling',
+  'Matching',
+  'Scheduling',
+  'Notification',
+  'Offer tracking',
+  'Analytics',
+];
+
+const LAYERS = [
+  'Data sources',
+  'Scoring & matching',
+  'Scheduler',
+  'Notifications',
+  'Dashboards',
+];
+
+export function LandingPage() {
+  const navigate = useNavigate();
+  const { markPipelineScrolled } = useStore();
+  const heroRef = useRef(null);
+  const inView = useInView(heroRef);
+  const { mode, use3d } = useFx();
+  const tiltA = useTilt({ max: 5 });
+  const tiltB = useTilt({ max: 5 });
+  const magOpen = useMagnetic({ strength: 0.25 });
+
+  const pipeRef = useRef(null);
+  const pipeInView = useInView(pipeRef);
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+
+  const { scrollYProgress: pipeScroll } = useScroll({
+    target: pipeRef,
+    offset: ['start start', 'end end'],
+  });
+  const smoothPipe = useSpring(pipeScroll, { stiffness: 80, damping: 24 });
+
+  useMotionValueEvent(smoothPipe, 'change', (p) => {
+    const t = Math.min(Math.max(p, 0), 0.97);
+    const idx = Math.min(5, Math.max(0, Math.round(t * 6 - 0.5)));
+    setCurrentStepIdx((prev) => (prev !== idx ? idx : prev));
+    if (p >= 0.95) {
+      markPipelineScrolled?.();
+    }
+  });
+
+  React.useEffect(() => {
+    if (!use3d && pipeInView) {
+      markPipelineScrolled?.();
+    }
+  }, [use3d, pipeInView, markPipelineScrolled]);
+
+  const layRef = useRef(null);
+  const layInView = useInView(layRef);
+  const { scrollYProgress: layScroll } = useScroll({
+    target: layRef,
+    offset: ['start start', 'end end'],
+  });
+  const spread = useTransform(layScroll, [0.1, 0.7], [0, 1]);
+
+  const handleHeroPointerMove = (e) => {
+    const el = heroRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    const my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+    requestAnimationFrame(() => {
+      el.style.setProperty('--mx', mx.toFixed(3));
+      el.style.setProperty('--my', my.toFixed(3));
+    });
+  };
+
+  const pipelineSteps = [
+    {
+      num: '01',
+      title: 'Readiness Profiling',
+      desc: 'Multi-source analysis across academic CGPA, verified projects, and mock scores.',
+    },
+    {
+      num: '02',
+      title: 'AI Matching & Scoring',
+      desc: 'Semantic skill-embedding comparison yielding explainable fit scores (0-100%).',
+    },
+    {
+      num: '03',
+      title: 'Conflict-Free Scheduling',
+      desc: 'Automated temporal & venue overlap mitigation across concurrent recruiter drives.',
+    },
+    {
+      num: '04',
+      title: 'Targeted Notifications',
+      desc: 'Real-time multi-channel alerts for shortlists, interviews, and compliance deadlines.',
+    },
+    {
+      num: '05',
+      title: 'Offer & Doc Tracking',
+      desc: 'End-to-end post-selection tracking from CTC verification to joining status.',
+    },
+    {
+      num: '06',
+      title: 'Predictive Analytics',
+      desc: 'Conversion rates, early warning for unplaced candidates, and recruiter ROI.',
+    },
+  ];
+
+  const desks = [
+    {
+      roman: 'I',
+      title: 'Student Desk',
+      desc: 'See your readiness score, diagnose skill gaps against target roles, and understand shortlisting factors.',
+      tags: 'READINESS · AI MATCH · INTERVIEWS',
+      path: '/student/overview',
+    },
+    {
+      roman: 'II',
+      title: 'Placement Directorate (Admin)',
+      desc: 'Audit student academic records, resolve venue double-booking with 1-click mitigation, and track at-risk candidates.',
+      tags: 'VERIFICATION · CONFLICTS · AT-RISK',
+      path: '/admin/command-center',
+    },
+    {
+      roman: 'III',
+      title: 'Corporate Recruiter',
+      desc: 'Rank candidates by semantic skill embeddings, inspect explainable bios, and schedule conflict-free interview slots.',
+      tags: 'PIPELINE · BIO DRAWER · SLOTS',
+      path: '/recruiter/overview',
+    },
+  ];
+
+  return (
+    <ReactLenis root>
+      <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
+        <IntroOverlay />
+        <Backdrop />
+        <JudgeGuide />
+      {/* Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-bg/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
+        <div className="flex items-baseline gap-1.5 select-none">
+          <span className="font-display font-medium text-2xl text-fg tracking-tight">CampusLink</span>
+          <span className="font-mono text-xs text-accent font-bold">.register</span>
+        </div>
+
+        <nav className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-wider text-fg-soft">
+          <a href="#pipeline" className="hover:text-fg transition-colors">Pipeline</a>
+          <a href="#desks" className="hover:text-fg transition-colors">Desks</a>
+          <a href="#architecture" className="hover:text-fg transition-colors">Architecture</a>
+          <a href="#metrics" className="hover:text-fg transition-colors">Metrics</a>
+        </nav>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button
+            variant="primary"
+            onClick={() => navigate('/student/overview')}
+            icon={ArrowRight}
+          >
+            Launch System Demo
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero Section: Asymmetric 12-Column Grid */}
+      <section
+        ref={heroRef}
+        onPointerMove={handleHeroPointerMove}
+        className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line relative overflow-hidden"
+      >
+        {use3d && (
+          <div
+            className="absolute inset-0 z-0 pointer-events-none transition-transform duration-100 ease-out"
+            style={{ transform: 'translate3d(calc(var(--mx, 0) * -22px), 0, 0)' }}
+          >
+            <Suspense fallback={null}>
+              <HeroCanvas visible={inView} />
+            </Suspense>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+          {/* Left Column (7 cols): Editorial Typography */}
+          <div className="lg:col-span-7 space-y-6">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block">
+              BPUT HACKATHON 2026 · PS10 PLACEMENT PLATFORM
+            </span>
+
+            <h1 className="font-display font-normal text-4xl sm:text-6xl text-fg tracking-tight leading-[1.04]">
+              Every shortlist,{' '}
+              <span className="font-serif italic font-normal">
+                <Mark delay={0.4}>explained.</Mark>
+              </span>
+            </h1>
+
+            <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-xl">
+              CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <span
+                ref={magOpen.ref}
+                onPointerMove={magOpen.onPointerMove}
+                onPointerLeave={magOpen.onPointerLeave}
+                className="inline-block"
+              >
+                <Button
+                  size="lg"
+                  variant="primary"
+                  onClick={() => {
+                    const el = document.getElementById('desks');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  Open the Demo Desks →
+                </Button>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('pipeline');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors"
+              >
+                See the Pipeline ↓
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column (5 cols): "The Physical Register" Artifacts with Parallax */}
+          <div
+            className="lg:col-span-5 relative py-6 transition-transform duration-100 ease-out"
+            style={{ transform: 'translate3d(calc(var(--mx, 0) * 34px), calc(var(--my, 0) * 22px), 0)' }}
+          >
+            {/* Artifact B (Conflict Slip behind, rotated -2deg) */}
+            <div
+              ref={tiltB.ref}
+              onPointerMove={tiltB.onPointerMove}
+              onPointerLeave={tiltB.onPointerLeave}
+              style={{ '--rot': '-2deg' }}
+              className="tilt absolute top-0 right-4 w-[85%] bg-surface rounded-object border border-line p-5 shadow-subtle select-none opacity-85"
+            >
+              <div className="flex items-center justify-between border-b border-line pb-2 mb-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft">
+                  RESOURCE SCHEDULE · LAB 4
+                </span>
+                <Stamp tone="brick" rotate={-3}>CLASH</Stamp>
+              </div>
+              <div className="h-4 w-full bg-bg rounded hatch-brick my-2" />
+              <p className="font-mono text-[11px] text-brick leading-tight">
+                Cognizant overlaps with Tech Mahindra, 10:00-12:00
+              </p>
+            </div>
+
+            {/* Artifact A (Front Candidate Slip, rotated 1.5deg) */}
+            <motion.div
+              ref={tiltA.ref}
+              onPointerMove={tiltA.onPointerMove}
+              onPointerLeave={tiltA.onPointerLeave}
+              style={{ '--rot': '1.5deg' }}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="tilt relative z-10 w-full glass-strong rounded-object border border-line p-6 shadow-object space-y-4"
+            >
+              <div className="flex items-start justify-between border-b border-line pb-3">
+                <div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-fg-soft block">
+                    CANDIDATE · MICROSOFT INDIA SDE
+                  </span>
+                  <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
+                    Rohan Senapati
+                  </h3>
+                  <p className="font-mono text-xs text-fg-soft">
+                    BPUT · CSE · CGPA 9.12
+                  </p>
+                </div>
+                <Stamp tone="jade" rotate={-2}>SHORTLISTED</Stamp>
+              </div>
+
+              {/* Match bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-xs">
+                  <span className="text-fg-soft">AI Semantic Match</span>
+                  <strong className="text-fg font-mono">94% Fit</strong>
+                </div>
+                <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden border border-line">
+                  <div className="h-full bg-accent w-[94%]" />
+                </div>
+              </div>
+
+              {/* Margin Note with Highlighters */}
+              <MarginNote label="AI MATCH JUSTIFICATION" strong>
+                Highly recommended: Candidate possesses verified proficiency in{' '}
+                <Mark delay={0.8}>React</Mark>, <Mark delay={1.1}>Python</Mark>, and{' '}
+                <Mark delay={1.4}>Data Structures</Mark>, comfortably exceeding the mock benchmark.
+              </MarginNote>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Register Ticker */}
+      <RegisterTicker />
+
+      {/* 6-Step Pipeline Thread Section */}
+      {use3d ? (
+        <div id="pipeline">
+          <div className="pt-20 pb-8 px-6 lg:px-12 max-w-[1240px] mx-auto">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+              02 · THE PIPELINE
+            </span>
+            <h2 className="font-display font-normal text-3xl sm:text-5xl text-fg">
+              Six stages, one thread.
+            </h2>
+          </div>
+
+          <section ref={pipeRef} style={{ height: '500vh' }} className="relative">
+            <div className="sticky top-0 h-screen w-full overflow-hidden bg-bg border-y border-line">
+              {/* 3D Canvas Background */}
+              <div className="absolute inset-0 w-full h-full">
+                <Suspense fallback={null}>
+                  <PipelineCanvas
+                    visible={pipeInView}
+                    progress={smoothPipe}
+                    labels={STEPS}
+                  />
+                </Suspense>
+              </div>
+
+              {/* Step Overlay Card (Max 420px, left) */}
+              <div className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 max-w-[420px] z-10 pointer-events-none">
+                <div className="glass-strong rounded-object border border-line p-8 space-y-4 shadow-object">
+                  <div className="flex items-center justify-between border-b border-line pb-2">
+                    <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep">
+                      STAGE {(currentStepIdx + 1).toString().padStart(2, '0')} / 06
+                    </span>
+                    <div className="h-1 w-24 bg-line rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all duration-300"
+                        style={{ width: `${((currentStepIdx + 1) / 6) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStepIdx}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -12 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-3"
+                    >
+                      <span className="font-mono text-4xl font-bold text-accent block">
+                        {pipelineSteps[currentStepIdx].num}
+                      </span>
+                      <h3 className="font-display font-medium text-3xl sm:text-4xl text-fg leading-tight">
+                        {pipelineSteps[currentStepIdx].title}
+                      </h3>
+                      <p className="font-sans text-sm text-fg-soft leading-relaxed">
+                        {pipelineSteps[currentStepIdx].desc}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              <div className="absolute right-6 lg:right-12 bottom-8 z-10 pointer-events-none font-mono text-[11px] text-fg-soft/60 uppercase tracking-wider flex items-center gap-2">
+                <span>SCROLL TO RIDE THE THREAD</span>
+                <span>↓</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <section id="pipeline" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
+          <div className="mb-12">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+              02 · THE PLACEMENT THREAD
+            </span>
+            <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
+              Six stages, one continuous pipeline.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {pipelineSteps.map((step) => (
+              <div key={step.num} className="border-t-2 border-line pt-4 space-y-2">
+                <span className="font-mono text-sm font-semibold text-accent-deep block">
+                  {step.num}
+                </span>
+                <h3 className="font-display font-medium text-xl text-fg">
+                  {step.title}
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-fg-soft leading-relaxed">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Portals Section: Three Ruled Desks (Not Cards!) */}
+      <section id="desks" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
+        <div className="mb-12">
+          <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+            03 · THREE UNIFIED DESKS
+          </span>
+          <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
+            One register, three connected perspectives.
+          </h2>
+        </div>
+
+        <div className="divide-y divide-line border-y border-line">
+          {desks.map((desk) => (
+            <div
+              key={desk.roman}
+              onClick={() => navigate(desk.path)}
+              className="py-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 cursor-pointer group hover:bg-surface/40 transition-colors px-2"
+            >
+              <div className="flex items-start gap-6 min-w-0">
+                <span className="font-display text-4xl text-fg-soft/40 font-normal shrink-0 group-hover:text-accent transition-colors">
+                  {desk.roman}
+                </span>
+                <div className="space-y-1">
+                  <h3 className="font-display font-medium text-2xl text-fg group-hover:text-fg transition-colors">
+                    {desk.title}
+                  </h3>
+                  <p className="font-sans text-sm text-fg-soft max-w-2xl leading-relaxed">
+                    {desk.desc}
+                  </p>
+                  <span className="font-mono text-[10.5px] uppercase tracking-wider text-fg-soft/80 block pt-1">
+                    {desk.tags}
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-2 font-mono text-xs font-semibold text-fg group-hover:text-accent-deep transition-colors">
+                <span>OPEN DESK</span>
+                <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Under the Hood Section */}
+      <div id="architecture" className="bg-dark-section text-dark-section-fg border-b border-white/10">
+        {use3d ? (
+          <section ref={layRef} style={{ height: '250vh' }} className="relative">
+            <div className="sticky top-0 h-screen w-full overflow-hidden bg-dark-section flex flex-col justify-center px-6 lg:px-12">
+              <div className="max-w-[1240px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full py-12">
+                {/* Left 5 Columns: Exploded Architecture Story */}
+                <div className="lg:col-span-5 space-y-6 z-10">
+                  <div>
+                    <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                      04 · UNDER THE HOOD
+                    </span>
+                    <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg leading-tight">
+                      Rules where rules belong. Models where they add value.
+                    </h2>
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Rule + ML Hybrid Scoring
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                      </p>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Semantic Match Embeddings
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                      </p>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Interval Overlap Scheduling
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right 7 Columns: Exploded 3D Canvas */}
+                <div className="lg:col-span-7 h-[420px] lg:h-[560px] relative w-full">
+                  <Suspense fallback={null}>
+                    <LayersCanvas
+                      visible={layInView}
+                      spread={spread}
+                      labels={LAYERS}
+                    />
+                  </Suspense>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto space-y-12">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-6">
+              <div>
+                <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                  04 · UNDER THE HOOD
+                </span>
+                <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg">
+                  Rules where rules belong. Models where they add value.
+                </h2>
+              </div>
+              <span className="font-mono text-xs text-dark-section-fg/50 uppercase">
+                BPUT PS10 ARCHITECTURE SPEC
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Rule + ML Hybrid Scoring
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Semantic Match Embeddings
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Interval Overlap Scheduling
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                </p>
+              </div>
+            </div>
+
+            {/* Architecture Dataflow Box */}
+            <div data-lenis-prevent className="p-6 rounded-object border border-white/10 bg-white/5 overflow-x-auto">
+              <span className="font-mono text-[10.5px] uppercase tracking-wider text-dark-section-fg/50 block mb-4">
+                PLATFORM OPERATIONAL DATA FLOW
+              </span>
+              <div className="flex items-center justify-between gap-3 min-w-[720px] font-mono text-xs">
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">01 INPUT</span>
+                  <span>Student Academic Records</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">02 EVAL</span>
+                  <span>Semantic Matching Engine</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">03 SCHEDULE</span>
+                  <span>Conflict-Free Allocator</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">04 STORE</span>
+                  <span>Shared Reactive State</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* Metrics Section */}
+      <section id="metrics" className="py-16 px-6 lg:px-12 max-w-[1240px] mx-auto">
+        <StatStrip
+          items={[
+            { label: 'REGISTERED STUDENTS', value: 1420, hint: 'Across 6 BPUT disciplines' },
+            { label: 'HIRING PARTNERS', value: 42, hint: 'Active corporate JNFs' },
+            { label: 'PLACEMENT RATE', value: 78.4, decimals: 1, suffix: '%', hint: '↑ 12.8% vs last season' },
+            { label: 'HIGHEST CTC', value: 34.0, decimals: 1, prefix: '₹', suffix: ' LPA', hint: 'Cloud Systems Architect' },
+          ]}
+        />
+      </section>
+
+      {/* Institutional Footer */}
+      <footer className="border-t border-line py-8 px-6 lg:px-12 bg-surface/50 font-mono text-xs text-fg-soft">
+        <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span>CAMPUSLINK REGISTER</span> · <span>BPUT HACKATHON 2026</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-fg-soft/60">EFFECTS:</span>
+              <button
+                type="button"
+                onClick={() => setFxMode('full')}
+                className={`hover:text-fg transition-colors ${
+                  mode === 'full'
+                    ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                    : 'text-fg-soft'
+                }`}
+              >
+                FULL
+              </button>
+              <span className="text-line">/</span>
+              <button
+                type="button"
+                onClick={() => setFxMode('lite')}
+                className={`hover:text-fg transition-colors ${
+                  mode === 'lite'
+                    ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                    : 'text-fg-soft'
+                }`}
+              >
+                LITE
+              </button>
+            </div>
+            <div className="text-[11px] text-fg-soft/70 hidden sm:block">
+              SIMULATED CAMPUS RECRUITMENT DATASET
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </ReactLenis>
+);
+}
+
+=== CampusLink-Demo2/src/components/layout/AppShell.jsx ===
+import React, { useState, useRef } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LayoutDashboard,
+  UserCheck,
+  CalendarDays,
+  FileSpreadsheet,
+  Video,
+  BarChart3,
+  CheckCheck,
+  Building2,
+  Calendar,
+  AlertTriangle,
+  Award,
+  Briefcase,
+  Users,
+  CalendarClock,
+  PieChart,
+  Search,
+  Bell,
+  Menu,
+  X,
+  Cpu,
+} from 'lucide-react';
+import { useStore } from '../../lib/store';
+import { CommandPalette } from './CommandPalette';
+import { NotificationPopover } from './NotificationPopover';
+import { JudgeGuide } from './JudgeGuide';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { Backdrop } from '../ui/Backdrop';
+import { PageTurnWipe } from '../ui/PageTurnWipe';
+import { cn } from '../../lib/utils';
+
+export function AppShell({ role = 'student', children }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentStudent, notifications } = useStore();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const roleNotifications = notifications[role] || [];
+  const unreadCount = roleNotifications.filter((n) => !n.read).length;
+
+  const roleNavItems = {
+    student: [
+      { num: '01', to: '/student/overview', label: 'Readiness & Diagnostic', icon: LayoutDashboard },
+      { num: '02', to: '/student/profile', label: 'Academic Record & Skills', icon: UserCheck },
+      { num: '03', to: '/student/drives', label: 'Placement Drives', icon: CalendarDays },
+      { num: '04', to: '/student/applications', label: 'Applications & Offers', icon: FileSpreadsheet },
+      { num: '05', to: '/student/interviews', label: 'Interview Calendar', icon: Video },
+    ],
+    admin: [
+      { num: '01', to: '/admin/command-center', label: 'Command Center', icon: BarChart3 },
+      { num: '02', to: '/admin/verification', label: 'Verification Queue', icon: CheckCheck },
+      { num: '03', to: '/admin/recruiters', label: 'Recruiter Partners', icon: Building2 },
+      { num: '04', to: '/admin/drives', label: 'Drives & Clash Resolver', icon: Calendar },
+      { num: '05', to: '/admin/at-risk', label: 'At-Risk Early Warning', icon: AlertTriangle },
+      { num: '06', to: '/admin/offers', label: 'Offers & Compliance', icon: Award },
+    ],
+    recruiter: [
+      { num: '01', to: '/recruiter/overview', label: 'Talent Overview', icon: LayoutDashboard },
+      { num: '02', to: '/recruiter/jobs', label: 'Active Job Postings', icon: Briefcase },
+      { num: '03', to: '/recruiter/pipeline', label: 'Candidate Pipeline', icon: Users, badge: 'AI Match' },
+      { num: '04', to: '/recruiter/slots', label: 'Interview Slots Grid', icon: CalendarClock },
+      { num: '05', to: '/recruiter/analytics', label: 'Hiring Analytics', icon: PieChart },
+    ],
+  };
+
+  const navItems = roleNavItems[role] || roleNavItems.student;
+
+  const tenantDetails = {
+    student: {
+      tag: '01 · STUDENT DESK',
+      title: 'BPUT Central Student Hub',
+      sub: 'Roll 220101045 · CSE',
+      avatar: 'AS',
+    },
+    admin: {
+      tag: '02 · PLACEMENT DIRECTORATE',
+      title: 'BPUT Central Campus',
+      sub: '42 Active Corporate Partners',
+      avatar: 'AD',
+    },
+    recruiter: {
+      tag: '03 · CORPORATE TA DESK',
+      title: 'Microsoft India TA Portal',
+      sub: 'Associate SDE Drive 2026',
+      avatar: 'MS',
+    },
+  };
+
+  const currentTenant = tenantDetails[role];
+  const wipeRef = useRef(null);
+
+  const handleRoleSwitch = (newRole) => {
+    if (newRole === role) return;
+    const dest =
+      newRole === 'student'
+        ? '/student/overview'
+        : newRole === 'admin'
+        ? '/admin/command-center'
+        : '/recruiter/overview';
+
+    if (wipeRef.current) {
+      wipeRef.current.start(() => navigate(dest));
+    } else {
+      navigate(dest);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-bg text-fg flex flex-col antialiased relative">
+      <PageTurnWipe ref={wipeRef} />
+      <Backdrop />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        currentRole={role}
+      />
+
+      {/* Floating Judge Guide */}
+      <JudgeGuide />
+
+      {/* Top Header */}
+      <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur-sm border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
+        {/* Brand & Mobile Hamburger */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-1.5 rounded-control text-ink hover:bg-bone transition-colors"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
+          <NavLink to="/" className="flex items-baseline gap-1 group select-none">
+            <span className="font-display font-medium text-xl text-ink tracking-tight">CampusLink</span>
+            <span className="font-mono text-xs text-ochre font-bold">.register</span>
+          </NavLink>
+
+          <div className="hidden sm:block h-3.5 w-px bg-line mx-2" />
+
+          {/* Institutional Tenant Label */}
+          <div className="hidden sm:flex flex-col">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] font-semibold text-ochre-deep leading-none">
+              {currentTenant.tag}
+            </span>
+            <span className="font-sans text-xs font-semibold text-ink leading-tight mt-0.5">
+              {currentTenant.title} <span className="font-normal text-ink-soft">({currentTenant.sub})</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Global Search Bar */}
+        <div className="hidden md:flex items-center">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="flex items-center gap-2.5 px-3 py-1 rounded-control border border-line bg-bone/40 hover:bg-bone hover:border-ink/40 text-ink-soft text-xs transition-all w-60 lg:w-72 select-none"
+          >
+            <Search className="w-3.5 h-3.5 text-ink-soft" />
+            <span className="flex-1 text-left font-sans text-xs">Search or type a command...</span>
+            <kbd className="px-1.5 py-0.5 rounded-xs bg-paper border border-line font-mono text-[10px] text-ink-soft">
+              Ctrl+K
+            </kbd>
+          </button>
+        </div>
+
+        {/* Right Action Stack: ThemeToggle + Demo Role Switcher + Notifs + Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
+          {/* Demo Role Switcher */}
+          <div className="bg-bg/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[11px] uppercase tracking-wider">
+            {['student', 'admin', 'recruiter'].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => handleRoleSwitch(r)}
+                className={cn(
+                  'px-2.5 py-1 rounded-xs transition-all font-semibold select-none',
+                  role === r
+                    ? 'bg-btn text-btn-fg shadow-xs'
+                    : 'text-fg-soft hover:text-fg'
+                )}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+
+          {/* Notifications Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setNotifOpen(!notifOpen)}
+              className="relative w-8 h-8 rounded-control border border-line bg-paper hover:bg-bone/80 flex items-center justify-center text-ink transition-colors"
+            >
+              <Bell className="w-3.5 h-3.5 stroke-[1.75]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-ochre" />
+              )}
+            </button>
+            <NotificationPopover
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              role={role}
+            />
+          </div>
+
+          {/* User Profile Avatar */}
+          <div className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line">
+            {currentTenant.avatar}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Body */}
+      <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
+        {/* Left Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-60 bg-sidebar text-sidebar-fg border-r border-line shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] p-3.5 justify-between">
+          <div>
+            <div className="px-3 py-2 mb-2">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] font-semibold text-sidebar-fg/45">
+                INDEX · NAVIGATION
+              </span>
+            </div>
+
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.to;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      'relative flex items-center justify-between px-3 py-2 rounded-control text-xs font-medium transition-all group select-none',
+                      isActive
+                        ? 'text-sidebar-fg bg-white/10 font-semibold'
+                        : 'text-sidebar-fg/70 hover:text-sidebar-fg hover:bg-white/5'
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="font-mono text-[10px] text-sidebar-fg/40 group-hover:text-sidebar-fg/70 shrink-0">
+                        {item.num}
+                      </span>
+                      <Icon className={cn('w-3.5 h-3.5 shrink-0', isActive ? 'text-accent' : 'text-sidebar-fg/60')} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+
+                    {item.badge && (
+                      <span className="font-mono text-[9px] px-1.5 py-0.2 rounded-xs bg-accent text-btn-fg font-semibold uppercase">
+                        {item.badge}
+                      </span>
+                    )}
+
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebarActiveMarker"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent rounded-r-full"
+                        transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                      />
+                    )}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="p-3 bg-white/5 rounded-control border border-white/10 font-mono text-[10px] text-sidebar-fg/60 space-y-1">
+            <div className="flex items-center justify-between text-bone/80 font-medium">
+              <span>BPUT PS10</span>
+              <span className="text-ochre">VERIFIED v2.2</span>
+            </div>
+            <p className="font-sans text-[10px] text-bone/50 leading-tight">
+              Institutional Placement Register & Semantic Engine
+            </p>
+          </div>
+        </aside>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: -200 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -200 }}
+              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-ink z-50 p-4 flex flex-col justify-between shadow-2xl pt-16"
+            >
+              <div>
+                <nav className="space-y-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.to;
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center gap-2.5 px-3 py-2 rounded-control text-xs font-medium transition-colors',
+                          isActive ? 'bg-white/10 text-bone font-semibold' : 'text-bone/70 hover:text-bone'
+                        )}
+                      >
+                        <span className="font-mono text-[10px] text-bone/40">{item.num}</span>
+                        <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-ochre' : 'text-bone/60')} />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </nav>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2 bg-white/10 text-bone text-xs rounded-control font-mono"
+              >
+                CLOSE
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Content Viewport */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-[1180px] mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+=== CampusLink-Demo2/src/index.css ===
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bone: rgb(var(--c-bg));
+  --paper: rgb(var(--c-surface));
+  --ink: rgb(var(--c-fg));
+  --ink-soft: rgb(var(--c-fg-soft));
+  --line: rgb(var(--c-line));
+  --ochre: rgb(var(--c-accent));
+  --ochre-tint: rgb(var(--c-accent-tint));
+  --ochre-deep: rgb(var(--c-accent-deep));
+  --jade: rgb(var(--c-jade));
+  --jade-tint: rgb(var(--c-jade-tint));
+  --brick: rgb(var(--c-brick));
+  --brick-tint: rgb(var(--c-brick-tint));
+}
+
+/* Custom polished institutional scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(91, 95, 107, 0.22);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 22, 28, 0.45);
+}
+
+/* Base Body with physical paper texture */
+body {
+  background-color: rgb(var(--c-bg));
+  color: rgb(var(--c-fg));
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Subtle Archival Grain Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  opacity: var(--grain-opacity, 0.03);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+}
+
+/* Typographic Display */
+h1, h2, h3, .font-display {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Precision Tabular Numerals */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mono utility labels */
+.label-mono {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgb(var(--c-fg-soft));
+}
+
+.data-mono {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Collision hatched pattern */
+.hatch-brick {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(196, 67, 47, 0.12),
+    rgba(196, 67, 47, 0.12) 6px,
+    rgba(196, 67, 47, 0.28) 6px,
+    rgba(196, 67, 47, 0.28) 12px
+  );
+}
+
+=== CampusLink-Demo2/src/styles/glass.css ===
+.glass {
+  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--glass-highlight)), var(--glass-shadow);
+}
+:root[data-theme='night'] { --glass-boost: 0.04; }
+.glass-strong { background: rgb(var(--c-glass-base) / calc(var(--glass-alpha) + var(--glass-boost, 0.12))); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong { background: rgb(var(--c-surface) / 0.94); }
+}
+.backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: rgb(var(--c-bg)); }
+.backdrop i { position: absolute; width: 60vmax; height: 60vmax; border-radius: 9999px; will-change: transform; }
+.backdrop i:nth-child(1) { left: -14vmax; top: -20vmax; background: radial-gradient(circle, rgb(var(--c-blob-a) / var(--backdrop-a-alpha)), transparent 62%); animation: drift-a 40s ease-in-out infinite alternate; }
+.backdrop i:nth-child(2) { right: -16vmax; top: -22vmax; background: radial-gradient(circle, rgb(var(--c-blob-b) / var(--backdrop-b-alpha)), transparent 62%); animation: drift-b 46s ease-in-out infinite alternate; }
+.backdrop i:nth-child(3) { left: 20vw; bottom: -34vmax; background: radial-gradient(circle, rgb(var(--c-blob-c) / var(--backdrop-c-alpha)), transparent 62%); animation: drift-c 52s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate3d(6vmax, 5vmax, 0) scale(1.08); } }
+@keyframes drift-b { to { transform: translate3d(-6vmax, 4vmax, 0) scale(1.1); } }
+@keyframes drift-c { to { transform: translate3d(4vmax, -5vmax, 0) scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .backdrop i { animation: none; } }
+
+/* Tilt & Specular Reflection */
+.tilt { position: relative; transform: perspective(900px) rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+.tilt::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.25s; background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.35), transparent 60%); }
+.tilt:hover::after { opacity: 1; }
+:root[data-theme='night'] .tilt::after { background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 225 190 / 0.16), transparent 60%); }
+
+/* Register Marquee Ticker */
+.ticker { overflow: hidden; border-block: 1px solid rgb(var(--c-line)); }
+.ticker-track { display: flex; width: max-content; gap: 48px; animation: ticker 60s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+
+/* 3D Scene Labels */
+.three-label {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgb(var(--c-fg));
+  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
+}
+
+/* Night Polish (P8) */
+:root[data-theme='night'] .score-dial-arc {
+  filter: drop-shadow(0 0 6px rgb(var(--c-accent) / 0.6));
+}
+:root[data-theme='night'] .score-dial-needle {
+  stroke: rgb(var(--c-fg));
+  filter: drop-shadow(0 0 4px rgb(var(--c-accent) / 0.6));
+}
+:root[data-theme='night'] .score-dial-hub {
+  fill: rgb(var(--c-accent));
+}
+
+:root[data-theme='night'] .match-bar-fill,
+:root[data-theme='night'] .timeline-thread {
+  box-shadow: var(--glow);
+}
+
+:root[data-theme='night'] .stamp-pill {
+  box-shadow: 0 0 12px -2px currentColor;
+}
+
+:root[data-theme='night'] .btn-primary:hover,
+:root[data-theme='night'] button.btn-primary:hover {
+  box-shadow: 0 0 24px -6px rgb(var(--c-accent) / 0.6);
+}
+
+/* Edge-lit hover on glass surfaces */
+.glass, .glass-strong {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+:root[data-theme='night'] .glass:hover,
+:root[data-theme='night'] .glass-strong:hover {
+  border-color: rgb(var(--c-accent) / 0.4);
+}
+
+/* Table row hover */
+tr {
+  transition: background-color 120ms ease;
+}
+tr:hover {
+  background-color: rgb(var(--c-fg) / 0.04);
+}
+:root[data-theme='night'] tr:hover {
+  background-color: rgb(var(--c-fg) / 0.06);
+}
+
+
+
+
+
+
+
+```
+
+```python
+import zipfile
+
+with zipfile.ZipFile('CampusLink-Demo2.zip', 'r') as z:
+    for name in [
+        'CampusLink-Demo2/src/theme/tokens.js',
+        'CampusLink-Demo2/src/styles/themes.base.css',
+        'CampusLink-Demo2/src/styles/themes.generated.css',
+        'CampusLink-Demo2/src/three/Scenes.jsx',
+        'CampusLink-Demo2/src/components/ui/RegisterTicker.jsx',
+        'CampusLink-Demo2/src/components/ui/Rule.jsx'
+    ]:
+        print(f"=== {name} ===")
+        print(z.read(name).decode('utf-8'))
+
+
+```
+
+```text
+=== CampusLink-Demo2/src/theme/tokens.js ===
+// SINGLE SOURCE OF TRUTH for both themes. Edit hex values here only.
+// Everything else (CSS variables, contrast check, charts, 3D) is derived from this file.
+export const tokens = {
+  day: {
+    bg: '#F4F5F7', surface: '#FFFFFF', fg: '#0E121B', fgSoft: '#475569', line: '#E2E8F0',
+    accent: '#D97706', accentTint: '#FEF3C7', accentDeep: '#92400E',
+    jade: '#0B6846', jadeTint: '#E1F6ED', brick: '#A82A18', brickTint: '#FBE8E5',
+    lagoon: '#09645E', lagoonLight: '#5EEAD4',
+    sidebar: '#0E121B', sidebarFg: '#F8FAFC', btn: '#0E121B', btnFg: '#F8FAFC', btnHover: '#D97706', btnHoverFg: '#0E121B',
+    darkSection: '#0E121B', darkSectionFg: '#F8FAFC',
+    glassBase: '#FFFFFF', glassAlpha: '0.72', glassBorderBase: '#FFFFFF', glassBorderAlpha: '0.85',
+    blobA: '#CBD5E1', blobB: '#FDE68A', blobC: '#FECDD3',
+    markAlpha: '0.55',
+    threeA: '#D97706', threeB: '#09645E', threeDust: '#D97706', threeEdge: '#09645E', threeAdditive: '0',
+    checkBackdrops: ['#F4F5F7', '#CBD5E1', '#FDE68A', '#FECDD3'],
+  },
+  night: {
+    bg: '#090D16', surface: '#111827', fg: '#F8FAFC', fgSoft: '#94A3B8', line: '#1E293B',
+    accent: '#F59E0B', accentTint: '#2A1E0B', accentDeep: '#FBBF24',
+    jade: '#3CCB8B', jadeTint: '#12251B', brick: '#FF6A55', brickTint: '#2D1714',
+    lagoon: '#2DD4BF', lagoonLight: '#14B8A6',
+    sidebar: '#0B0F19', sidebarFg: '#F8FAFC', btn: '#F59E0B', btnFg: '#090D16', btnHover: '#F8FAFC', btnHoverFg: '#090D16',
+    darkSection: '#0B0F19', darkSectionFg: '#F8FAFC',
+    glassBase: '#1E293B', glassAlpha: '0.18', glassBorderBase: '#334155', glassBorderAlpha: '0.28',
+    blobA: '#1E293B', blobB: '#D97706', blobC: '#EA580C',
+    markAlpha: '0.30',
+    threeA: '#F59E0B', threeB: '#EA580C', threeDust: '#FDE68A', threeEdge: '#94A3B8', threeAdditive: '1',
+    checkBackdrops: ['#090D16', '#1E293B', '#111827'],
+  },
+};
+
+=== CampusLink-Demo2/src/styles/themes.base.css ===
+:root[data-theme='day'] {
+  --glass-blur: 22px; --glass-saturate: 1.6; --glass-highlight: 0.9;
+  --glass-shadow: 0 10px 40px -12px rgb(14 18 27 / 0.12);
+  --grain-opacity: 0.025;
+  --backdrop-a-alpha: 0.45; --backdrop-b-alpha: 0.4; --backdrop-c-alpha: 0.35;
+  --glow: 0 0 0 0 transparent;
+}
+:root[data-theme='night'] {
+  --glass-blur: 18px; --glass-saturate: 1.2; --glass-highlight: 0.1;
+  --glass-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.7);
+  --grain-opacity: 0.05;
+  --backdrop-a-alpha: 0.08; --backdrop-b-alpha: 0.16; --backdrop-c-alpha: 0.1;
+  --glow: 0 0 14px rgb(245 158 11 / 0.45);
+}
+:focus-visible { outline: 2px solid rgb(var(--c-lagoon)); outline-offset: 2px; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+
+=== CampusLink-Demo2/src/styles/themes.generated.css ===
+/* GENERATED from src/theme/tokens.js. Do not edit. */
+:root[data-theme='day'] {
+  color-scheme: light;
+  --c-bg: 244 245 247;
+  --c-surface: 255 255 255;
+  --c-fg: 14 18 27;
+  --c-fg-soft: 71 85 105;
+  --c-line: 226 232 240;
+  --c-accent: 217 119 6;
+  --c-accent-tint: 254 243 199;
+  --c-accent-deep: 146 64 14;
+  --c-jade: 11 104 70;
+  --c-jade-tint: 225 246 237;
+  --c-brick: 168 42 24;
+  --c-brick-tint: 251 232 229;
+  --c-lagoon: 9 100 94;
+  --c-lagoon-light: 94 234 212;
+  --c-sidebar: 14 18 27;
+  --c-sidebar-fg: 248 250 252;
+  --c-btn: 14 18 27;
+  --c-btn-fg: 248 250 252;
+  --c-btn-hover: 217 119 6;
+  --c-btn-hover-fg: 14 18 27;
+  --c-dark-section: 14 18 27;
+  --c-dark-section-fg: 248 250 252;
+  --c-glass-base: 255 255 255;
+  --glass-alpha: 0.72;
+  --c-glass-border-base: 255 255 255;
+  --glass-border-alpha: 0.85;
+  --c-blob-a: 203 213 225;
+  --c-blob-b: 253 230 138;
+  --c-blob-c: 254 205 211;
+  --mark-alpha: 0.55;
+  --three-a: #D97706;
+  --three-b: #09645E;
+  --three-dust: #D97706;
+  --three-edge: #09645E;
+  --three-additive: 0;
+}
+
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --c-bg: 9 13 22;
+  --c-surface: 17 24 39;
+  --c-fg: 248 250 252;
+  --c-fg-soft: 148 163 184;
+  --c-line: 30 41 59;
+  --c-accent: 245 158 11;
+  --c-accent-tint: 42 30 11;
+  --c-accent-deep: 251 191 36;
+  --c-jade: 60 203 139;
+  --c-jade-tint: 18 37 27;
+  --c-brick: 255 106 85;
+  --c-brick-tint: 45 23 20;
+  --c-lagoon: 45 212 191;
+  --c-lagoon-light: 20 184 166;
+  --c-sidebar: 11 15 25;
+  --c-sidebar-fg: 248 250 252;
+  --c-btn: 245 158 11;
+  --c-btn-fg: 9 13 22;
+  --c-btn-hover: 248 250 252;
+  --c-btn-hover-fg: 9 13 22;
+  --c-dark-section: 11 15 25;
+  --c-dark-section-fg: 248 250 252;
+  --c-glass-base: 30 41 59;
+  --glass-alpha: 0.18;
+  --c-glass-border-base: 51 65 85;
+  --glass-border-alpha: 0.28;
+  --c-blob-a: 30 41 59;
+  --c-blob-b: 217 119 6;
+  --c-blob-c: 234 88 12;
+  --mark-alpha: 0.30;
+  --three-a: #F59E0B;
+  --three-b: #EA580C;
+  --three-dust: #FDE68A;
+  --three-edge: #94A3B8;
+  --three-additive: 1;
+}
+
+=== CampusLink-Demo2/src/three/Scenes.jsx ===
+import * as THREE from 'three';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Points, PointMaterial, Edges, Html, PerformanceMonitor } from '@react-three/drei';
+import { threadCurve } from './thread.js';
+import { useThemeTokens, sceneColors } from '../theme/useThemeTokens.js';
+import { tokens } from '../theme/tokens.js';
+
+export function Thread({ colors, radius = 0.045 }) {
+  const geo = useMemo(() => {
+    const g = new THREE.TubeGeometry(threadCurve, 300, radius, 8, false);
+    const n = g.attributes.position.count;
+    const arr = new Float32Array(n * 3);
+    const a = new THREE.Color(colors.a);
+    const b = new THREE.Color(colors.b);
+    const tmp = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      tmp.copy(a).lerp(b, i / n);
+      arr.set([tmp.r, tmp.g, tmp.b], i * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+    return g;
+  }, [radius, colors.a, colors.b]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  return (
+    <mesh geometry={geo}>
+      <meshBasicMaterial vertexColors toneMapped={false} />
+    </mesh>
+  );
+}
+
+export function Dust({ count = 320, color, additive }) {
+  const ref = useRef();
+  const positions = useMemo(() => {
+    const a = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      a[i * 3] = (Math.random() - 0.5) * 18;
+      a[i * 3 + 1] = (Math.random() - 0.5) * 9;
+      a[i * 3 + 2] = -Math.random() * 12;
+    }
+    return a;
+  }, [count]);
+  useFrame((_, dt) => {
+    if (ref.current) ref.current.rotation.y += dt * 0.01;
+  });
+  return (
+    <Points ref={ref} positions={positions} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color={color}
+        size={0.035}
+        sizeAttenuation
+        depthWrite={false}
+        blending={additive ? THREE.AdditiveBlending : THREE.NormalBlending}
+      />
+    </Points>
+  );
+}
+
+function PointerParallax({ children, amount = 0.12 }) {
+  const ref = useRef();
+  useFrame(({ pointer }, dt) => {
+    if (!ref.current) return;
+    ref.current.rotation.y = THREE.MathUtils.damp(ref.current.rotation.y, pointer.x * amount, 4, dt);
+    ref.current.rotation.x = THREE.MathUtils.damp(ref.current.rotation.x, -pointer.y * amount * 0.6, 4, dt);
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
+const _p = new THREE.Vector3();
+const _l = new THREE.Vector3();
+const _t = new THREE.Vector3();
+const _off = new THREE.Vector3(0, 0.35, 1.4);
+
+export function CameraRig({ progress }) {
+  const { camera } = useThree();
+  useFrame((_, dt) => {
+    const val = typeof progress?.get === 'function' ? progress.get() : (progress || 0);
+    const t = THREE.MathUtils.clamp(val, 0, 0.97);
+    threadCurve.getPointAt(t, _p);
+    threadCurve.getPointAt(Math.min(t + 0.03, 1), _l);
+    _t.copy(_p).add(_off);
+    camera.position.lerp(_t, 1 - Math.exp(-6 * dt));
+    camera.lookAt(_l);
+  });
+  return null;
+}
+
+export function Nodes({ labels, colors }) {
+  return labels.map((label, i) => {
+    const pos = threadCurve.getPointAt((i + 0.5) / labels.length);
+    return (
+      <group key={label} position={pos}>
+        <mesh>
+          <torusGeometry args={[0.28, 0.014, 12, 48]} />
+          <meshBasicMaterial color={colors.a} toneMapped={false} />
+        </mesh>
+        <Html center distanceFactor={7} style={{ pointerEvents: 'none' }}>
+          <span className="three-label">
+            {String(i + 1).padStart(2, '0')} {label}
+          </span>
+        </Html>
+      </group>
+    );
+  });
+}
+
+export function Layers({ spread, labels, colors }) {
+  const refs = useRef([]);
+  useFrame(() => {
+    const s = typeof spread?.get === 'function' ? spread.get() : (spread || 0);
+    refs.current.forEach((m, i) => {
+      if (m) m.position.y = (i - (labels.length - 1) / 2) * (0.18 + s * 0.9);
+    });
+  });
+  return labels.map((label, i) => (
+    <mesh key={label} ref={(el) => (refs.current[i] = el)}>
+      <boxGeometry args={[4, 0.08, 2.6]} />
+      <meshBasicMaterial transparent opacity={0.14} color={colors.a} depthWrite={false} />
+      <Edges color={colors.edge} />
+      <Html position={[2.3, 0, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="three-label">{label}</span>
+      </Html>
+    </mesh>
+  ));
+}
+
+export function Packets({ count = 8, height = 2.2, color }) {
+  const refs = useRef([]);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    refs.current.forEach((m, i) => {
+      if (m) m.position.y = height / 2 - (((t * 0.35 + i / count) % 1) * height);
+    });
+  });
+  return Array.from({ length: count }, (_, i) => (
+    <mesh
+      key={i}
+      ref={(el) => (refs.current[i] = el)}
+      position={[((i % 4) - 1.5) * 0.7, 0, ((i % 3) - 1) * 0.6]}
+    >
+      <sphereGeometry args={[0.05, 12, 12]} />
+      <meshBasicMaterial color={color} toneMapped={false} />
+    </mesh>
+  ));
+}
+
+export function SceneCanvas({ visible, children, camera }) {
+  const [dpr, setDpr] = useState(1.5);
+  return (
+    <Canvas
+      frameloop={visible ? 'always' : 'never'}
+      dpr={[1, dpr]}
+      camera={camera}
+      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+    >
+      <PerformanceMonitor onDecline={() => setDpr(1)} />
+      {children}
+    </Canvas>
+  );
+}
+
+export function HeroScene() {
+  const colors = sceneColors(useThemeTokens());
+  return (
+    <PointerParallax>
+      <Thread colors={colors} radius={0.05} />
+      <Dust color={colors.dust} additive={colors.additive} />
+    </PointerParallax>
+  );
+}
+
+export function PipelineScene({ progress, labels }) {
+  const colors = sceneColors(useThemeTokens());
+  return (
+    <>
+      <Thread colors={colors} />
+      <Dust color={colors.dust} additive={colors.additive} />
+      <Nodes labels={labels} colors={colors} />
+      <CameraRig progress={progress} />
+    </>
+  );
+}
+
+export function LayersScene({ spread, labels }) {
+  const colors = sceneColors(tokens.night);
+  return (
+    <PointerParallax amount={0.18}>
+      <Layers spread={spread} labels={labels} colors={colors} />
+      <Packets color={colors.b} />
+      <Dust count={140} color={colors.dust} additive={colors.additive} />
+    </PointerParallax>
+  );
+}
+
+
+=== CampusLink-Demo2/src/components/ui/RegisterTicker.jsx ===
+import React from 'react';
+
+const ITEMS = [
+  { text: 'VERIFIED · ROHAN SENAPATI · CSE · 14:02', tone: 'jade' },
+  { text: 'CLASH RESOLVED · COGNIZANT MOVED TO LAB 2 · 14:00', tone: 'jade' },
+  { text: 'SHORTLISTED · MICROSOFT INDIA · 48 CANDIDATES', tone: 'accent' },
+  { text: 'OFFER ACCEPTED · TCS DIGITAL · 7.0 LPA', tone: 'jade' },
+  { text: 'SLOT BOOKED · INTERVIEW · 05 NOV · 10:45', tone: 'accent' },
+  { text: 'AT-RISK FLAGGED · 14 STUDENTS · MENTORS ASSIGNED', tone: 'brick' },
+  { text: 'DRIVE AUTHORIZED · INFOSYS · 11 NOV', tone: 'accent' },
+];
+
+export function RegisterTicker() {
+  const dotColor = (tone) => {
+    if (tone === 'jade') return 'bg-jade';
+    if (tone === 'brick') return 'bg-brick';
+    return 'bg-accent';
+  };
+
+  return (
+    <div className="ticker py-2 bg-surface/60 backdrop-blur-sm select-none">
+      <div className="max-w-[1440px] mx-auto px-4 flex items-center">
+        {/* Pinned Label */}
+        <div className="shrink-0 flex items-center gap-2 pr-6 border-r border-line z-10 bg-surface/80">
+          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] font-bold text-fg">
+            LIVE REGISTER · SIMULATED
+          </span>
+        </div>
+
+        {/* Scrolling Track */}
+        <div className="ticker overflow-hidden border-none flex-1 ml-6">
+          <div className="ticker-track flex items-center">
+            {/* List rendered twice for seamless loop */}
+            {[...ITEMS, ...ITEMS].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 shrink-0 font-mono text-[11.5px] uppercase tracking-wider text-fg-soft">
+                <span className={`w-1.5 h-1.5 rounded-full ${dotColor(item.tone)} shrink-0`} />
+                <span>{item.text}</span>
+                <span className="text-line mx-2">/</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+=== CampusLink-Demo2/src/components/ui/Rule.jsx ===
+import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { cn } from '../../lib/utils';
+
+export function Rule({
+  strong = false,
+  draw = false,
+  className,
+}) {
+  const shouldReduceMotion = useReducedMotion();
+
+  if (shouldReduceMotion || !draw) {
+    return (
+      <hr
+        className={cn(
+          'w-full border-0 my-6',
+          strong ? 'h-px bg-fg/60' : 'h-px bg-line',
+          className
+        )}
+      />
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ scaleX: 0 }}
+      whileInView={{ scaleX: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      style={{ originX: 0 }}
+      className={cn(
+        'w-full my-6',
+        strong ? 'h-px bg-fg/60' : 'h-px bg-line',
+        className
+      )}
+    />
+  );
+}
+
+
+
+
+```
+
+Yes—everything below is configured specifically for your **Dark Mode (`theme === 'night'` / `data-theme="night"`)** in `CampusLink-Demo2`, while leaving your Light Mode (`theme === 'day'`) untouched.
+
+In your codebase, `src/theme/ThemeProvider.jsx` uses `'night'` and `'day'` as the theme keys (`document.documentElement.dataset.theme = 'night'`). Here are the exact drop-in files tailored to your BPUT Hackathon PS10 content, exports, and component structure.
+
+---
+
+### 1. `src/three/HeroCanvas.jsx` (Scene 1: Qronos Vortex Funnel in Dark Mode)
+
+In `'day'` mode, this keeps your original Three.js `HeroScene` thread. As soon as you switch to `'night'` mode, it renders the **Qronos Swirling 3D Vortex Funnel** and pauses automatically when scrolled out of view (`visible={inView}`).
+
+```jsx
+import React, { useEffect, useRef } from 'react';
+import { SceneCanvas, HeroScene } from './Scenes.jsx';
+import { useTheme } from '../theme/ThemeProvider.jsx';
+
+export default function HeroCanvas({ visible = true }) {
+  const { theme } = useTheme();
+  const isNight = theme === 'night';
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!isNight || !visible) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let animationFrameId;
+    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
+    let height = (canvas.height = canvas.parentElement?.clientHeight || window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Parametric funnel profile: wide top mouth -> narrow throat -> flared bottom disc
+    const getFunnelProfile = (t) => {
+      let radius;
+      let y;
+      if (t < 0.64) {
+        const u = t / 0.64;
+        y = -height * 0.56 + u * (height * 0.80);
+        radius = width * 0.042 + Math.pow(1 - u, 2.15) * (width * 0.44);
+      } else {
+        const u = (t - 0.64) / 0.36;
+        y = height * 0.24 + Math.pow(u, 0.72) * (height * 0.25);
+        radius = width * 0.042 + Math.pow(u, 1.48) * (width * 0.70);
+      }
+      return { y, radius };
+    };
+
+    const NUM_PARTICLES = 850;
+    const particles = Array.from({ length: NUM_PARTICLES }, () => ({
+      t: Math.random(),
+      angle: Math.random() * Math.PI * 2,
+      speedT: 0.0005 + Math.random() * 0.0011,
+      speedAngle: 0.01 + Math.random() * 0.016,
+      size: Math.random() < 0.82 ? 1.1 : 1.8,
+      alpha: 0.16 + Math.random() * 0.52,
+    }));
+
+    let time = 0;
+
+    const render = () => {
+      time += 0.011;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, width, height);
+
+      const cx = width * 0.5;
+      const cy = height * 0.46;
+      const tilt = 0.27;
+
+      // 1. Swirling orbital spline rings
+      const NUM_RINGS = 76;
+      for (let i = 0; i < NUM_RINGS; i++) {
+        const t = ((i / NUM_RINGS) + time * 0.022) % 1;
+        const { y, radius } = getFunnelProfile(t);
+        const edgeFade = Math.sin(t * Math.PI);
+        const alpha = Math.max(0.03, edgeFade * 0.21);
+
+        ctx.beginPath();
+        const segments = 60;
+        for (let s = 0; s <= segments; s++) {
+          const theta = (s / segments) * Math.PI * 2 + time * (1.15 - t * 0.55) + t * 8;
+          const wobble = Math.sin(theta * 3 + time * 1.8 + t * 11) * (radius * 0.032);
+          const r = radius + wobble;
+
+          const px = cx + Math.cos(theta) * r;
+          const py = cy + y + Math.sin(theta) * r * tilt;
+
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.lineWidth = 0.85;
+        ctx.stroke();
+      }
+
+      // 2. Twisting longitudinal meridian strands
+      const NUM_STRANDS = 34;
+      for (let s = 0; s < NUM_STRANDS; s++) {
+        const baseAngle = (s / NUM_STRANDS) * Math.PI * 2;
+        ctx.beginPath();
+        const steps = 48;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const { y, radius } = getFunnelProfile(t);
+          const theta = baseAngle + t * 7.2 - time * 1.3;
+          const px = cx + Math.cos(theta) * radius;
+          const py = cy + y + Math.sin(theta) * radius * tilt;
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.065)';
+        ctx.lineWidth = 0.75;
+        ctx.stroke();
+      }
+
+      // 3. Flowing white/silver vortex particles
+      for (const p of particles) {
+        p.t += p.speedT;
+        if (p.t > 1) p.t -= 1;
+        p.angle += p.speedAngle * (1.35 - p.t * 0.55);
+
+        const { y, radius } = getFunnelProfile(p.t);
+        const px = cx + Math.cos(p.angle) * radius;
+        const py = cy + y + Math.sin(p.angle) * radius * tilt;
+
+        const depthBoost = (Math.sin(p.angle) + 1) * 0.5;
+        const finalAlpha = p.alpha * (0.35 + depthBoost * 0.65) * Math.sin(p.t * Math.PI);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${finalAlpha})`;
+        ctx.fillRect(px, py, p.size, p.size);
+      }
+
+      // 4. Readability vignette behind Hero copy & candidate slips
+      const vignette = ctx.createRadialGradient(
+        cx - width * 0.12,
+        cy - height * 0.04,
+        20,
+        cx,
+        cy,
+        width * 0.45
+      );
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0.68)');
+      vignette.addColorStop(0.55, 'rgba(0, 0, 0, 0.32)');
+      vignette.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, width, height);
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isNight, visible]);
+
+  if (!isNight) {
+    return (
+      <SceneCanvas visible={visible} camera={{ position: [0, 0, 8], fov: 50 }}>
+        <HeroScene />
+      </SceneCanvas>
+    );
+  }
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black">
+      <canvas ref={canvasRef} className="h-full w-full block" />
+      <div className="
+        pointer-events-none absolute inset-x-0 bottom-0 h-28
+        bg-gradient-to-t from-black via-black/65 to-transparent
+      " />
+    </div>
+  );
+}
+
+```
+
+---
+
+### 2. `src/components/ui/Backdrop.jsx` (Scene 2: Vertical Light Streaks & Grid Rails)
+
+Note that your codebase uses a **named export** (`export function Backdrop()`). In `'day'` mode it renders your three drifting pastel blobs; in `'night'` mode it renders **Scene 2** (vertical light trails + micro-dust + left/right architectural frame lines) across both the lower Landing Page and every Student/Admin/Recruiter dashboard in `AppShell.jsx`.
+
+```jsx
+import React, { useEffect, useRef } from 'react';
+import { useTheme } from '../../theme/ThemeProvider.jsx';
+
+export function Backdrop() {
+  const { theme } = useTheme();
+  const isNight = theme === 'night';
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!isNight) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let animationFrameId;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Qronos Scene 2 vertical light streaks
+    const NUM_STREAKS = 64;
+    const streaks = Array.from({ length: NUM_STREAKS }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      length: 50 + Math.random() * 145,
+      speed: 0.3 + Math.random() * 0.85,
+      opacity: 0.05 + Math.random() * 0.20,
+      hasHeadDot: Math.random() > 0.55,
+    }));
+
+    // Ambient floating micro-particles
+    const NUM_DOTS = 48;
+    const dots = Array.from({ length: NUM_DOTS }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vy: 0.08 + Math.random() * 0.22,
+      size: 1 + Math.random() * 1.2,
+      alpha: 0.07 + Math.random() * 0.22,
+    }));
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      for (const s of streaks) {
+        s.y -= s.speed;
+        if (s.y + s.length < 0) {
+          s.y = height + Math.random() * 90;
+          s.x = Math.random() * width;
+        }
+
+        const grad = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.length);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${s.opacity})`);
+        grad.addColorStop(0.35, `rgba(255, 255, 255, ${s.opacity * 0.55})`);
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x, s.y + s.length);
+        ctx.stroke();
+
+        if (s.hasHeadDot) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.42, s.opacity * 1.75)})`;
+          ctx.fillRect(s.x - 0.5, s.y - 0.5, 2, 2);
+        }
+      }
+
+      for (const d of dots) {
+        d.y -= d.vy;
+        if (d.y < 0) {
+          d.y = height;
+          d.x = Math.random() * width;
+        }
+        ctx.fillStyle = `rgba(255, 255, 255, ${d.alpha})`;
+        ctx.fillRect(d.x, d.y, d.size, d.size);
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isNight]);
+
+  if (!isNight) {
+    return (
+      <div className="backdrop" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-0 bg-[#000000] overflow-hidden"
+      aria-hidden="true"
+    >
+      <canvas ref={canvasRef} className="h-full w-full block opacity-90" />
+      {/* Architectural vertical framing lines */}
+      <div className="pointer-events-none fixed inset-y-0 left-4 lg:left-10 w-px bg-white/[0.08]" />
+      <div className="pointer-events-none fixed inset-y-0 right-4 lg:right-10 w-px bg-white/[0.08]" />
+    </div>
+  );
+}
+
+```
+
+---
+
+### 3. `src/pages/landing/LandingPage.jsx` (Tailored to Your BPUT PS10 Content)
+
+This keeps every piece of your existing `LandingPage.jsx` (Hero candidate slip for Rohan Senapati, Lab 4 Clash slip, RegisterTicker, 6-Stage Pipeline, Three Unified Desks, Under the Hood, and Metrics), while adding:
+
+* **Full-bleed Hero Vortex (Scene 1)** in Dark Mode that spans behind the Hero and feeds its flared bottom floor disc right into `<RegisterTicker/>`.
+
+
+* **Qronos Diagonal Hatched Section Dividers** (`<QronosDivider/>`) with `+` crosshairs between major sections in Dark Mode.
+
+
+* **Transparent Below-the-Fold Sections** in Dark Mode so **Scene 2** (`<Backdrop/>`) animates cleanly behind your content without impairing readability, plus a **Qronos Scene 2 Bottom CTA Banner** right above the footer.
+
+
+
+```jsx
+import React, { useRef, useState, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useSpring,
+  useMotionValueEvent,
+  useTransform,
+} from 'framer-motion';
+import { ReactLenis } from 'lenis/react';
+import 'lenis/dist/lenis.css';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { Stamp } from '../../components/ui/Stamp';
+import { Mark } from '../../components/ui/Mark';
+import { MarginNote } from '../../components/ui/MarginNote';
+import { StatStrip } from '../../components/ui/StatStrip';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { IntroOverlay } from '../../components/ui/IntroOverlay';
+import { RegisterTicker } from '../../components/ui/RegisterTicker';
+import { useTilt, useMagnetic } from '../../fx/useTilt';
+import { useInView } from '../../fx/useInView';
+import { useFx, setFxMode } from '../../fx/useFx';
+import { useStore } from '../../lib/store';
+import { useTheme } from '../../theme/ThemeProvider';
+import { JudgeGuide } from '../../components/layout/JudgeGuide';
+
+const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
+const PipelineCanvas = lazy(() => import('../../three/PipelineCanvas.jsx'));
+const LayersCanvas = lazy(() => import('../../three/LayersCanvas.jsx'));
+
+const STEPS = [
+  'Profiling',
+  'Matching',
+  'Scheduling',
+  'Notification',
+  'Offer tracking',
+  'Analytics',
+];
+
+const LAYERS = [
+  'Data sources',
+  'Scoring & matching',
+  'Scheduler',
+  'Notifications',
+  'Dashboards',
+];
+
+function QronosDivider({ isNight }) {
+  if (!isNight) return null;
+  return (
+    <div className="relative h-8 w-full border-y border-white/[0.09] qronos-hatch-divider select-none overflow-hidden z-10">
+      <span className="absolute left-4 lg:left-10 top-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-white/40">+</span>
+      <span className="absolute right-4 lg:right-10 top-1/2 translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-white/40">+</span>
+    </div>
+  );
+}
+
+export function LandingPage() {
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isNight = theme === 'night';
+  const { markPipelineScrolled } = useStore();
+  const heroRef = useRef(null);
+  const inView = useInView(heroRef);
+  const { mode, use3d } = useFx();
+  const tiltA = useTilt({ max: 5 });
+  const tiltB = useTilt({ max: 5 });
+  const magOpen = useMagnetic({ strength: 0.25 });
+
+  const pipeRef = useRef(null);
+  const pipeInView = useInView(pipeRef);
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+
+  const { scrollYProgress: pipeScroll } = useScroll({
+    target: pipeRef,
+    offset: ['start start', 'end end'],
+  });
+  const smoothPipe = useSpring(pipeScroll, { stiffness: 80, damping: 24 });
+
+  useMotionValueEvent(smoothPipe, 'change', (p) => {
+    const t = Math.min(Math.max(p, 0), 0.97);
+    const idx = Math.min(5, Math.max(0, Math.round(t * 6 - 0.5)));
+    setCurrentStepIdx((prev) => (prev !== idx ? idx : prev));
+    if (p >= 0.95) {
+      markPipelineScrolled?.();
+    }
+  });
+
+  React.useEffect(() => {
+    if (!use3d && pipeInView) {
+      markPipelineScrolled?.();
+    }
+  }, [use3d, pipeInView, markPipelineScrolled]);
+
+  const layRef = useRef(null);
+  const layInView = useInView(layRef);
+  const { scrollYProgress: layScroll } = useScroll({
+    target: layRef,
+    offset: ['start start', 'end end'],
+  });
+  const spread = useTransform(layScroll, [0.1, 0.7], [0, 1]);
+
+  const handleHeroPointerMove = (e) => {
+    const el = heroRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    const my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+    requestAnimationFrame(() => {
+      el.style.setProperty('--mx', mx.toFixed(3));
+      el.style.setProperty('--my', my.toFixed(3));
+    });
+  };
+
+  const pipelineSteps = [
+    {
+      num: '01',
+      title: 'Readiness Profiling',
+      desc: 'Multi-source analysis across academic CGPA, verified projects, and mock scores.',
+    },
+    {
+      num: '02',
+      title: 'AI Matching & Scoring',
+      desc: 'Semantic skill-embedding comparison yielding explainable fit scores (0-100%).',
+    },
+    {
+      num: '03',
+      title: 'Conflict-Free Scheduling',
+      desc: 'Automated temporal & venue overlap mitigation across concurrent recruiter drives.',
+    },
+    {
+      num: '04',
+      title: 'Targeted Notifications',
+      desc: 'Real-time multi-channel alerts for shortlists, interviews, and compliance deadlines.',
+    },
+    {
+      num: '05',
+      title: 'Offer & Doc Tracking',
+      desc: 'End-to-end post-selection tracking from CTC verification to joining status.',
+    },
+    {
+      num: '06',
+      title: 'Predictive Analytics',
+      desc: 'Conversion rates, early warning for unplaced candidates, and recruiter ROI.',
+    },
+  ];
+
+  const desks = [
+    {
+      roman: 'I',
+      title: 'Student Desk',
+      desc: 'See your readiness score, diagnose skill gaps against target roles, and understand shortlisting factors.',
+      tags: 'READINESS · AI MATCH · INTERVIEWS',
+      path: '/student/overview',
+    },
+    {
+      roman: 'II',
+      title: 'Placement Directorate (Admin)',
+      desc: 'Audit student academic records, resolve venue double-booking with 1-click mitigation, and track at-risk candidates.',
+      tags: 'VERIFICATION · CONFLICTS · AT-RISK',
+      path: '/admin/command-center',
+    },
+    {
+      roman: 'III',
+      title: 'Corporate Recruiter',
+      desc: 'Rank candidates by semantic skill embeddings, inspect explainable bios, and schedule conflict-free interview slots.',
+      tags: 'PIPELINE · BIO DRAWER · SLOTS',
+      path: '/recruiter/overview',
+    },
+  ];
+
+  return (
+    <ReactLenis root>
+      <div
+        className={`min-h-screen text-fg selection:bg-accent-tint selection:text-fg relative ${
+          isNight ? 'bg-transparent' : 'bg-bg'
+        }`}
+      >
+        <IntroOverlay />
+        <Backdrop />
+        <JudgeGuide />
+
+        {/* Navigation Bar */}
+        <header
+          className={`sticky top-0 z-50 backdrop-blur-md border-b px-6 lg:px-12 h-16 flex items-center justify-between ${
+            isNight
+              ? 'bg-black/75 border-white/[0.09]'
+              : 'bg-bg/90 border-line'
+          }`}
+        >
+          <div className="flex items-baseline gap-1.5 select-none">
+            <span className="font-display font-medium text-2xl text-fg tracking-tight">
+              CampusLink
+            </span>
+            <span className="font-mono text-xs text-accent font-bold">.register</span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-wider text-fg-soft">
+            <a href="#pipeline" className="hover:text-fg transition-colors">Pipeline</a>
+            <a href="#desks" className="hover:text-fg transition-colors">Desks</a>
+            <a href="#architecture" className="hover:text-fg transition-colors">Architecture</a>
+            <a href="#metrics" className="hover:text-fg transition-colors">Metrics</a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {isNight ? (
+              <button
+                type="button"
+                onClick={() => navigate('/student/overview')}
+                className="rounded-full border border-white/25 bg-black/80 px-4 py-2 font-mono text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2"
+              >
+                <span>Launch Demo</span>
+                <span className="text-white/70">»</span>
+              </button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => navigate('/student/overview')}
+                icon={ArrowRight}
+              >
+                Launch System Demo
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {/* SCENE 1 WRAPPER: Full-Bleed Vortex Funnel in Dark Mode */}
+        <section
+          ref={heroRef}
+          onPointerMove={handleHeroPointerMove}
+          className={`relative overflow-hidden border-b ${
+            isNight ? 'bg-black border-white/[0.09]' : 'border-line'
+          }`}
+        >
+          {(use3d || isNight) && (
+            <div
+              className="absolute inset-0 z-0 pointer-events-none transition-transform duration-100 ease-out"
+              style={{ transform: 'translate3d(calc(var(--mx, 0) * -18px), 0, 0)' }}
+            >
+              <Suspense fallback={null}>
+                <HeroCanvas visible={inView} />
+              </Suspense>
+            </div>
+          )}
+
+          <div className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              {/* Left Column (7 cols): Editorial Typography */}
+              <div className="lg:col-span-7 space-y-6">
+                <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block">
+                  BPUT HACKATHON 2026 · PS10 PLACEMENT PLATFORM
+                </span>
+
+                <h1
+                  className={`font-display font-normal text-4xl sm:text-6xl tracking-tight leading-[1.04] ${
+                    isNight
+                      ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent'
+                      : 'text-fg'
+                  }`}
+                >
+                  Every shortlist,{' '}
+                  <span className="font-serif italic font-normal text-fg">
+                    <Mark delay={0.4}>explained.</Mark>
+                  </span>
+                </h1>
+
+                <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-xl">
+                  CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <span
+                    ref={magOpen.ref}
+                    onPointerMove={magOpen.onPointerMove}
+                    onPointerLeave={magOpen.onPointerLeave}
+                    className="inline-block"
+                  >
+                    {isNight ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById('desks');
+                          el?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="rounded-full bg-white text-black font-mono text-xs font-semibold uppercase tracking-wider px-6 py-3.5 hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+                      >
+                        Open the Demo Desks →
+                      </button>
+                    ) : (
+                      <Button
+                        size="lg"
+                        variant="primary"
+                        onClick={() => {
+                          const el = document.getElementById('desks');
+                          el?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        Open the Demo Desks →
+                      </Button>
+                    )}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('pipeline');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={
+                      isNight
+                        ? 'rounded-full border border-white/25 bg-black/60 backdrop-blur-md font-mono text-xs uppercase tracking-wider text-white hover:border-white/50 px-6 py-3.5 transition-all'
+                        : 'font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors'
+                    }
+                  >
+                    See the Pipeline ↓
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column (5 cols): "The Physical Register" Artifacts with Parallax */}
+              <div
+                className="lg:col-span-5 relative py-6 transition-transform duration-100 ease-out"
+                style={{
+                  transform:
+                    'translate3d(calc(var(--mx, 0) * 34px), calc(var(--my, 0) * 22px), 0)',
+                }}
+              >
+                {/* Artifact B (Conflict Slip behind, rotated -2deg) */}
+                <div
+                  ref={tiltB.ref}
+                  onPointerMove={tiltB.onPointerMove}
+                  onPointerLeave={tiltB.onPointerLeave}
+                  style={{ '--rot': '-2deg' }}
+                  className={`tilt absolute top-0 right-4 w-[85%] rounded-object border p-5 shadow-subtle select-none opacity-85 ${
+                    isNight
+                      ? 'bg-[#0A0A0E]/90 border-white/15 backdrop-blur-md'
+                      : 'bg-surface border-line'
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b border-line pb-2 mb-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft">
+                      RESOURCE SCHEDULE · LAB 4
+                    </span>
+                    <Stamp tone="brick" rotate={-3}>CLASH</Stamp>
+                  </div>
+                  <div className="h-4 w-full bg-bg rounded hatch-brick my-2" />
+                  <p className="font-mono text-[11px] text-brick leading-tight">
+                    Cognizant overlaps with Tech Mahindra, 10:00-12:00
+                  </p>
+                </div>
+
+                {/* Artifact A (Front Candidate Slip, rotated 1.5deg) */}
+                <motion.div
+                  ref={tiltA.ref}
+                  onPointerMove={tiltA.onPointerMove}
+                  onPointerLeave={tiltA.onPointerLeave}
+                  style={{ '--rot': '1.5deg' }}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  className={`tilt relative z-10 w-full rounded-object border p-6 shadow-object space-y-4 ${
+                    isNight
+                      ? 'bg-[#09090C]/85 border-white/15 backdrop-blur-xl'
+                      : 'glass-strong border-line'
+                  }`}
+                >
+                  <div className="flex items-start justify-between border-b border-line pb-3">
+                    <div>
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-fg-soft block">
+                        CANDIDATE · MICROSOFT INDIA SDE
+                      </span>
+                      <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
+                        Rohan Senapati
+                      </h3>
+                      <p className="font-mono text-xs text-fg-soft">
+                        BPUT · CSE · CGPA 9.12
+                      </p>
+                    </div>
+                    <Stamp tone="jade" rotate={-2}>SHORTLISTED</Stamp>
+                  </div>
+
+                  {/* Match bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between font-mono text-xs">
+                      <span className="text-fg-soft">AI Semantic Match</span>
+                      <strong className="text-fg font-mono">94% Fit</strong>
+                    </div>
+                    <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden border border-line">
+                      <div className="h-full bg-accent w-[94%]" />
+                    </div>
+                  </div>
+
+                  {/* Margin Note with Highlighters */}
+                  <MarginNote label="AI MATCH JUSTIFICATION" strong>
+                    Highly recommended: Candidate possesses verified proficiency in{' '}
+                    <Mark delay={0.8}>React</Mark>, <Mark delay={1.1}>Python</Mark>, and{' '}
+                    <Mark delay={1.4}>Data Structures</Mark>, comfortably exceeding the mock benchmark.
+                  </MarginNote>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* Register Ticker sits over the flared floor of Scene 1 */}
+          <div className="relative z-10">
+            <RegisterTicker />
+          </div>
+        </section>
+
+        {/* BELOW THE FOLD: Scene 2 (Vertical Light Streaks in Backdrop) takes over */}
+        <QronosDivider isNight={isNight} />
+
+        {/* 6-Step Pipeline Thread Section */}
+        {use3d ? (
+          <div id="pipeline" className="relative z-10">
+            <div className="pt-20 pb-8 px-6 lg:px-12 max-w-[1240px] mx-auto">
+              <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+                02 · THE PIPELINE
+              </span>
+              <h2 className="font-display font-normal text-3xl sm:text-5xl text-fg">
+                Six stages, one thread.
+              </h2>
+            </div>
+
+            <section ref={pipeRef} style={{ height: '500vh' }} className="relative">
+              <div
+                className={`sticky top-0 h-screen w-full overflow-hidden border-y ${
+                  isNight ? 'bg-black/45 backdrop-blur-[2px] border-white/[0.09]' : 'bg-bg border-line'
+                }`}
+              >
+                <div className="absolute inset-0 w-full h-full">
+                  <Suspense fallback={null}>
+                    <PipelineCanvas
+                      visible={pipeInView}
+                      progress={smoothPipe}
+                      labels={STEPS}
+                    />
+                  </Suspense>
+                </div>
+
+                <div className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 max-w-[420px] z-10 pointer-events-none">
+                  <div
+                    className={`rounded-object border p-8 space-y-4 shadow-object ${
+                      isNight
+                        ? 'bg-[#0A0A0E]/85 border-white/15 backdrop-blur-xl'
+                        : 'glass-strong border-line'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-line pb-2">
+                      <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep">
+                        STAGE {(currentStepIdx + 1).toString().padStart(2, '0')} / 06
+                      </span>
+                      <div className="h-1 w-24 bg-line rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-accent transition-all duration-300"
+                          style={{ width: `${((currentStepIdx + 1) / 6) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentStepIdx}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-3"
+                      >
+                        <span className="font-mono text-4xl font-bold text-accent block">
+                          {pipelineSteps[currentStepIdx].num}
+                        </span>
+                        <h3 className="font-display font-medium text-3xl sm:text-4xl text-fg leading-tight">
+                          {pipelineSteps[currentStepIdx].title}
+                        </h3>
+                        <p className="font-sans text-sm text-fg-soft leading-relaxed">
+                          {pipelineSteps[currentStepIdx].desc}
+                        </p>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <div className="absolute right-6 lg:right-12 bottom-8 z-10 pointer-events-none font-mono text-[11px] text-fg-soft/60 uppercase tracking-wider flex items-center gap-2">
+                  <span>SCROLL TO RIDE THE THREAD</span>
+                  <span>↓</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        ) : (
+          <section
+            id="pipeline"
+            className="relative z-10 py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line"
+          >
+            <div className="mb-12">
+              <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+                02 · THE PLACEMENT THREAD
+              </span>
+              <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
+                Six stages, one continuous pipeline.
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {pipelineSteps.map((step) => (
+                <div key={step.num} className="border-t-2 border-line pt-4 space-y-2">
+                  <span className="font-mono text-sm font-semibold text-accent-deep block">
+                    {step.num}
+                  </span>
+                  <h3 className="font-display font-medium text-xl text-fg">
+                    {step.title}
+                  </h3>
+                  <p className="font-sans text-xs sm:text-sm text-fg-soft leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <QronosDivider isNight={isNight} />
+
+        {/* Portals Section: Three Ruled Desks */}
+        <section
+          id="desks"
+          className="relative z-10 py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line"
+        >
+          <div className="mb-12">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+              03 · THREE UNIFIED DESKS
+            </span>
+            <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
+              One register, three connected perspectives.
+            </h2>
+          </div>
+
+          <div className="divide-y divide-line border-y border-line">
+            {desks.map((desk) => (
+              <div
+                key={desk.roman}
+                onClick={() => navigate(desk.path)}
+                className={`py-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 cursor-pointer group transition-colors px-4 ${
+                  isNight ? 'hover:bg-white/[0.04]' : 'hover:bg-surface/40'
+                }`}
+              >
+                <div className="flex items-start gap-6 min-w-0">
+                  <span className="font-display text-4xl text-fg-soft/40 font-normal shrink-0 group-hover:text-accent transition-colors">
+                    {desk.roman}
+                  </span>
+                  <div className="space-y-1">
+                    <h3 className="font-display font-medium text-2xl text-fg group-hover:text-fg transition-colors">
+                      {desk.title}
+                    </h3>
+                    <p className="font-sans text-sm text-fg-soft max-w-2xl leading-relaxed">
+                      {desk.desc}
+                    </p>
+                    <span className="font-mono text-[10.5px] uppercase tracking-wider text-fg-soft/80 block pt-1">
+                      {desk.tags}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2 font-mono text-xs font-semibold text-fg group-hover:text-accent-deep transition-colors">
+                  <span>OPEN DESK</span>
+                  <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <QronosDivider isNight={isNight} />
+
+        {/* Under the Hood Section */}
+        <div
+          id="architecture"
+          className={`relative z-10 text-dark-section-fg border-b border-white/10 ${
+            isNight ? 'bg-black/50 backdrop-blur-[2px]' : 'bg-dark-section'
+          }`}
+        >
+          {use3d ? (
+            <section ref={layRef} style={{ height: '250vh' }} className="relative">
+              <div
+                className={`sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-center px-6 lg:px-12 ${
+                  isNight ? 'bg-transparent' : 'bg-dark-section'
+                }`}
+              >
+                <div className="max-w-[1240px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full py-12">
+                  <div className="lg:col-span-5 space-y-6 z-10">
+                    <div>
+                      <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                        04 · UNDER THE HOOD
+                      </span>
+                      <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg leading-tight">
+                        Rules where rules belong. Models where they add value.
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4 pt-2">
+                      <div className="border-t border-white/10 pt-3">
+                        <h4 className="font-display font-medium text-base text-dark-section-fg">
+                          Rule + ML Hybrid Scoring
+                        </h4>
+                        <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                          Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                        </p>
+                      </div>
+
+                      <div className="border-t border-white/10 pt-3">
+                        <h4 className="font-display font-medium text-base text-dark-section-fg">
+                          Semantic Match Embeddings
+                        </h4>
+                        <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                          Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                        </p>
+                      </div>
+
+                      <div className="border-t border-white/10 pt-3">
+                        <h4 className="font-display font-medium text-base text-dark-section-fg">
+                          Interval Overlap Scheduling
+                        </h4>
+                        <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                          Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-7 h-[420px] lg:h-[560px] relative w-full">
+                    <Suspense fallback={null}>
+                      <LayersCanvas
+                        visible={layInView}
+                        spread={spread}
+                        labels={LAYERS}
+                      />
+                    </Suspense>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto space-y-12">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-6">
+                <div>
+                  <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                    04 · UNDER THE HOOD
+                  </span>
+                  <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg">
+                    Rules where rules belong. Models where they add value.
+                  </h2>
+                </div>
+                <span className="font-mono text-xs text-dark-section-fg/50 uppercase">
+                  BPUT PS10 ARCHITECTURE SPEC
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                    Rule + ML Hybrid Scoring
+                  </h4>
+                  <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                    Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                  </p>
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                    Semantic Match Embeddings
+                  </h4>
+                  <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                    Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                  </p>
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                    Interval Overlap Scheduling
+                  </h4>
+                  <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                    Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+
+        <QronosDivider isNight={isNight} />
+
+        {/* Metrics Section */}
+        <section id="metrics" className="relative z-10 py-16 px-6 lg:px-12 max-w-[1240px] mx-auto">
+          <StatStrip
+            items={[
+              { label: 'REGISTERED STUDENTS', value: 1420, hint: 'Across 6 BPUT disciplines' },
+              { label: 'HIRING PARTNERS', value: 42, hint: 'Active corporate JNFs' },
+              { label: 'PLACEMENT RATE', value: 78.4, decimals: 1, suffix: '%', hint: '↑ 12.8% vs last season' },
+              { label: 'HIGHEST CTC', value: 34.0, decimals: 1, prefix: '₹', suffix: ' LPA', hint: 'Cloud Systems Architect' },
+            ]}
+          />
+        </section>
+
+        {/* Qronos Scene 2 Closing CTA Banner (Dark Mode Showcase) */}
+        <section className="relative z-10 py-24 px-6 lg:px-12 max-w-[1240px] mx-auto text-center border-t border-line">
+          <h2
+            className={`font-display font-normal text-3xl sm:text-5xl tracking-tight max-w-2xl mx-auto leading-[1.1] ${
+              isNight
+                ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent'
+                : 'text-fg'
+            }`}
+          >
+            Stop babysitting spreadsheets.
+            <br />
+            Let the register own the drive.
+          </h2>
+          <p className="font-sans text-sm sm:text-base text-fg-soft max-w-lg mx-auto mt-4 leading-relaxed">
+            Turn every JNF, student verification, and interview slot into explainable, conflict-free placement workflows.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+            <button
+              type="button"
+              onClick={() => navigate('/student/overview')}
+              className={
+                isNight
+                  ? 'rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-6 py-3 font-mono text-xs uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all'
+                  : 'rounded-control border border-line bg-surface px-6 py-3 font-mono text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg transition-all'
+              }
+            >
+              Get Started »
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/command-center')}
+              className={
+                isNight
+                  ? 'rounded-full bg-white text-black px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all'
+                  : 'rounded-control bg-btn text-btn-fg px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-all'
+              }
+            >
+              Open Command Center
+            </button>
+          </div>
+        </section>
+
+        <QronosDivider isNight={isNight} />
+
+        {/* Institutional Footer */}
+        <footer
+          className={`relative z-10 border-t py-8 px-6 lg:px-12 font-mono text-xs text-fg-soft ${
+            isNight ? 'bg-black/80 border-white/[0.09]' : 'bg-surface/50 border-line'
+          }`}
+        >
+          <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span>CAMPUSLINK REGISTER</span> · <span>BPUT HACKATHON 2026</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-fg-soft/60">EFFECTS:</span>
+                <button
+                  type="button"
+                  onClick={() => setFxMode('full')}
+                  className={`hover:text-fg transition-colors ${
+                    mode === 'full'
+                      ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                      : 'text-fg-soft'
+                  }`}
+                >
+                  FULL
+                </button>
+                <span className="text-line">/</span>
+                <button
+                  type="button"
+                  onClick={() => setFxMode('lite')}
+                  className={`hover:text-fg transition-colors ${
+                    mode === 'lite'
+                      ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                      : 'text-fg-soft'
+                  }`}
+                >
+                  LITE
+                </button>
+              </div>
+              <div className="text-[11px] text-fg-soft/70 hidden sm:block">
+                SIMULATED CAMPUS RECRUITMENT DATASET
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </ReactLenis>
+  );
+}
+
+```
+
+---
+
+### 4. `src/components/ui/Card.jsx` & `src/index.css` (Obsidian Glass Cards over Scene 2)
+
+Update `src/components/ui/Card.jsx` so your Student, Recruiter, and Admin cards sit cleanly above the Scene 2 vertical streaks with Qronos obsidian glass styling in `'night'` mode:
+
+```jsx
+import React from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '../../lib/utils';
+
+export function Card({
+  children,
+  className,
+  hover = false,
+  object = false,
+  onClick,
+  ...props
+}) {
+  const Component = hover ? motion.div : 'div';
+  const hoverProps = hover
+    ? {
+        whileHover: { y: -2, transition: { duration: 0.15 } },
+      }
+    : {};
+
+  return (
+    <Component
+      onClick={onClick}
+      className={cn(
+        'relative overflow-hidden transition-all qronos-card',
+        object
+          ? 'glass-strong rounded-object p-5 shadow-object'
+          : 'bg-surface rounded-object border border-line p-5 shadow-subtle',
+        hover && 'cursor-pointer hover:border-ink/40',
+        className
+      )}
+      {...hoverProps}
+      {...props}
+    >
+      {children}
+    </Component>
+  );
+}
+
+```
+
+And append these rules to the bottom of `src/index.css`:
+
+```css
+/* Qronos Night Mode Overrides (Scene 2 Readability + Diagonal Hatch Dividers) */
+:root[data-theme='night'] {
+  --c-bg: 0 0 0;
+  --c-surface: 10 10 14;
+  --c-line: 38 38 44;
+  --c-sidebar: 5 5 8;
+}
+
+:root[data-theme='night'] .qronos-card {
+  background-color: rgba(10, 10, 14, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='night'] .qronos-hatch-divider {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.055) 0px,
+    rgba(255, 255, 255, 0.055) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+```
+
+And in `src/components/layout/AppShell.jsx`, make sure the `<div className="min-h-screen bg-bg ...">` root wrapper has `bg-transparent` when in `'night'` mode (or simply keep `--c-bg: 0 0 0` with `Backdrop` at `z-0` and `header` / `div.flex-1` at `relative z-10`) so the Scene 2 vertical streaks remain visible behind the Student, Recruiter, and Admin dashboards.

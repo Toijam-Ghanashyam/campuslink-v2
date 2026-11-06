@@ -21,11 +21,11 @@ export function Card({
     <Component
       onClick={onClick}
       className={cn(
-        'relative overflow-hidden transition-all',
+        'relative overflow-hidden transition-all qronos-card',
         object
           ? 'glass-strong rounded-object p-5 shadow-object'
           : 'bg-surface rounded-object border border-line p-5 shadow-subtle',
-        hover && 'cursor-pointer hover:border-ink/40',
+        hover && 'cursor-pointer hover:border-fg/40',
         className
       )}
       {...hoverProps}

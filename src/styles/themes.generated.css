@@ -40,11 +40,11 @@
 
 :root[data-theme='night'] {
   color-scheme: dark;
-  --c-bg: 9 13 22;
-  --c-surface: 17 24 39;
-  --c-fg: 248 250 252;
-  --c-fg-soft: 148 163 184;
-  --c-line: 30 41 59;
+  --c-bg: 0 0 0;
+  --c-surface: 10 10 14;
+  --c-fg: 255 255 255;
+  --c-fg-soft: 161 161 170;
+  --c-line: 38 38 46;
   --c-accent: 245 158 11;
   --c-accent-tint: 42 30 11;
   --c-accent-deep: 251 191 36;
@@ -54,25 +54,25 @@
   --c-brick-tint: 45 23 20;
   --c-lagoon: 45 212 191;
   --c-lagoon-light: 20 184 166;
-  --c-sidebar: 11 15 25;
-  --c-sidebar-fg: 248 250 252;
+  --c-sidebar: 5 5 8;
+  --c-sidebar-fg: 255 255 255;
   --c-btn: 245 158 11;
-  --c-btn-fg: 9 13 22;
-  --c-btn-hover: 248 250 252;
-  --c-btn-hover-fg: 9 13 22;
-  --c-dark-section: 11 15 25;
-  --c-dark-section-fg: 248 250 252;
-  --c-glass-base: 30 41 59;
-  --glass-alpha: 0.18;
-  --c-glass-border-base: 51 65 85;
-  --glass-border-alpha: 0.28;
-  --c-blob-a: 30 41 59;
-  --c-blob-b: 217 119 6;
+  --c-btn-fg: 0 0 0;
+  --c-btn-hover: 255 255 255;
+  --c-btn-hover-fg: 0 0 0;
+  --c-dark-section: 5 5 8;
+  --c-dark-section-fg: 255 255 255;
+  --c-glass-base: 10 10 14;
+  --glass-alpha: 0.78;
+  --c-glass-border-base: 255 255 255;
+  --glass-border-alpha: 0.09;
+  --c-blob-a: 0 0 0;
+  --c-blob-b: 245 158 11;
   --c-blob-c: 234 88 12;
   --mark-alpha: 0.30;
   --three-a: #F59E0B;
   --three-b: #EA580C;
   --three-dust: #FDE68A;
-  --three-edge: #94A3B8;
+  --three-edge: #A1A1AA;
   --three-additive: 1;
 }

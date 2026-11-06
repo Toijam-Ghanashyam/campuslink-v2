@@ -30,11 +30,14 @@ import { JudgeGuide } from './JudgeGuide';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Backdrop } from '../ui/Backdrop';
 import { PageTurnWipe } from '../ui/PageTurnWipe';
+import { useTheme } from '../../theme/ThemeProvider';
 import { cn } from '../../lib/utils';
 
 export function AppShell({ role = 'student', children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
+  const isNight = theme === 'night';
   const { currentStudent, notifications } = useStore();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -111,7 +114,12 @@ export function AppShell({ role = 'student', children }) {
   };
 
   return (
-    <div className="min-h-screen bg-bg text-fg flex flex-col antialiased relative">
+    <div
+      className={cn(
+        'min-h-screen text-fg flex flex-col antialiased relative',
+        isNight ? 'bg-black/40' : 'bg-bg'
+      )}
+    >
       <PageTurnWipe ref={wipeRef} />
       <Backdrop />
       <CommandPalette
@@ -124,31 +132,31 @@ export function AppShell({ role = 'student', children }) {
       <JudgeGuide />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur-sm border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
         {/* Brand & Mobile Hamburger */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 rounded-control text-ink hover:bg-bone transition-colors"
+            className="lg:hidden p-1.5 rounded-control text-fg hover:bg-surface/50 transition-colors"
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
           <NavLink to="/" className="flex items-baseline gap-1 group select-none">
-            <span className="font-display font-medium text-xl text-ink tracking-tight">CampusLink</span>
-            <span className="font-mono text-xs text-ochre font-bold">.register</span>
+            <span className="font-display font-medium text-xl text-fg tracking-tight">CampusLink</span>
+            <span className="font-mono text-xs text-accent font-bold">.register</span>
           </NavLink>
 
           <div className="hidden sm:block h-3.5 w-px bg-line mx-2" />
 
           {/* Institutional Tenant Label */}
           <div className="hidden sm:flex flex-col">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] font-semibold text-ochre-deep leading-none">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] font-semibold text-accent-deep leading-none">
               {currentTenant.tag}
             </span>
-            <span className="font-sans text-xs font-semibold text-ink leading-tight mt-0.5">
-              {currentTenant.title} <span className="font-normal text-ink-soft">({currentTenant.sub})</span>
+            <span className="font-sans text-xs font-semibold text-fg leading-tight mt-0.5">
+              {currentTenant.title} <span className="font-normal text-fg-soft">({currentTenant.sub})</span>
             </span>
           </div>
         </div>
@@ -158,11 +166,11 @@ export function AppShell({ role = 'student', children }) {
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="flex items-center gap-2.5 px-3 py-1 rounded-control border border-line bg-bone/40 hover:bg-bone hover:border-ink/40 text-ink-soft text-xs transition-all w-60 lg:w-72 select-none"
+            className="flex items-center gap-2.5 px-3 py-1 rounded-control border border-line bg-surface/40 hover:bg-surface hover:border-fg/40 text-fg-soft text-xs transition-all w-60 lg:w-72 select-none"
           >
-            <Search className="w-3.5 h-3.5 text-ink-soft" />
+            <Search className="w-3.5 h-3.5 text-fg-soft" />
             <span className="flex-1 text-left font-sans text-xs">Search or type a command...</span>
-            <kbd className="px-1.5 py-0.5 rounded-xs bg-paper border border-line font-mono text-[10px] text-ink-soft">
+            <kbd className="px-1.5 py-0.5 rounded-xs bg-surface border border-line font-mono text-[10px] text-fg-soft">
               Ctrl+K
             </kbd>
           </button>
@@ -173,7 +181,7 @@ export function AppShell({ role = 'student', children }) {
           <ThemeToggle />
 
           {/* Demo Role Switcher */}
-          <div className="bg-bg/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[11px] uppercase tracking-wider">
+          <div className="bg-surface/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[11px] uppercase tracking-wider">
             {['student', 'admin', 'recruiter'].map((r) => (
               <button
                 key={r}
@@ -196,11 +204,11 @@ export function AppShell({ role = 'student', children }) {
             <button
               type="button"
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative w-8 h-8 rounded-control border border-line bg-paper hover:bg-bone/80 flex items-center justify-center text-ink transition-colors"
+              className="relative w-8 h-8 rounded-control border border-line bg-surface hover:bg-surface/80 flex items-center justify-center text-fg transition-colors"
             >
               <Bell className="w-3.5 h-3.5 stroke-[1.75]" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-ochre" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" />
               )}
             </button>
             <NotificationPopover
@@ -272,11 +280,11 @@ export function AppShell({ role = 'student', children }) {
 
           {/* Sidebar Footer */}
           <div className="p-3 bg-white/5 rounded-control border border-white/10 font-mono text-[10px] text-sidebar-fg/60 space-y-1">
-            <div className="flex items-center justify-between text-bone/80 font-medium">
+            <div className="flex items-center justify-between text-sidebar-fg/80 font-medium">
               <span>BPUT PS10</span>
-              <span className="text-ochre">VERIFIED v2.2</span>
+              <span className="text-accent">VERIFIED v2.2</span>
             </div>
-            <p className="font-sans text-[10px] text-bone/50 leading-tight">
+            <p className="font-sans text-[10px] text-sidebar-fg/50 leading-tight">
               Institutional Placement Register & Semantic Engine
             </p>
           </div>
@@ -289,7 +297,7 @@ export function AppShell({ role = 'student', children }) {
               initial={{ opacity: 0, x: -200 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -200 }}
-              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-ink z-50 p-4 flex flex-col justify-between shadow-2xl pt-16"
+              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-sidebar z-50 p-4 flex flex-col justify-between shadow-2xl pt-16"
             >
               <div>
                 <nav className="space-y-1">

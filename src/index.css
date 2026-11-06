@@ -101,3 +101,30 @@ h1, h2, h3, .font-display {
     rgba(196, 67, 47, 0.28) 12px
   );
 }
+
+/* Qronos Night Mode Overrides (Scene 2 Readability + Diagonal Hatch Dividers) */
+:root[data-theme='night'] {
+  --c-bg: 0 0 0;
+  --c-surface: 10 10 14;
+  --c-line: 38 38 44;
+  --c-sidebar: 5 5 8;
+}
+
+:root[data-theme='night'] .qronos-card {
+  background-color: rgba(10, 10, 14, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='night'] .qronos-hatch-divider {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.055) 0px,
+    rgba(255, 255, 255, 0.055) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
