@@ -1,6 +1,13 @@
 import React, { useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useSpring,
+  useMotionValueEvent,
+  useTransform,
+} from 'framer-motion';
 import { ReactLenis } from 'lenis/react';
 import 'lenis/dist/lenis.css';
 import {
@@ -8,7 +15,7 @@ import {
   UserCheck,
   Building2,
   Briefcase,
-  Layers,
+  Layers as LayersIcon,
   CalendarCheck,
   BellRing,
   Award,
@@ -34,6 +41,7 @@ import { useFx, setFxMode } from '../../fx/useFx';
 
 const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
 const PipelineCanvas = lazy(() => import('../../three/PipelineCanvas.jsx'));
+const LayersCanvas = lazy(() => import('../../three/LayersCanvas.jsx'));
 
 const STEPS = [
   'Profiling',
@@ -42,6 +50,14 @@ const STEPS = [
   'Notification',
   'Offer tracking',
   'Analytics',
+];
+
+const LAYERS = [
+  'Data sources',
+  'Scoring & matching',
+  'Scheduler',
+  'Notifications',
+  'Dashboards',
 ];
 
 export function LandingPage() {
@@ -68,6 +84,14 @@ export function LandingPage() {
     const idx = Math.min(5, Math.max(0, Math.round(t * 6 - 0.5)));
     setCurrentStepIdx((prev) => (prev !== idx ? idx : prev));
   });
+
+  const layRef = useRef(null);
+  const layInView = useInView(layRef);
+  const { scrollYProgress: layScroll } = useScroll({
+    target: layRef,
+    offset: ['start start', 'end end'],
+  });
+  const spread = useTransform(layScroll, [0.1, 0.7], [0, 1]);
 
   const handleHeroPointerMove = (e) => {
     const el = heroRef.current;
@@ -413,10 +437,10 @@ export function LandingPage() {
       {/* Portals Section: Three Ruled Desks (Not Cards!) */}
       <section id="desks" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
         <div className="mb-12">
-          <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-ochre-deep block mb-1">
+          <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
             03 · THREE UNIFIED DESKS
           </span>
-          <h2 className="font-display font-normal text-3xl sm:text-4xl text-ink">
+          <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
             One register, three connected perspectives.
           </h2>
         </div>
@@ -426,26 +450,26 @@ export function LandingPage() {
             <div
               key={desk.roman}
               onClick={() => navigate(desk.path)}
-              className="py-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 cursor-pointer group hover:bg-bone/40 transition-colors px-2"
+              className="py-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 cursor-pointer group hover:bg-surface/40 transition-colors px-2"
             >
               <div className="flex items-start gap-6 min-w-0">
-                <span className="font-display text-4xl text-ink-soft/40 font-normal shrink-0 group-hover:text-ochre transition-colors">
+                <span className="font-display text-4xl text-fg-soft/40 font-normal shrink-0 group-hover:text-accent transition-colors">
                   {desk.roman}
                 </span>
                 <div className="space-y-1">
-                  <h3 className="font-display font-medium text-2xl text-ink group-hover:text-ink transition-colors">
+                  <h3 className="font-display font-medium text-2xl text-fg group-hover:text-fg transition-colors">
                     {desk.title}
                   </h3>
-                  <p className="font-sans text-sm text-ink-soft max-w-2xl leading-relaxed">
+                  <p className="font-sans text-sm text-fg-soft max-w-2xl leading-relaxed">
                     {desk.desc}
                   </p>
-                  <span className="font-mono text-[10.5px] uppercase tracking-wider text-ink-soft/80 block pt-1">
+                  <span className="font-mono text-[10.5px] uppercase tracking-wider text-fg-soft/80 block pt-1">
                     {desk.tags}
                   </span>
                 </div>
               </div>
 
-              <div className="shrink-0 flex items-center gap-2 font-mono text-xs font-semibold text-ink group-hover:text-ochre-deep transition-colors">
+              <div className="shrink-0 flex items-center gap-2 font-mono text-xs font-semibold text-fg group-hover:text-accent-deep transition-colors">
                 <span>OPEN DESK</span>
                 <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform" />
               </div>
@@ -455,80 +479,140 @@ export function LandingPage() {
       </section>
 
       {/* Under the Hood Section */}
-      <section id="architecture" className="py-20 bg-ink text-bone px-6 lg:px-12">
-        <div className="max-w-[1240px] mx-auto space-y-12">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-ochre block mb-1">
-                04 · UNDER THE HOOD
+      <div id="architecture" className="bg-dark-section text-dark-section-fg border-b border-white/10">
+        {use3d ? (
+          <section ref={layRef} style={{ height: '250vh' }} className="relative">
+            <div className="sticky top-0 h-screen w-full overflow-hidden bg-dark-section flex flex-col justify-center px-6 lg:px-12">
+              <div className="max-w-[1240px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full py-12">
+                {/* Left 5 Columns: Exploded Architecture Story */}
+                <div className="lg:col-span-5 space-y-6 z-10">
+                  <div>
+                    <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                      04 · UNDER THE HOOD
+                    </span>
+                    <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg leading-tight">
+                      Rules where rules belong. Models where they add value.
+                    </h2>
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Rule + ML Hybrid Scoring
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                      </p>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Semantic Match Embeddings
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                      </p>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-3">
+                      <h4 className="font-display font-medium text-base text-dark-section-fg">
+                        Interval Overlap Scheduling
+                      </h4>
+                      <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed mt-1">
+                        Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right 7 Columns: Exploded 3D Canvas */}
+                <div className="lg:col-span-7 h-[420px] lg:h-[560px] relative w-full">
+                  <Suspense fallback={null}>
+                    <LayersCanvas
+                      visible={layInView}
+                      spread={spread}
+                      labels={LAYERS}
+                    />
+                  </Suspense>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto space-y-12">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-6">
+              <div>
+                <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent block mb-1">
+                  04 · UNDER THE HOOD
+                </span>
+                <h2 className="font-display font-normal text-3xl sm:text-4xl text-dark-section-fg">
+                  Rules where rules belong. Models where they add value.
+                </h2>
+              </div>
+              <span className="font-mono text-xs text-dark-section-fg/50 uppercase">
+                BPUT PS10 ARCHITECTURE SPEC
               </span>
-              <h2 className="font-display font-normal text-3xl sm:text-4xl text-bone">
-                Rules where rules belong. Models where they add value.
-              </h2>
-            </div>
-            <span className="font-mono text-xs text-bone/50 uppercase">
-              BPUT PS10 ARCHITECTURE SPEC
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-2 border-t border-white/10 pt-4">
-              <h4 className="font-display font-medium text-lg text-bone">
-                Rule + ML Hybrid Scoring
-              </h4>
-              <p className="font-sans text-xs text-bone/70 leading-relaxed">
-                Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
-              </p>
             </div>
 
-            <div className="space-y-2 border-t border-white/10 pt-4">
-              <h4 className="font-display font-medium text-lg text-bone">
-                Semantic Match Embeddings
-              </h4>
-              <p className="font-sans text-xs text-bone/70 leading-relaxed">
-                Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Rule + ML Hybrid Scoring
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Academic thresholds (CGPA, backlogs, branch) are strictly enforced by deterministic logic, while project relevance and mock interviews are weighted by trained regression models.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Semantic Match Embeddings
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Candidate resumes and recruiter Job Notification Forms (JNFs) are parsed into normalized skill vectors to calculate cosine similarity fit scores without keyword stuffing bias.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="font-display font-medium text-lg text-dark-section-fg">
+                  Interval Overlap Scheduling
+                </h4>
+                <p className="font-sans text-xs text-dark-section-fg/70 leading-relaxed">
+                  Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2 border-t border-white/10 pt-4">
-              <h4 className="font-display font-medium text-lg text-bone">
-                Interval Overlap Scheduling
-              </h4>
-              <p className="font-sans text-xs text-bone/70 leading-relaxed">
-                Temporal interval intersection trees detect room collisions, candidate multi-shortlist clashes, and interview panel unavailability before drives are approved.
-              </p>
-            </div>
-          </div>
-
-          {/* Architecture Dataflow Box */}
-          <div className="p-6 rounded-object border border-white/10 bg-white/5 overflow-x-auto">
-            <span className="font-mono text-[10.5px] uppercase tracking-wider text-bone/50 block mb-4">
-              PLATFORM OPERATIONAL DATA FLOW
-            </span>
-            <div className="flex items-center justify-between gap-3 min-w-[720px] font-mono text-xs">
-              <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
-                <span className="text-ochre text-[10px] block">01 INPUT</span>
-                <span>Student Academic Records</span>
-              </div>
-              <span>→</span>
-              <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
-                <span className="text-ochre text-[10px] block">02 EVAL</span>
-                <span>Semantic Matching Engine</span>
-              </div>
-              <span>→</span>
-              <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
-                <span className="text-ochre text-[10px] block">03 SCHEDULE</span>
-                <span>Conflict-Free Allocator</span>
-              </div>
-              <span>→</span>
-              <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
-                <span className="text-ochre text-[10px] block">04 STORE</span>
-                <span>Shared Reactive State</span>
+            {/* Architecture Dataflow Box */}
+            <div data-lenis-prevent className="p-6 rounded-object border border-white/10 bg-white/5 overflow-x-auto">
+              <span className="font-mono text-[10.5px] uppercase tracking-wider text-dark-section-fg/50 block mb-4">
+                PLATFORM OPERATIONAL DATA FLOW
+              </span>
+              <div className="flex items-center justify-between gap-3 min-w-[720px] font-mono text-xs">
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">01 INPUT</span>
+                  <span>Student Academic Records</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">02 EVAL</span>
+                  <span>Semantic Matching Engine</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">03 SCHEDULE</span>
+                  <span>Conflict-Free Allocator</span>
+                </div>
+                <span>→</span>
+                <div className="p-3 bg-white/5 border border-white/10 rounded flex-1 text-center">
+                  <span className="text-accent text-[10px] block">04 STORE</span>
+                  <span>Shared Reactive State</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        )}
+      </div>
 
       {/* Metrics Section */}
       <section id="metrics" className="py-16 px-6 lg:px-12 max-w-[1240px] mx-auto">
