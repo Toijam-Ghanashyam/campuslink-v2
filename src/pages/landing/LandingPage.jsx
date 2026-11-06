@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -27,10 +27,16 @@ import { Backdrop } from '../../components/ui/Backdrop';
 import { IntroOverlay } from '../../components/ui/IntroOverlay';
 import { RegisterTicker } from '../../components/ui/RegisterTicker';
 import { useTilt, useMagnetic } from '../../fx/useTilt';
+import { useInView } from '../../fx/useInView';
+import { useFx, setFxMode } from '../../fx/useFx';
+
+const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
 
 export function LandingPage() {
   const navigate = useNavigate();
   const heroRef = useRef(null);
+  const inView = useInView(heroRef);
+  const { mode, use3d } = useFx();
   const tiltA = useTilt({ max: 5 });
   const tiltB = useTilt({ max: 5 });
   const magOpen = useMagnetic({ strength: 0.25 });
@@ -138,9 +144,20 @@ export function LandingPage() {
       <section
         ref={heroRef}
         onPointerMove={handleHeroPointerMove}
-        className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line relative"
+        className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line relative overflow-hidden"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        {use3d && (
+          <div
+            className="absolute inset-0 z-0 pointer-events-none transition-transform duration-100 ease-out"
+            style={{ transform: 'translate3d(calc(var(--mx, 0) * -22px), 0, 0)' }}
+          >
+            <Suspense fallback={null}>
+              <HeroCanvas visible={inView} />
+            </Suspense>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
           {/* Left Column (7 cols): Editorial Typography */}
           <div className="lg:col-span-7 space-y-6">
             <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block">
@@ -427,13 +444,41 @@ export function LandingPage() {
       </section>
 
       {/* Institutional Footer */}
-      <footer className="border-t border-line py-8 px-6 lg:px-12 bg-bone font-mono text-xs text-ink-soft">
+      <footer className="border-t border-line py-8 px-6 lg:px-12 bg-surface/50 font-mono text-xs text-fg-soft">
         <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-3">
             <span>CAMPUSLINK REGISTER</span> · <span>BPUT HACKATHON 2026</span>
           </div>
-          <div className="text-[11px] text-ink-soft/70">
-            SIMULATED CAMPUS RECRUITMENT DATASET · STRICT ODISHA INK PALETTE
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-fg-soft/60">EFFECTS:</span>
+              <button
+                type="button"
+                onClick={() => setFxMode('full')}
+                className={`hover:text-fg transition-colors ${
+                  mode === 'full'
+                    ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                    : 'text-fg-soft'
+                }`}
+              >
+                FULL
+              </button>
+              <span className="text-line">/</span>
+              <button
+                type="button"
+                onClick={() => setFxMode('lite')}
+                className={`hover:text-fg transition-colors ${
+                  mode === 'lite'
+                    ? 'text-fg font-bold underline underline-offset-4 decoration-accent'
+                    : 'text-fg-soft'
+                }`}
+              >
+                LITE
+              </button>
+            </div>
+            <div className="text-[11px] text-fg-soft/70 hidden sm:block">
+              SIMULATED CAMPUS RECRUITMENT DATASET
+            </div>
           </div>
         </div>
       </footer>

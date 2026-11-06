@@ -33,4 +33,19 @@
 @keyframes ticker { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
 
+/* 3D Scene Labels */
+.three-label {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgb(var(--c-fg));
+  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
+}
+
+
 
