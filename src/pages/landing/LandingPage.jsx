@@ -1,6 +1,8 @@
-import React, { useRef, lazy, Suspense } from 'react';
+import React, { useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
+import { ReactLenis } from 'lenis/react';
+import 'lenis/dist/lenis.css';
 import {
   ArrowRight,
   UserCheck,
@@ -31,6 +33,16 @@ import { useInView } from '../../fx/useInView';
 import { useFx, setFxMode } from '../../fx/useFx';
 
 const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
+const PipelineCanvas = lazy(() => import('../../three/PipelineCanvas.jsx'));
+
+const STEPS = [
+  'Profiling',
+  'Matching',
+  'Scheduling',
+  'Notification',
+  'Offer tracking',
+  'Analytics',
+];
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -40,6 +52,22 @@ export function LandingPage() {
   const tiltA = useTilt({ max: 5 });
   const tiltB = useTilt({ max: 5 });
   const magOpen = useMagnetic({ strength: 0.25 });
+
+  const pipeRef = useRef(null);
+  const pipeInView = useInView(pipeRef);
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+
+  const { scrollYProgress: pipeScroll } = useScroll({
+    target: pipeRef,
+    offset: ['start start', 'end end'],
+  });
+  const smoothPipe = useSpring(pipeScroll, { stiffness: 80, damping: 24 });
+
+  useMotionValueEvent(smoothPipe, 'change', (p) => {
+    const t = Math.min(Math.max(p, 0), 0.97);
+    const idx = Math.min(5, Math.max(0, Math.round(t * 6 - 0.5)));
+    setCurrentStepIdx((prev) => (prev !== idx ? idx : prev));
+  });
 
   const handleHeroPointerMove = (e) => {
     const el = heroRef.current;
@@ -111,9 +139,10 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
-      <IntroOverlay />
-      <Backdrop />
+    <ReactLenis root>
+      <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
+        <IntroOverlay />
+        <Backdrop />
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 bg-bg/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
         <div className="flex items-baseline gap-1.5 select-none">
@@ -283,33 +312,103 @@ export function LandingPage() {
       <RegisterTicker />
 
       {/* 6-Step Pipeline Thread Section */}
-      <section id="pipeline" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
-        <div className="mb-12">
-          <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-ochre-deep block mb-1">
-            02 · THE PLACEMENT THREAD
-          </span>
-          <h2 className="font-display font-normal text-3xl sm:text-4xl text-ink">
-            Six stages, one continuous pipeline.
-          </h2>
-        </div>
+      {use3d ? (
+        <div id="pipeline">
+          <div className="pt-20 pb-8 px-6 lg:px-12 max-w-[1240px] mx-auto">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+              02 · THE PIPELINE
+            </span>
+            <h2 className="font-display font-normal text-3xl sm:text-5xl text-fg">
+              Six stages, one thread.
+            </h2>
+          </div>
 
-        {/* 6 Steps Grid with Thread */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {pipelineSteps.map((step) => (
-            <div key={step.num} className="border-t-2 border-line pt-4 space-y-2">
-              <span className="font-mono text-sm font-semibold text-ochre-deep block">
-                {step.num}
-              </span>
-              <h3 className="font-display font-medium text-xl text-ink">
-                {step.title}
-              </h3>
-              <p className="font-sans text-xs sm:text-sm text-ink-soft leading-relaxed">
-                {step.desc}
-              </p>
+          <section ref={pipeRef} style={{ height: '500vh' }} className="relative">
+            <div className="sticky top-0 h-screen w-full overflow-hidden bg-bg border-y border-line">
+              {/* 3D Canvas Background */}
+              <div className="absolute inset-0 w-full h-full">
+                <Suspense fallback={null}>
+                  <PipelineCanvas
+                    visible={pipeInView}
+                    progress={smoothPipe}
+                    labels={STEPS}
+                  />
+                </Suspense>
+              </div>
+
+              {/* Step Overlay Card (Max 420px, left) */}
+              <div className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 max-w-[420px] z-10 pointer-events-none">
+                <div className="glass-strong rounded-object border border-line p-8 space-y-4 shadow-object">
+                  <div className="flex items-center justify-between border-b border-line pb-2">
+                    <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep">
+                      STAGE {(currentStepIdx + 1).toString().padStart(2, '0')} / 06
+                    </span>
+                    <div className="h-1 w-24 bg-line rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all duration-300"
+                        style={{ width: `${((currentStepIdx + 1) / 6) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStepIdx}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -12 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-3"
+                    >
+                      <span className="font-mono text-4xl font-bold text-accent block">
+                        {pipelineSteps[currentStepIdx].num}
+                      </span>
+                      <h3 className="font-display font-medium text-3xl sm:text-4xl text-fg leading-tight">
+                        {pipelineSteps[currentStepIdx].title}
+                      </h3>
+                      <p className="font-sans text-sm text-fg-soft leading-relaxed">
+                        {pipelineSteps[currentStepIdx].desc}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              <div className="absolute right-6 lg:right-12 bottom-8 z-10 pointer-events-none font-mono text-[11px] text-fg-soft/60 uppercase tracking-wider flex items-center gap-2">
+                <span>SCROLL TO RIDE THE THREAD</span>
+                <span>↓</span>
+              </div>
             </div>
-          ))}
+          </section>
         </div>
-      </section>
+      ) : (
+        <section id="pipeline" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
+          <div className="mb-12">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block mb-1">
+              02 · THE PLACEMENT THREAD
+            </span>
+            <h2 className="font-display font-normal text-3xl sm:text-4xl text-fg">
+              Six stages, one continuous pipeline.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {pipelineSteps.map((step) => (
+              <div key={step.num} className="border-t-2 border-line pt-4 space-y-2">
+                <span className="font-mono text-sm font-semibold text-accent-deep block">
+                  {step.num}
+                </span>
+                <h3 className="font-display font-medium text-xl text-fg">
+                  {step.title}
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-fg-soft leading-relaxed">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Portals Section: Three Ruled Desks (Not Cards!) */}
       <section id="desks" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
@@ -483,5 +582,6 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
-  );
+  </ReactLenis>
+);
 }
