@@ -47,5 +47,52 @@
   border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
 }
 
+/* Night Polish (P8) */
+:root[data-theme='night'] .score-dial-arc {
+  filter: drop-shadow(0 0 6px rgb(var(--c-accent) / 0.6));
+}
+:root[data-theme='night'] .score-dial-needle {
+  stroke: rgb(var(--c-fg));
+  filter: drop-shadow(0 0 4px rgb(var(--c-accent) / 0.6));
+}
+:root[data-theme='night'] .score-dial-hub {
+  fill: rgb(var(--c-accent));
+}
+
+:root[data-theme='night'] .match-bar-fill,
+:root[data-theme='night'] .timeline-thread {
+  box-shadow: var(--glow);
+}
+
+:root[data-theme='night'] .stamp-pill {
+  box-shadow: 0 0 12px -2px currentColor;
+}
+
+:root[data-theme='night'] .btn-primary:hover,
+:root[data-theme='night'] button.btn-primary:hover {
+  box-shadow: 0 0 24px -6px rgb(var(--c-accent) / 0.6);
+}
+
+/* Edge-lit hover on glass surfaces */
+.glass, .glass-strong {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+:root[data-theme='night'] .glass:hover,
+:root[data-theme='night'] .glass-strong:hover {
+  border-color: rgb(var(--c-accent) / 0.4);
+}
+
+/* Table row hover */
+tr {
+  transition: background-color 120ms ease;
+}
+tr:hover {
+  background-color: rgb(var(--c-fg) / 0.04);
+}
+:root[data-theme='night'] tr:hover {
+  background-color: rgb(var(--c-fg) / 0.06);
+}
+
+
 
 

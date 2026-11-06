@@ -3,18 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --bone: #F6F2E9;
-  --paper: #FFFDF8;
-  --ink: #14161C;
-  --ink-soft: #5B5F6B;
-  --line: #E6DFCF;
-  --ochre: #E8A33D;
-  --ochre-tint: #FBEFD5;
-  --ochre-deep: #8A5A0B;
-  --jade: #1F8A63;
-  --jade-tint: #DDF1E8;
-  --brick: #C4432F;
-  --brick-tint: #F8E1DC;
+  --bone: rgb(var(--c-bg));
+  --paper: rgb(var(--c-surface));
+  --ink: rgb(var(--c-fg));
+  --ink-soft: rgb(var(--c-fg-soft));
+  --line: rgb(var(--c-line));
+  --ochre: rgb(var(--c-accent));
+  --ochre-tint: rgb(var(--c-accent-tint));
+  --ochre-deep: rgb(var(--c-accent-deep));
+  --jade: rgb(var(--c-jade));
+  --jade-tint: rgb(var(--c-jade-tint));
+  --brick: rgb(var(--c-brick));
+  --brick-tint: rgb(var(--c-brick-tint));
 }
 
 /* Custom polished institutional scrollbar */

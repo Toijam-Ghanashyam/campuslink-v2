@@ -22,7 +22,7 @@ export const Button = React.forwardRef(({
   };
 
   const variantStyles = {
-    primary: 'bg-btn text-btn-fg hover:bg-btn/90 active:scale-[0.98]',
+    primary: 'btn-primary bg-btn text-btn-fg hover:bg-btn/90 active:scale-[0.98]',
     secondary: 'bg-surface text-fg border border-line hover:border-fg/40 hover:bg-bg/40 active:scale-[0.98]',
     ghost: 'text-fg hover:bg-bg/80',
     success: 'bg-jade text-surface hover:bg-jade/90',

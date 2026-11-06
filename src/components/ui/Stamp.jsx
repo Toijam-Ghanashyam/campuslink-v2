@@ -23,7 +23,7 @@ export function Stamp({
       <span
         style={{ transform: `rotate(${rotate}deg)` }}
         className={cn(
-          'inline-flex items-center justify-center font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold border-[1.5px] rounded-[3px] px-2 py-0.5 select-none leading-none shrink-0 shadow-xs',
+          'inline-flex items-center justify-center font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold border-[1.5px] rounded-[3px] px-2 py-0.5 select-none leading-none shrink-0 shadow-xs stamp-pill',
           tones[tone] || tones.ink,
           className
         )}
@@ -44,7 +44,7 @@ export function Stamp({
         mass: 0.8,
       }}
       className={cn(
-        'inline-flex items-center justify-center font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold border-[1.5px] rounded-[3px] px-2 py-0.5 select-none leading-none shrink-0 shadow-xs',
+        'inline-flex items-center justify-center font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold border-[1.5px] rounded-[3px] px-2 py-0.5 select-none leading-none shrink-0 shadow-xs stamp-pill',
         tones[tone] || tones.ink,
         className
       )}

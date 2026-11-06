@@ -93,6 +93,7 @@ export function ScoreDial({
 
           {/* Value Arc (solid Ochre, 5px) */}
           <path
+            className="score-dial-arc"
             d={`M ${cx - arcR} ${cy} A ${arcR} ${arcR} 0 0 1 ${cx + arcR} ${cy}`}
             fill="none"
             stroke="rgb(var(--c-accent))"
@@ -108,6 +109,7 @@ export function ScoreDial({
           {/* Needle Indicator */}
           <g transform={`translate(${cx}, ${cy}) rotate(${needleAngle})`}>
             <line
+              className="score-dial-needle"
               x1={0}
               y1={0}
               x2={0}
@@ -117,7 +119,7 @@ export function ScoreDial({
               strokeLinecap="round"
             />
             {/* Pivot Hub */}
-            <circle cx={0} cy={0} r={4.5} fill="rgb(var(--c-fg))" />
+            <circle className="score-dial-hub" cx={0} cy={0} r={4.5} fill="rgb(var(--c-fg))" />
             <circle cx={0} cy={0} r={1.5} fill="rgb(var(--c-surface))" />
           </g>
 
