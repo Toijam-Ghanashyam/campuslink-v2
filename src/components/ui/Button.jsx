@@ -22,12 +22,12 @@ export const Button = React.forwardRef(({
   };
 
   const variantStyles = {
-    primary: 'bg-ink text-bone hover:bg-ink/90 active:scale-[0.98]',
-    secondary: 'bg-paper text-ink border border-line hover:border-ink/40 hover:bg-bone/40 active:scale-[0.98]',
-    ghost: 'text-ink hover:bg-bone/80',
-    success: 'bg-jade text-bone hover:bg-jade/90',
-    danger: 'bg-brick text-bone hover:bg-brick/90',
-    accent: 'bg-ochre text-ink hover:bg-ochre/90 font-semibold',
+    primary: 'bg-btn text-btn-fg hover:bg-btn/90 active:scale-[0.98]',
+    secondary: 'bg-surface text-fg border border-line hover:border-fg/40 hover:bg-bg/40 active:scale-[0.98]',
+    ghost: 'text-fg hover:bg-bg/80',
+    success: 'bg-jade text-surface hover:bg-jade/90',
+    danger: 'bg-brick text-surface hover:bg-brick/90',
+    accent: 'bg-accent text-btn-fg hover:bg-accent/90 font-semibold',
   };
 
   return (

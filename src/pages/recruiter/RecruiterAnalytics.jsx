@@ -12,9 +12,11 @@ import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { StatStrip } from '../../components/ui/StatStrip';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useThemeTokens } from '../../theme/useThemeTokens';
 
 export function RecruiterAnalytics() {
   const { analytics } = useStore();
+  const themeTokens = useThemeTokens();
 
   const branchData = analytics.recruiterBranchBreakdown || [];
   const matchData = analytics.aiMatchDistribution || [];
@@ -65,26 +67,26 @@ export function RecruiterAnalytics() {
                 data={branchData}
                 margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
                 <XAxis
                   dataKey="branch"
-                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: '#F6F2E9' }}
+                  cursor={{ fill: themeTokens.bg }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px]">
+                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] border border-line">
                           <p className="font-bold">{payload[0].payload.branch}</p>
-                          <p className="text-ochre">{payload[0].value} candidates</p>
+                          <p className="text-accent">{payload[0].value} candidates</p>
                         </div>
                       );
                     }
@@ -93,7 +95,7 @@ export function RecruiterAnalytics() {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#14161C"
+                  fill={themeTokens.fg}
                   radius={[3, 3, 0, 0]}
                   animationDuration={900}
                 />
@@ -105,7 +107,7 @@ export function RecruiterAnalytics() {
         {/* AI Match Distribution (6 cols) */}
         <div className="lg:col-span-6 space-y-3">
           <div className="border-b border-line pb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-fg-soft">
               02 · AI MATCH SCORE SPREAD
             </span>
             <span className="font-mono text-[10px] text-jade uppercase font-semibold">
@@ -119,26 +121,26 @@ export function RecruiterAnalytics() {
                 data={matchData}
                 margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
                 <XAxis
                   dataKey="range"
-                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: '#F6F2E9' }}
+                  cursor={{ fill: themeTokens.bg }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px]">
+                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] border border-line">
                           <p className="font-bold">{payload[0].payload.range}</p>
-                          <p className="text-ochre">{payload[0].value} applicants</p>
+                          <p className="text-accent">{payload[0].value} applicants</p>
                         </div>
                       );
                     }
@@ -147,7 +149,7 @@ export function RecruiterAnalytics() {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#E8A33D"
+                  fill={themeTokens.accent}
                   radius={[3, 3, 0, 0]}
                   animationDuration={900}
                 />

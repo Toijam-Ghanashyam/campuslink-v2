@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion';
 
 // Providers & Layout
+import { ThemeProvider } from './theme/ThemeProvider';
 import { StoreProvider } from './lib/store';
 import { ToastProvider } from './components/ui/Toast';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -211,13 +212,15 @@ function AnimatedAppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <StoreProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <AnimatedAppRoutes />
-          </BrowserRouter>
-        </ToastProvider>
-      </StoreProvider>
+      <ThemeProvider>
+        <StoreProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <AnimatedAppRoutes />
+            </BrowserRouter>
+          </ToastProvider>
+        </StoreProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

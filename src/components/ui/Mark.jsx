@@ -13,8 +13,8 @@ export function Mark({
   if (shouldReduceMotion) {
     return (
       <span className={cn('relative inline-block font-semibold', className)}>
-        <span className="absolute inset-x-0 bottom-0.5 h-[55%] bg-ochre/30 -z-10 rounded-xs" />
-        <span className="relative z-0 text-ink">{children}</span>
+        <span className="absolute inset-x-0 bottom-0.5 h-[55%] bg-accent/35 -z-10 rounded-xs" />
+        <span className="relative z-0 text-fg">{children}</span>
       </span>
     );
   }
@@ -31,9 +31,9 @@ export function Mark({
           ease: [0.22, 1, 0.36, 1],
         }}
         style={{ originX: 0 }}
-        className="absolute inset-x-0 bottom-0.5 h-[55%] bg-ochre/35 -z-10 rounded-xs"
+        className="absolute inset-x-0 bottom-0.5 h-[55%] bg-accent/35 -z-10 rounded-xs"
       />
-      <span className="relative z-0 text-ink">{children}</span>
+      <span className="relative z-0 text-fg">{children}</span>
     </span>
   );
 }

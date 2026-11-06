@@ -76,7 +76,7 @@ export function ScoreDial({
               y1={t.y1}
               x2={t.x2}
               y2={t.y2}
-              stroke={t.isMajor ? '#14161C' : '#E6DFCF'}
+              stroke={t.isMajor ? 'rgb(var(--c-fg))' : 'rgb(var(--c-line))'}
               strokeWidth={t.isMajor ? 1.5 : 1}
               strokeLinecap="round"
             />
@@ -86,7 +86,7 @@ export function ScoreDial({
           <path
             d={`M ${cx - arcR} ${cy} A ${arcR} ${arcR} 0 0 1 ${cx + arcR} ${cy}`}
             fill="none"
-            stroke="#E6DFCF"
+            stroke="rgb(var(--c-line))"
             strokeWidth={3}
             strokeLinecap="round"
           />
@@ -95,7 +95,7 @@ export function ScoreDial({
           <path
             d={`M ${cx - arcR} ${cy} A ${arcR} ${arcR} 0 0 1 ${cx + arcR} ${cy}`}
             fill="none"
-            stroke="#E8A33D"
+            stroke="rgb(var(--c-accent))"
             strokeWidth={5}
             strokeLinecap="round"
             strokeDasharray={arcLength}
@@ -112,37 +112,37 @@ export function ScoreDial({
               y1={0}
               x2={0}
               y2={-arcR + 4}
-              stroke="#14161C"
+              stroke="rgb(var(--c-fg))"
               strokeWidth={1.75}
               strokeLinecap="round"
             />
             {/* Pivot Hub */}
-            <circle cx={0} cy={0} r={4.5} fill="#14161C" />
-            <circle cx={0} cy={0} r={1.5} fill="#FFFDF8" />
+            <circle cx={0} cy={0} r={4.5} fill="rgb(var(--c-fg))" />
+            <circle cx={0} cy={0} r={1.5} fill="rgb(var(--c-surface))" />
           </g>
 
           {/* Scale Labels */}
-          <text x={cx - arcR} y={cy + 14} textAnchor="middle" className="font-mono text-[9px] fill-ink-soft">
+          <text x={cx - arcR} y={cy + 14} textAnchor="middle" className="font-mono text-[9px] fill-[rgb(var(--c-fg-soft))]">
             0
           </text>
-          <text x={cx} y={cy - arcR - 4} textAnchor="middle" className="font-mono text-[9px] fill-ink-soft">
+          <text x={cx} y={cy - arcR - 4} textAnchor="middle" className="font-mono text-[9px] fill-[rgb(var(--c-fg-soft))]">
             50
           </text>
-          <text x={cx + arcR} y={cy + 14} textAnchor="middle" className="font-mono text-[9px] fill-ink-soft">
+          <text x={cx + arcR} y={cy + 14} textAnchor="middle" className="font-mono text-[9px] fill-[rgb(var(--c-fg-soft))]">
             100
           </text>
         </svg>
 
         {/* Dial Center Reading */}
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-          <div className="font-display text-5xl text-ink tabular-nums leading-none tracking-tight">
+          <div className="font-display text-5xl text-fg tabular-nums leading-none tracking-tight">
             {Math.round(displayValue)}
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] font-semibold text-ochre-deep mt-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] font-semibold text-accent-deep mt-1">
             {level}
           </span>
           {label && (
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft/80 mt-0.5">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-fg-soft/80 mt-0.5">
               {label}
             </span>
           )}
@@ -150,7 +150,7 @@ export function ScoreDial({
       </div>
 
       {subtext && (
-        <p className="font-sans text-xs text-ink-soft mt-3 max-w-[240px] leading-relaxed">
+        <p className="font-sans text-xs text-fg-soft mt-3 max-w-[240px] leading-relaxed">
           {subtext}
         </p>
       )}

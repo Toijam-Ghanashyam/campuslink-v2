@@ -1,0 +1,78 @@
+/* GENERATED from src/theme/tokens.js. Do not edit. */
+:root[data-theme='day'] {
+  color-scheme: light;
+  --c-bg: 244 245 247;
+  --c-surface: 255 255 255;
+  --c-fg: 14 18 27;
+  --c-fg-soft: 71 85 105;
+  --c-line: 226 232 240;
+  --c-accent: 217 119 6;
+  --c-accent-tint: 254 243 199;
+  --c-accent-deep: 146 64 14;
+  --c-jade: 11 104 70;
+  --c-jade-tint: 225 246 237;
+  --c-brick: 168 42 24;
+  --c-brick-tint: 251 232 229;
+  --c-lagoon: 9 100 94;
+  --c-lagoon-light: 94 234 212;
+  --c-sidebar: 14 18 27;
+  --c-sidebar-fg: 248 250 252;
+  --c-btn: 14 18 27;
+  --c-btn-fg: 248 250 252;
+  --c-btn-hover: 217 119 6;
+  --c-btn-hover-fg: 14 18 27;
+  --c-dark-section: 14 18 27;
+  --c-dark-section-fg: 248 250 252;
+  --c-glass-base: 255 255 255;
+  --glass-alpha: 0.72;
+  --c-glass-border-base: 255 255 255;
+  --glass-border-alpha: 0.85;
+  --c-blob-a: 203 213 225;
+  --c-blob-b: 253 230 138;
+  --c-blob-c: 254 205 211;
+  --mark-alpha: 0.55;
+  --three-a: #D97706;
+  --three-b: #09645E;
+  --three-dust: #D97706;
+  --three-edge: #09645E;
+  --three-additive: 0;
+}
+
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --c-bg: 9 13 22;
+  --c-surface: 17 24 39;
+  --c-fg: 248 250 252;
+  --c-fg-soft: 148 163 184;
+  --c-line: 30 41 59;
+  --c-accent: 245 158 11;
+  --c-accent-tint: 42 30 11;
+  --c-accent-deep: 251 191 36;
+  --c-jade: 60 203 139;
+  --c-jade-tint: 18 37 27;
+  --c-brick: 255 106 85;
+  --c-brick-tint: 45 23 20;
+  --c-lagoon: 45 212 191;
+  --c-lagoon-light: 20 184 166;
+  --c-sidebar: 11 15 25;
+  --c-sidebar-fg: 248 250 252;
+  --c-btn: 245 158 11;
+  --c-btn-fg: 9 13 22;
+  --c-btn-hover: 248 250 252;
+  --c-btn-hover-fg: 9 13 22;
+  --c-dark-section: 11 15 25;
+  --c-dark-section-fg: 248 250 252;
+  --c-glass-base: 30 41 59;
+  --glass-alpha: 0.18;
+  --c-glass-border-base: 51 65 85;
+  --glass-border-alpha: 0.28;
+  --c-blob-a: 30 41 59;
+  --c-blob-b: 217 119 6;
+  --c-blob-c: 234 88 12;
+  --mark-alpha: 0.30;
+  --three-a: #F59E0B;
+  --three-b: #EA580C;
+  --three-dust: #FDE68A;
+  --three-edge: #94A3B8;
+  --three-additive: 1;
+}

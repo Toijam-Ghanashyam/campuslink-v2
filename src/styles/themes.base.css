@@ -1,0 +1,18 @@
+:root[data-theme='day'] {
+  --glass-blur: 22px; --glass-saturate: 1.6; --glass-highlight: 0.9;
+  --glass-shadow: 0 10px 40px -12px rgb(14 18 27 / 0.12);
+  --grain-opacity: 0.025;
+  --backdrop-a-alpha: 0.45; --backdrop-b-alpha: 0.4; --backdrop-c-alpha: 0.35;
+  --glow: 0 0 0 0 transparent;
+}
+:root[data-theme='night'] {
+  --glass-blur: 18px; --glass-saturate: 1.2; --glass-highlight: 0.1;
+  --glass-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.7);
+  --grain-opacity: 0.05;
+  --backdrop-a-alpha: 0.08; --backdrop-b-alpha: 0.16; --backdrop-c-alpha: 0.1;
+  --glow: 0 0 14px rgb(245 158 11 / 0.45);
+}
+:focus-visible { outline: 2px solid rgb(var(--c-lagoon)); outline-offset: 2px; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }

@@ -23,8 +23,8 @@ export function Card({
       className={cn(
         'relative overflow-hidden transition-all',
         object
-          ? 'bg-paper rounded-object border border-line p-5 shadow-object'
-          : 'bg-paper rounded-object border border-line p-5 shadow-subtle',
+          ? 'glass-strong rounded-object p-5 shadow-object'
+          : 'bg-surface rounded-object border border-line p-5 shadow-subtle',
         hover && 'cursor-pointer hover:border-ink/40',
         className
       )}

@@ -27,6 +27,8 @@ import { useStore } from '../../lib/store';
 import { CommandPalette } from './CommandPalette';
 import { NotificationPopover } from './NotificationPopover';
 import { JudgeGuide } from './JudgeGuide';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { Backdrop } from '../ui/Backdrop';
 import { cn } from '../../lib/utils';
 
 export function AppShell({ role = 'student', children }) {
@@ -98,7 +100,8 @@ export function AppShell({ role = 'student', children }) {
   };
 
   return (
-    <div className="min-h-screen bg-bone flex flex-col antialiased">
+    <div className="min-h-screen bg-bg text-fg flex flex-col antialiased relative">
+      <Backdrop />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -109,7 +112,7 @@ export function AppShell({ role = 'student', children }) {
       <JudgeGuide />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur-sm border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur-sm border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
         {/* Brand & Mobile Hamburger */}
         <div className="flex items-center gap-3">
           <button
@@ -153,10 +156,12 @@ export function AppShell({ role = 'student', children }) {
           </button>
         </div>
 
-        {/* Right Action Stack: Demo Role Switcher + Notifs + Profile */}
+        {/* Right Action Stack: ThemeToggle + Demo Role Switcher + Notifs + Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           {/* Demo Role Switcher */}
-          <div className="bg-bone/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[11px] uppercase tracking-wider">
+          <div className="bg-bg/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[11px] uppercase tracking-wider">
             {['student', 'admin', 'recruiter'].map((r) => (
               <button
                 key={r}
@@ -165,8 +170,8 @@ export function AppShell({ role = 'student', children }) {
                 className={cn(
                   'px-2.5 py-1 rounded-xs transition-all font-semibold select-none',
                   role === r
-                    ? 'bg-ink text-bone shadow-xs'
-                    : 'text-ink-soft hover:text-ink'
+                    ? 'bg-btn text-btn-fg shadow-xs'
+                    : 'text-fg-soft hover:text-fg'
                 )}
               >
                 {r}
@@ -194,7 +199,7 @@ export function AppShell({ role = 'student', children }) {
           </div>
 
           {/* User Profile Avatar */}
-          <div className="w-7 h-7 rounded-full bg-ink text-bone font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0">
+          <div className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line">
             {currentTenant.avatar}
           </div>
         </div>
@@ -203,10 +208,10 @@ export function AppShell({ role = 'student', children }) {
       {/* Main Body */}
       <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
         {/* Left Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-60 bg-ink text-bone border-r border-ink/40 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] p-3.5 justify-between">
+        <aside className="hidden lg:flex flex-col w-60 bg-sidebar text-sidebar-fg border-r border-line shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] p-3.5 justify-between">
           <div>
             <div className="px-3 py-2 mb-2">
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] font-semibold text-bone/45">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] font-semibold text-sidebar-fg/45">
                 INDEX · NAVIGATION
               </span>
             </div>
@@ -222,20 +227,20 @@ export function AppShell({ role = 'student', children }) {
                     className={cn(
                       'relative flex items-center justify-between px-3 py-2 rounded-control text-xs font-medium transition-all group select-none',
                       isActive
-                        ? 'text-bone bg-white/10 font-semibold'
-                        : 'text-bone/70 hover:text-bone hover:bg-white/5'
+                        ? 'text-sidebar-fg bg-white/10 font-semibold'
+                        : 'text-sidebar-fg/70 hover:text-sidebar-fg hover:bg-white/5'
                     )}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-[10px] text-bone/40 group-hover:text-bone/70 shrink-0">
+                      <span className="font-mono text-[10px] text-sidebar-fg/40 group-hover:text-sidebar-fg/70 shrink-0">
                         {item.num}
                       </span>
-                      <Icon className={cn('w-3.5 h-3.5 shrink-0', isActive ? 'text-ochre' : 'text-bone/60')} />
+                      <Icon className={cn('w-3.5 h-3.5 shrink-0', isActive ? 'text-accent' : 'text-sidebar-fg/60')} />
                       <span className="truncate">{item.label}</span>
                     </div>
 
                     {item.badge && (
-                      <span className="font-mono text-[9px] px-1.5 py-0.2 rounded-xs bg-ochre text-ink font-semibold uppercase">
+                      <span className="font-mono text-[9px] px-1.5 py-0.2 rounded-xs bg-accent text-btn-fg font-semibold uppercase">
                         {item.badge}
                       </span>
                     )}
@@ -243,7 +248,7 @@ export function AppShell({ role = 'student', children }) {
                     {isActive && (
                       <motion.div
                         layoutId="sidebarActiveMarker"
-                        className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-ochre rounded-r-full"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent rounded-r-full"
                         transition={{ type: 'spring', stiffness: 450, damping: 30 }}
                       />
                     )}
@@ -254,7 +259,7 @@ export function AppShell({ role = 'student', children }) {
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-3 bg-white/5 rounded-control border border-white/10 font-mono text-[10px] text-bone/60 space-y-1">
+          <div className="p-3 bg-white/5 rounded-control border border-white/10 font-mono text-[10px] text-sidebar-fg/60 space-y-1">
             <div className="flex items-center justify-between text-bone/80 font-medium">
               <span>BPUT PS10</span>
               <span className="text-ochre">VERIFIED v2.2</span>

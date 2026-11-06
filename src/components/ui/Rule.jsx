@@ -14,7 +14,7 @@ export function Rule({
       <hr
         className={cn(
           'w-full border-0 my-6',
-          strong ? 'h-px bg-ink/60' : 'h-px bg-line',
+          strong ? 'h-px bg-fg/60' : 'h-px bg-line',
           className
         )}
       />
@@ -30,7 +30,7 @@ export function Rule({
       style={{ originX: 0 }}
       className={cn(
         'w-full my-6',
-        strong ? 'h-px bg-ink/60' : 'h-px bg-line',
+        strong ? 'h-px bg-fg/60' : 'h-px bg-line',
         className
       )}
     />

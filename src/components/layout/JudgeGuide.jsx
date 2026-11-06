@@ -154,9 +154,9 @@ export function JudgeGuide() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-control bg-ink text-bone font-mono text-[11px] uppercase tracking-wider font-semibold hover:bg-ink/90 active:scale-95 transition-all shadow-subtle border border-ink"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-control bg-sidebar text-sidebar-fg font-mono text-[11px] uppercase tracking-wider font-semibold hover:bg-sidebar/90 active:scale-95 transition-all shadow-subtle border border-line"
       >
-        <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
         <span>GUIDE {completedCount}/6</span>
       </button>
     </div>

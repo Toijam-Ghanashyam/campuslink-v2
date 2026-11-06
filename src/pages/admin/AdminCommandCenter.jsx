@@ -18,10 +18,12 @@ import { Button } from '../../components/ui/Button';
 import { Drawer } from '../../components/ui/Drawer';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useThemeTokens } from '../../theme/useThemeTokens';
 
 export function AdminCommandCenter() {
   const { analytics } = useStore();
   const { toast } = useToast();
+  const themeTokens = useThemeTokens();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [formCompany, setFormCompany] = useState('');
@@ -89,28 +91,28 @@ export function AdminCommandCenter() {
                 data={analytics.branchConversion}
                 margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
                 <XAxis
                   dataKey="branch"
-                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                   domain={[0, 100]}
                 />
                 <Tooltip
-                  cursor={{ fill: '#F6F2E9' }}
+                  cursor={{ fill: themeTokens.bg }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px] space-y-0.5">
+                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] space-y-0.5 border border-line">
                           <p className="font-bold">{payload[0].payload.branch}</p>
-                          <p className="text-ochre">{payload[0].value}% Placed</p>
-                          <p className="text-bone/60">{payload[0].payload.placed} of {payload[0].payload.total} candidates</p>
+                          <p className="text-accent">{payload[0].value}% Placed</p>
+                          <p className="text-sidebar-fg/60">{payload[0].payload.placed} of {payload[0].payload.total} candidates</p>
                         </div>
                       );
                     }
@@ -119,7 +121,7 @@ export function AdminCommandCenter() {
                 />
                 <Bar
                   dataKey="conversion"
-                  fill="#14161C"
+                  fill={themeTokens.fg}
                   radius={[3, 3, 0, 0]}
                   animationDuration={900}
                 />
@@ -148,26 +150,26 @@ export function AdminCommandCenter() {
                 data={analytics.packageTrend}
                 margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6DFCF" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
                 <XAxis
                   dataKey="year"
-                  tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
-                  axisLine={{ stroke: '#E6DFCF' }}
+                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                  axisLine={{ stroke: themeTokens.line }}
                   tickLine={false}
                 />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-ink text-bone p-2 rounded-xs font-mono text-[11px] space-y-0.5">
+                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] space-y-0.5 border border-line">
                           <p className="font-bold">Season {payload[0].payload.year}</p>
-                          <p className="text-ochre">Highest: ₹{payload[1]?.value} LPA</p>
-                          <p className="text-bone/80">Average: ₹{payload[0]?.value} LPA</p>
+                          <p className="text-accent">Highest: ₹{payload[1]?.value} LPA</p>
+                          <p className="text-sidebar-fg/80">Average: ₹{payload[0]?.value} LPA</p>
                         </div>
                       );
                     }
@@ -177,17 +179,17 @@ export function AdminCommandCenter() {
                 <Line
                   type="monotone"
                   dataKey="avg"
-                  stroke="#14161C"
+                  stroke={themeTokens.lagoon}
                   strokeWidth={2}
-                  dot={{ fill: '#14161C', r: 3 }}
+                  dot={{ fill: themeTokens.lagoon, r: 3 }}
                   name="Average"
                 />
                 <Line
                   type="monotone"
                   dataKey="highest"
-                  stroke="#E8A33D"
+                  stroke={themeTokens.accent}
                   strokeWidth={2.5}
-                  dot={{ fill: '#E8A33D', r: 4 }}
+                  dot={{ fill: themeTokens.accent, r: 4 }}
                   name="Highest"
                 />
               </LineChart>

@@ -1,3 +1,5 @@
+const c = (n) => `rgb(var(--c-${n}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,24 +9,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        bone: '#F6F2E9',
-        paper: '#FFFDF8',
-        ink: '#14161C',
-        'ink-soft': '#5B5F6B',
-        line: '#E6DFCF',
-        ochre: '#E8A33D',
-        'ochre-tint': '#FBEFD5',
-        'ochre-deep': '#8A5A0B',
-        jade: '#1F8A63',
-        'jade-tint': '#DDF1E8',
-        brick: '#C4432F',
-        'brick-tint': '#F8E1DC',
+        bg: c('bg'), surface: c('surface'), fg: c('fg'), 'fg-soft': c('fg-soft'), line: c('line'),
+        accent: c('accent'), 'accent-tint': c('accent-tint'), 'accent-deep': c('accent-deep'),
+        jade: c('jade'), 'jade-tint': c('jade-tint'), brick: c('brick'), 'brick-tint': c('brick-tint'),
+        lagoon: c('lagoon'), sidebar: c('sidebar'), 'sidebar-fg': c('sidebar-fg'),
+        btn: c('btn'), 'btn-fg': c('btn-fg'), 'btn-hover': c('btn-hover'), 'btn-hover-fg': c('btn-hover-fg'),
+        'dark-section': c('dark-section'), 'dark-section-fg': c('dark-section-fg'),
+        glass: 'rgb(var(--c-glass-base) / var(--glass-alpha))',
+        'glass-border': 'rgb(var(--c-glass-border-base) / var(--glass-border-alpha))',
+        // legacy aliases so nothing breaks while migrating
+        bone: c('bg'), paper: c('surface'), ink: c('fg'), 'ink-soft': c('fg-soft'),
+        ochre: c('accent'), 'ochre-tint': c('accent-tint'), 'ochre-deep': c('accent-deep'),
       },
       fontFamily: {
-        display: ["'Newsreader Variable'", 'Newsreader', 'Georgia', 'serif'],
+        display: ['"Plus Jakarta Sans"', '-apple-system', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
         serif: ["'Newsreader Variable'", 'Newsreader', 'Georgia', 'serif'],
-        sans: ["'Instrument Sans Variable'", "'Instrument Sans'", '-apple-system', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       boxShadow: {
         subtle: '0 1px 2px rgba(20, 22, 28, 0.04)',

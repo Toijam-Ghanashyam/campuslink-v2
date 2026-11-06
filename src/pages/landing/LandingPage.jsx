@@ -22,6 +22,8 @@ import { Mark } from '../../components/ui/Mark';
 import { MarginNote } from '../../components/ui/MarginNote';
 import { Rule } from '../../components/ui/Rule';
 import { StatStrip } from '../../components/ui/StatStrip';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { Backdrop } from '../../components/ui/Backdrop';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -84,22 +86,24 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-bone text-ink selection:bg-ochre-tint selection:text-ink">
+    <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
+      <Backdrop />
       {/* Navigation Bar */}
-      <header className="sticky top-0 z-50 bg-bone/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-bg/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
         <div className="flex items-baseline gap-1.5 select-none">
-          <span className="font-display font-medium text-2xl text-ink tracking-tight">CampusLink</span>
-          <span className="font-mono text-xs text-ochre font-bold">.register</span>
+          <span className="font-display font-medium text-2xl text-fg tracking-tight">CampusLink</span>
+          <span className="font-mono text-xs text-accent font-bold">.register</span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-wider text-ink-soft">
-          <a href="#pipeline" className="hover:text-ink transition-colors">Pipeline</a>
-          <a href="#desks" className="hover:text-ink transition-colors">Desks</a>
-          <a href="#architecture" className="hover:text-ink transition-colors">Architecture</a>
-          <a href="#metrics" className="hover:text-ink transition-colors">Metrics</a>
+        <nav className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-wider text-fg-soft">
+          <a href="#pipeline" className="hover:text-fg transition-colors">Pipeline</a>
+          <a href="#desks" className="hover:text-fg transition-colors">Desks</a>
+          <a href="#architecture" className="hover:text-fg transition-colors">Architecture</a>
+          <a href="#metrics" className="hover:text-fg transition-colors">Metrics</a>
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Button
             variant="primary"
             onClick={() => navigate('/student/overview')}

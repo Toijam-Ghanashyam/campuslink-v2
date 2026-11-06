@@ -38,14 +38,14 @@ export function NotificationPopover({ open, onClose, role }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.96 }}
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute right-0 top-12 w-80 sm:w-96 bg-paper rounded-2xl border border-line shadow-2xl z-50 overflow-hidden"
+          className="absolute right-0 top-12 w-80 sm:w-96 glass-strong rounded-object border border-line shadow-2xl z-50 overflow-hidden"
         >
           {/* Header */}
-          <div className="p-4 border-b border-line flex items-center justify-between bg-paper">
+          <div className="p-4 border-b border-line flex items-center justify-between bg-surface">
             <div className="flex items-center gap-2">
-              <span className="font-display font-semibold text-base text-ink">Notifications</span>
+              <span className="font-display font-semibold text-base text-fg">Notifications</span>
               {unreadCount > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-ochre-tint text-ochre-deep font-semibold">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-accent-tint text-accent-deep font-semibold">
                   {unreadCount} new
                 </span>
               )}
@@ -54,7 +54,7 @@ export function NotificationPopover({ open, onClose, role }) {
               <button
                 type="button"
                 onClick={() => markAllNotificationsRead(role)}
-                className="text-xs text-ink-soft hover:text-ochre-deep flex items-center gap-1 transition-colors"
+                className="text-xs text-fg-soft hover:text-accent-deep flex items-center gap-1 transition-colors"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 <span>Mark all read</span>

@@ -14,8 +14,8 @@ export function Stamp({
   const tones = {
     jade: 'border-jade text-jade bg-jade-tint/25',
     brick: 'border-brick text-brick bg-brick-tint/25',
-    ochre: 'border-ochre text-ochre-deep bg-ochre-tint/30',
-    ink: 'border-ink text-ink bg-bone/40',
+    ochre: 'border-accent text-accent-deep bg-accent-tint/30',
+    ink: 'border-fg text-fg bg-bg/40',
   };
 
   if (shouldReduceMotion || !animate) {

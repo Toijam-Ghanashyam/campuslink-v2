@@ -32,10 +32,10 @@ export function ToastProvider({ children }) {
   };
 
   const toneStyles = {
-    jade: 'bg-paper text-ink border-jade/40 shadow-hover text-jade',
-    brick: 'bg-paper text-ink border-brick/40 shadow-hover text-brick',
-    ochre: 'bg-paper text-ink border-ochre/50 shadow-hover text-ochre-deep',
-    ink: 'bg-ink text-bone border-ink/40 shadow-hover text-bone',
+    jade: 'bg-surface text-fg border-jade/40 shadow-hover text-jade',
+    brick: 'bg-surface text-fg border-brick/40 shadow-hover text-brick',
+    ochre: 'bg-surface text-fg border-accent/50 shadow-hover text-accent-deep',
+    ink: 'bg-sidebar text-sidebar-fg border-line shadow-hover',
   };
 
   return (
