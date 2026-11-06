@@ -19,11 +19,13 @@ import { Drawer } from '../../components/ui/Drawer';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { useThemeTokens } from '../../theme/useThemeTokens';
+import { useMagnetic } from '../../fx/useTilt';
 
 export function AdminCommandCenter() {
   const { analytics } = useStore();
   const { toast } = useToast();
   const themeTokens = useThemeTokens();
+  const magAuth = useMagnetic({ strength: 0.25 });
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [formCompany, setFormCompany] = useState('');
@@ -52,13 +54,20 @@ export function AdminCommandCenter() {
         title="Placement Command Center."
         lede="Overseeing 1,420 registered candidates across 6 engineering disciplines and 42 active corporate recruitment partners."
         action={
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => setDrawerOpen(true)}
+          <span
+            ref={magAuth.ref}
+            onPointerMove={magAuth.onPointerMove}
+            onPointerLeave={magAuth.onPointerLeave}
+            className="inline-block"
           >
-            Authorize New Drive
-          </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setDrawerOpen(true)}
+            >
+              Authorize New Drive
+            </Button>
+          </span>
         }
       />
 

@@ -8,10 +8,12 @@ import { TagInput } from '../../components/ui/TagInput';
 import { Callout } from '../../components/ui/Callout';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useTilt } from '../../fx/useTilt';
 
 export function StudentProfile() {
   const { currentStudent, submitProfile } = useStore();
   const { toast } = useToast();
+  const recordTilt = useTilt({ max: 5 });
 
   const [skills, setSkills] = useState(currentStudent.skills || ['React', 'Node.js', 'Python', 'PostgreSQL', 'Tailwind CSS']);
   const [submitting, setSubmitting] = useState(false);
@@ -54,7 +56,12 @@ export function StudentProfile() {
       />
 
       {/* Academic Record Slip (L2 Object) */}
-      <div className="bg-paper rounded-object border border-line p-6 shadow-object space-y-4">
+      <div
+        ref={recordTilt.ref}
+        onPointerMove={recordTilt.onPointerMove}
+        onPointerLeave={recordTilt.onPointerLeave}
+        className="tilt glass-strong rounded-object border border-line p-6 shadow-object space-y-4"
+      >
         <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4 text-ink-soft stroke-[1.75]" />

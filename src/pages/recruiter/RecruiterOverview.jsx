@@ -9,10 +9,12 @@ import { Drawer } from '../../components/ui/Drawer';
 import { TagInput } from '../../components/ui/TagInput';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useMagnetic } from '../../fx/useTilt';
 
 export function RecruiterOverview() {
   const { analytics, pipeline, recruiterScheduledCount } = useStore();
   const { toast } = useToast();
+  const magJnf = useMagnetic({ strength: 0.25 });
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [jobRole, setJobRole] = useState('');
@@ -40,13 +42,20 @@ export function RecruiterOverview() {
         title="Associate Software Engineer."
         lede="Drive: Associate SDE 2026. 342 BPUT candidates pre-screened; 48 match above the 85% benchmark."
         action={
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => setDrawerOpen(true)}
+          <span
+            ref={magJnf.ref}
+            onPointerMove={magJnf.onPointerMove}
+            onPointerLeave={magJnf.onPointerLeave}
+            className="inline-block"
           >
-            Post New JNF
-          </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setDrawerOpen(true)}
+            >
+              Post New JNF
+            </Button>
+          </span>
         }
       />
 

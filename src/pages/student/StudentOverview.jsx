@@ -7,10 +7,12 @@ import { ScoreDial } from '../../components/ui/ScoreDial';
 import { Stamp } from '../../components/ui/Stamp';
 import { Rule } from '../../components/ui/Rule';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useTilt } from '../../fx/useTilt';
 import { cn } from '../../lib/utils';
 
 export function StudentOverview() {
   const { currentStudent, applications, studentInterviews } = useStore();
+  const dialTilt = useTilt({ max: 5 });
 
   const initialGaps = [
     { id: 'gap-1', skill: 'Cloud Infrastructure (AWS / Azure)', points: 4, inProgress: false },
@@ -85,7 +87,12 @@ export function StudentOverview() {
           </div>
 
           {/* Instrument Paper Object */}
-          <div className="bg-paper rounded-object border border-line p-6 shadow-object flex flex-col items-center">
+          <div
+            ref={dialTilt.ref}
+            onPointerMove={dialTilt.onPointerMove}
+            onPointerLeave={dialTilt.onPointerLeave}
+            className="tilt glass-strong rounded-object border border-line p-6 shadow-object flex flex-col items-center"
+          >
             <ScoreDial
               value={currentScore}
               size={230}

@@ -8,7 +8,53 @@ import { Stamp } from '../../components/ui/Stamp';
 import { Mark } from '../../components/ui/Mark';
 import { MarginNote } from '../../components/ui/MarginNote';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { useTilt } from '../../fx/useTilt';
 import { cn } from '../../lib/utils';
+
+function OfferLetterCard({ offer }) {
+  const tilt = useTilt({ max: 5 });
+  return (
+    <div
+      ref={tilt.ref}
+      onPointerMove={tilt.onPointerMove}
+      onPointerLeave={tilt.onPointerLeave}
+      className="tilt glass-strong rounded-object border border-line p-6 shadow-object space-y-4 max-w-2xl"
+    >
+      <div className="flex items-start justify-between border-b border-line pb-4">
+        <div>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft block">
+            AUTHENTICATED OFFER RECORD · BPUT SEASON 2026
+          </span>
+          <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
+            {offer.company}
+          </h3>
+          <p className="font-mono text-xs text-fg-soft mt-0.5">
+            CTC: <strong className="text-fg font-mono text-base">{offer.ctc}</strong> · Joining: {offer.joiningDate}
+          </p>
+        </div>
+        <Stamp tone="jade">{offer.status}</Stamp>
+      </div>
+
+      <div>
+        <span className="font-mono text-[10.5px] uppercase tracking-wider text-fg-soft font-semibold block mb-2">
+          Joining Document Checklist
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
+          {offer.documents.map((doc, dIdx) => (
+            <div key={dIdx} className="p-2.5 bg-bg/50 rounded-xs border border-line flex items-center justify-between">
+              <span className="text-fg">{doc.name}</span>
+              {doc.status === 'verified' ? (
+                <span className="text-jade font-semibold">✓ Done</span>
+              ) : (
+                <span className="text-accent-deep font-semibold">Pending</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function StudentApplications() {
   const { applications, offers } = useStore();
@@ -197,43 +243,7 @@ export function StudentApplications() {
       {activeTab === 'offers' && (
         <div className="space-y-6">
           {studentOffers.map((offer) => (
-            <div
-              key={offer.id}
-              className="bg-paper rounded-object border border-line p-6 shadow-object space-y-4 max-w-2xl"
-            >
-              <div className="flex items-start justify-between border-b border-line pb-4">
-                <div>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft block">
-                    AUTHENTICATED OFFER RECORD · BPUT SEASON 2026
-                  </span>
-                  <h3 className="font-display font-medium text-2xl text-ink mt-0.5">
-                    {offer.company}
-                  </h3>
-                  <p className="font-mono text-xs text-ink-soft mt-0.5">
-                    CTC: <strong className="text-ink font-display text-base">{offer.ctc}</strong> · Joining: {offer.joiningDate}
-                  </p>
-                </div>
-                <Stamp tone="jade">{offer.status}</Stamp>
-              </div>
-
-              <div>
-                <span className="font-mono text-[10.5px] uppercase tracking-wider text-ink-soft font-semibold block mb-2">
-                  Joining Document Checklist
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
-                  {offer.documents.map((doc, dIdx) => (
-                    <div key={dIdx} className="p-2.5 bg-bone/50 rounded-xs border border-line flex items-center justify-between">
-                      <span className="text-ink">{doc.name}</span>
-                      {doc.status === 'verified' ? (
-                        <span className="text-jade font-semibold">✓ Done</span>
-                      ) : (
-                        <span className="text-ochre-deep font-semibold">Pending</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <OfferLetterCard key={offer.id} offer={offer} />
           ))}
         </div>
       )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -24,9 +24,28 @@ import { Rule } from '../../components/ui/Rule';
 import { StatStrip } from '../../components/ui/StatStrip';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
 import { Backdrop } from '../../components/ui/Backdrop';
+import { IntroOverlay } from '../../components/ui/IntroOverlay';
+import { RegisterTicker } from '../../components/ui/RegisterTicker';
+import { useTilt, useMagnetic } from '../../fx/useTilt';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const heroRef = useRef(null);
+  const tiltA = useTilt({ max: 5 });
+  const tiltB = useTilt({ max: 5 });
+  const magOpen = useMagnetic({ strength: 0.25 });
+
+  const handleHeroPointerMove = (e) => {
+    const el = heroRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    const my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+    requestAnimationFrame(() => {
+      el.style.setProperty('--mx', mx.toFixed(3));
+      el.style.setProperty('--my', my.toFixed(3));
+    });
+  };
 
   const pipelineSteps = [
     {
@@ -87,6 +106,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
+      <IntroOverlay />
       <Backdrop />
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 bg-bg/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
@@ -115,60 +135,80 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section: Asymmetric 12-Column Grid */}
-      <section className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">
+      <section
+        ref={heroRef}
+        onPointerMove={handleHeroPointerMove}
+        className="pt-16 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line relative"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column (7 cols): Editorial Typography */}
           <div className="lg:col-span-7 space-y-6">
-            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-ochre-deep block">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] font-semibold text-accent-deep block">
               BPUT HACKATHON 2026 · PS10 PLACEMENT PLATFORM
             </span>
 
-            <h1 className="font-display font-normal text-4xl sm:text-6xl text-ink tracking-tight leading-[1.04]">
+            <h1 className="font-display font-normal text-4xl sm:text-6xl text-fg tracking-tight leading-[1.04]">
               Every shortlist,{' '}
               <span className="font-serif italic font-normal">
                 <Mark delay={0.4}>explained.</Mark>
               </span>
             </h1>
 
-            <p className="font-sans text-base sm:text-lg text-ink-soft leading-relaxed max-w-xl">
+            <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-xl">
               CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Button
-                size="lg"
-                variant="primary"
-                onClick={() => {
-                  const el = document.getElementById('desks');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
+              <span
+                ref={magOpen.ref}
+                onPointerMove={magOpen.onPointerMove}
+                onPointerLeave={magOpen.onPointerLeave}
+                className="inline-block"
               >
-                Open the Demo Desks →
-              </Button>
+                <Button
+                  size="lg"
+                  variant="primary"
+                  onClick={() => {
+                    const el = document.getElementById('desks');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  Open the Demo Desks →
+                </Button>
+              </span>
               <button
                 type="button"
                 onClick={() => {
                   const el = document.getElementById('pipeline');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="font-mono text-xs uppercase tracking-wider font-semibold text-ink-soft hover:text-ink px-4 py-3 transition-colors"
+                className="font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors"
               >
                 See the Pipeline ↓
               </button>
             </div>
           </div>
 
-          {/* Right Column (5 cols): "The Physical Register" Artifacts */}
-          <div className="lg:col-span-5 relative py-6">
+          {/* Right Column (5 cols): "The Physical Register" Artifacts with Parallax */}
+          <div
+            className="lg:col-span-5 relative py-6 transition-transform duration-100 ease-out"
+            style={{ transform: 'translate3d(calc(var(--mx, 0) * 34px), calc(var(--my, 0) * 22px), 0)' }}
+          >
             {/* Artifact B (Conflict Slip behind, rotated -2deg) */}
-            <div className="absolute top-0 right-4 w-[85%] bg-paper rounded-object border border-line p-5 shadow-subtle transform -rotate-2 select-none pointer-events-none opacity-85">
+            <div
+              ref={tiltB.ref}
+              onPointerMove={tiltB.onPointerMove}
+              onPointerLeave={tiltB.onPointerLeave}
+              style={{ '--rot': '-2deg' }}
+              className="tilt absolute top-0 right-4 w-[85%] bg-surface rounded-object border border-line p-5 shadow-subtle select-none opacity-85"
+            >
               <div className="flex items-center justify-between border-b border-line pb-2 mb-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft">
                   RESOURCE SCHEDULE · LAB 4
                 </span>
                 <Stamp tone="brick" rotate={-3}>CLASH</Stamp>
               </div>
-              <div className="h-4 w-full bg-bone rounded hatch-brick my-2" />
+              <div className="h-4 w-full bg-bg rounded hatch-brick my-2" />
               <p className="font-mono text-[11px] text-brick leading-tight">
                 Cognizant overlaps with Tech Mahindra, 10:00-12:00
               </p>
@@ -176,20 +216,24 @@ export function LandingPage() {
 
             {/* Artifact A (Front Candidate Slip, rotated 1.5deg) */}
             <motion.div
+              ref={tiltA.ref}
+              onPointerMove={tiltA.onPointerMove}
+              onPointerLeave={tiltA.onPointerLeave}
+              style={{ '--rot': '1.5deg' }}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="relative z-10 w-full bg-paper rounded-object border border-line p-6 shadow-object transform rotate-1 space-y-4"
+              className="tilt relative z-10 w-full glass-strong rounded-object border border-line p-6 shadow-object space-y-4"
             >
               <div className="flex items-start justify-between border-b border-line pb-3">
                 <div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-ink-soft block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-fg-soft block">
                     CANDIDATE · MICROSOFT INDIA SDE
                   </span>
-                  <h3 className="font-display font-medium text-2xl text-ink mt-0.5">
+                  <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
                     Rohan Senapati
                   </h3>
-                  <p className="font-mono text-xs text-ink-soft">
+                  <p className="font-mono text-xs text-fg-soft">
                     BPUT · CSE · CGPA 9.12
                   </p>
                 </div>
@@ -199,11 +243,11 @@ export function LandingPage() {
               {/* Match bar */}
               <div className="space-y-1">
                 <div className="flex justify-between font-mono text-xs">
-                  <span className="text-ink-soft">AI Semantic Match</span>
-                  <strong className="text-ink">94% Fit</strong>
+                  <span className="text-fg-soft">AI Semantic Match</span>
+                  <strong className="text-fg font-mono">94% Fit</strong>
                 </div>
-                <div className="h-1.5 w-full bg-bone rounded-full overflow-hidden border border-line">
-                  <div className="h-full bg-ochre w-[94%]" />
+                <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden border border-line">
+                  <div className="h-full bg-accent w-[94%]" />
                 </div>
               </div>
 
@@ -217,6 +261,9 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Register Ticker */}
+      <RegisterTicker />
 
       {/* 6-Step Pipeline Thread Section */}
       <section id="pipeline" className="py-20 px-6 lg:px-12 max-w-[1240px] mx-auto border-b border-line">

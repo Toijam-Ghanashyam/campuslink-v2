@@ -17,3 +17,4 @@ const block = (name, t) => {
 mkdirSync('src/styles', { recursive: true });
 writeFileSync('src/styles/themes.generated.css', `/* GENERATED from src/theme/tokens.js. Do not edit. */\n${block('day', tokens.day)}\n${block('night', tokens.night)}`);
 console.log('themes.generated.css written');
+

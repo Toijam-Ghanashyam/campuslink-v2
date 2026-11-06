@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,6 +29,7 @@ import { NotificationPopover } from './NotificationPopover';
 import { JudgeGuide } from './JudgeGuide';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Backdrop } from '../ui/Backdrop';
+import { PageTurnWipe } from '../ui/PageTurnWipe';
 import { cn } from '../../lib/utils';
 
 export function AppShell({ role = 'student', children }) {
@@ -91,16 +92,27 @@ export function AppShell({ role = 'student', children }) {
   };
 
   const currentTenant = tenantDetails[role];
+  const wipeRef = useRef(null);
 
   const handleRoleSwitch = (newRole) => {
     if (newRole === role) return;
-    if (newRole === 'student') navigate('/student/overview');
-    if (newRole === 'admin') navigate('/admin/command-center');
-    if (newRole === 'recruiter') navigate('/recruiter/overview');
+    const dest =
+      newRole === 'student'
+        ? '/student/overview'
+        : newRole === 'admin'
+        ? '/admin/command-center'
+        : '/recruiter/overview';
+
+    if (wipeRef.current) {
+      wipeRef.current.start(() => navigate(dest));
+    } else {
+      navigate(dest);
+    }
   };
 
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col antialiased relative">
+      <PageTurnWipe ref={wipeRef} />
       <Backdrop />
       <CommandPalette
         open={paletteOpen}

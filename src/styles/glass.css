@@ -19,3 +19,18 @@
 @keyframes drift-b { to { transform: translate3d(-6vmax, 4vmax, 0) scale(1.1); } }
 @keyframes drift-c { to { transform: translate3d(4vmax, -5vmax, 0) scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .backdrop i { animation: none; } }
+
+/* Tilt & Specular Reflection */
+.tilt { position: relative; transform: perspective(900px) rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+.tilt::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.25s; background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.35), transparent 60%); }
+.tilt:hover::after { opacity: 1; }
+:root[data-theme='night'] .tilt::after { background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 225 190 / 0.16), transparent 60%); }
+
+/* Register Marquee Ticker */
+.ticker { overflow: hidden; border-block: 1px solid rgb(var(--c-line)); }
+.ticker-track { display: flex; width: max-content; gap: 48px; animation: ticker 60s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+
+

@@ -31,3 +31,4 @@ for (const [name, t] of Object.entries(tokens)) {
 }
 console.log(fail ? `\n${fail} contrast check(s) FAILED` : `\nALL CONTRAST CHECKS PASSED (lowest ratio ${lowest.toFixed(2)})`);
 process.exit(fail ? 1 : 0);
+
