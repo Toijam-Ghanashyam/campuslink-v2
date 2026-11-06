@@ -12,14 +12,14 @@ export function EmptyState({
   className,
 }) {
   return (
-    <div className={cn('p-12 text-center rounded-2xl border border-dashed border-line bg-paper/50 flex flex-col items-center justify-center', className)}>
-      <div className="w-12 h-12 rounded-2xl bg-bone flex items-center justify-center text-ink-soft mb-3 border border-line">
+    <div className={cn('p-12 text-center rounded-object border border-dashed border-line bg-surface/50 flex flex-col items-center justify-center', className)}>
+      <div className="w-12 h-12 rounded-object bg-bg flex items-center justify-center text-fg-soft mb-3 border border-line">
         <Icon className="w-6 h-6 stroke-[1.5]" />
       </div>
-      <h4 className="font-display font-semibold text-lg text-ink">
+      <h4 className="font-display font-semibold text-lg text-fg">
         {title}
       </h4>
-      <p className="text-xs sm:text-sm text-ink-soft max-w-sm mt-1 mb-5 leading-relaxed">
+      <p className="text-xs sm:text-sm text-fg-soft max-w-sm mt-1 mb-5 leading-relaxed">
         {description}
       </p>
       {actionLabel && onAction && (

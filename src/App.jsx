@@ -41,11 +41,11 @@ import { useNavigate } from 'react-router-dom';
 function NotFound() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-bone flex items-center justify-center p-6 text-center">
-      <div className="max-w-md bg-paper p-8 rounded-2xl border border-line shadow-subtle space-y-4">
-        <span className="font-display font-bold text-5xl text-ochre">404</span>
-        <h2 className="font-display font-semibold text-2xl text-ink">Page Not Found</h2>
-        <p className="text-xs text-ink-soft">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-6 text-center">
+      <div className="max-w-md bg-surface p-8 rounded-object border border-line shadow-object space-y-4">
+        <span className="font-display font-bold text-5xl text-accent">404</span>
+        <h2 className="font-display font-semibold text-2xl text-fg">Page Not Found</h2>
+        <p className="text-xs text-fg-soft">
           The requested placement portal link does not exist or has been relocated.
         </p>
         <Button variant="primary" onClick={() => navigate('/')} className="w-full">

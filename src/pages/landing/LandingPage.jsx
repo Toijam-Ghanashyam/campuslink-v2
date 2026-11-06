@@ -38,6 +38,8 @@ import { RegisterTicker } from '../../components/ui/RegisterTicker';
 import { useTilt, useMagnetic } from '../../fx/useTilt';
 import { useInView } from '../../fx/useInView';
 import { useFx, setFxMode } from '../../fx/useFx';
+import { useStore } from '../../lib/store';
+import { JudgeGuide } from '../../components/layout/JudgeGuide';
 
 const HeroCanvas = lazy(() => import('../../three/HeroCanvas.jsx'));
 const PipelineCanvas = lazy(() => import('../../three/PipelineCanvas.jsx'));
@@ -62,6 +64,7 @@ const LAYERS = [
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { markPipelineScrolled } = useStore();
   const heroRef = useRef(null);
   const inView = useInView(heroRef);
   const { mode, use3d } = useFx();
@@ -83,7 +86,16 @@ export function LandingPage() {
     const t = Math.min(Math.max(p, 0), 0.97);
     const idx = Math.min(5, Math.max(0, Math.round(t * 6 - 0.5)));
     setCurrentStepIdx((prev) => (prev !== idx ? idx : prev));
+    if (p >= 0.95) {
+      markPipelineScrolled?.();
+    }
   });
+
+  React.useEffect(() => {
+    if (!use3d && pipeInView) {
+      markPipelineScrolled?.();
+    }
+  }, [use3d, pipeInView, markPipelineScrolled]);
 
   const layRef = useRef(null);
   const layInView = useInView(layRef);
@@ -167,6 +179,7 @@ export function LandingPage() {
       <div className="min-h-screen bg-bg text-fg selection:bg-accent-tint selection:text-fg relative">
         <IntroOverlay />
         <Backdrop />
+        <JudgeGuide />
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 bg-bg/90 backdrop-blur-sm border-b border-line px-6 lg:px-12 h-16 flex items-center justify-between">
         <div className="flex items-baseline gap-1.5 select-none">

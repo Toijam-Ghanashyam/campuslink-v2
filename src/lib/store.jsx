@@ -23,6 +23,40 @@ export function StoreProvider({ children }) {
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [recruiterScheduledCount, setRecruiterScheduledCount] = useState(12);
 
+  const [hasToggledTheme, setHasToggledTheme] = useState(() => {
+    try {
+      return sessionStorage.getItem('cl-guide-theme') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const [hasScrolledPipeline, setHasScrolledPipeline] = useState(() => {
+    try {
+      return sessionStorage.getItem('cl-guide-pipeline') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const markThemeToggled = () => {
+    setHasToggledTheme(true);
+    try {
+      sessionStorage.setItem('cl-guide-theme', '1');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const markPipelineScrolled = () => {
+    setHasScrolledPipeline(true);
+    try {
+      sessionStorage.setItem('cl-guide-pipeline', '1');
+    } catch {
+      /* ignore */
+    }
+  };
+
   // Student specific active profile (Ananya Sharma)
   const currentStudent = students.find((s) => s.id === 's-1') || students[0];
 
@@ -348,6 +382,10 @@ export function StoreProvider({ children }) {
         analytics,
         recruiterScheduledCount,
         studentInterviews,
+        hasToggledTheme,
+        hasScrolledPipeline,
+        markThemeToggled,
+        markPipelineScrolled,
         submitProfile,
         applyToDrive,
         approveStudent,

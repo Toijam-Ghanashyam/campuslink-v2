@@ -54,12 +54,12 @@ export function ToastProvider({ children }) {
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border max-w-md shadow-lg text-sm font-medium',
+                  'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-object border max-w-md shadow-object text-sm font-medium',
                   toneStyles[item.tone] || toneStyles.ink
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
-                <span className="text-ink text-xs sm:text-sm flex-1">{item.message}</span>
+                <span className="text-fg text-xs sm:text-sm flex-1">{item.message}</span>
                 <button
                   type="button"
                   onClick={() => removeToast(item.id)}

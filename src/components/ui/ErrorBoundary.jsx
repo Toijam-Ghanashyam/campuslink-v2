@@ -25,14 +25,14 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="min-h-[400px] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-paper p-8 rounded-2xl border border-line shadow-subtle text-center">
+          <div className="max-w-md w-full bg-surface p-8 rounded-object border border-line shadow-object text-center">
             <div className="w-12 h-12 rounded-full bg-brick-tint text-brick mx-auto flex items-center justify-center mb-4">
               <AlertCircle className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <h3 className="font-display font-semibold text-xl text-ink mb-2">
+            <h3 className="font-display font-semibold text-xl text-fg mb-2">
               Something went wrong
             </h3>
-            <p className="text-xs text-ink-soft mb-6 leading-relaxed">
+            <p className="text-xs text-fg-soft mb-6 leading-relaxed">
               An unexpected error occurred in this section. The platform state is safeguarded.
             </p>
             <Button
