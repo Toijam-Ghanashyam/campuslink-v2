@@ -21,9 +21,9 @@ export default {
         'brick-tint': '#F8E1DC',
       },
       fontFamily: {
-        display: ['Newsreader', 'Fraunces', 'Georgia', 'serif'],
-        serif: ['Newsreader', 'Fraunces', 'Georgia', 'serif'],
-        sans: ['Instrument Sans', 'Manrope', '-apple-system', 'sans-serif'],
+        display: ["'Newsreader Variable'", 'Newsreader', 'Georgia', 'serif'],
+        serif: ["'Newsreader Variable'", 'Newsreader', 'Georgia', 'serif'],
+        sans: ["'Instrument Sans Variable'", "'Instrument Sans'", '-apple-system', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       boxShadow: {

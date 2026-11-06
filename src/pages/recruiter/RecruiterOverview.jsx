@@ -11,7 +11,7 @@ import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 
 export function RecruiterOverview() {
-  const { analytics, pipeline } = useStore();
+  const { analytics, pipeline, recruiterScheduledCount } = useStore();
   const { toast } = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -55,7 +55,7 @@ export function RecruiterOverview() {
         items={[
           { label: 'TOTAL APPLICANTS', value: 342, hint: 'CSE, IT & ECE cohorts' },
           { label: 'AI MATCH > 85%', value: 48, hint: 'Pre-screened elite talent' },
-          { label: 'INTERVIEWS SCHEDULED', value: 12, hint: 'Slot conflict checks verified' },
+          { label: 'INTERVIEWS SCHEDULED', value: recruiterScheduledCount, hint: 'upcoming, 31 completed' },
           { label: 'OFFERS EXTENDED', value: 16, hint: 'Target: 20 hires' },
         ]}
       />

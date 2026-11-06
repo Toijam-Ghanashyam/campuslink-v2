@@ -19,6 +19,17 @@ export function RecruiterAnalytics() {
   const branchData = analytics.recruiterBranchBreakdown || [];
   const matchData = analytics.aiMatchDistribution || [];
 
+  const totalCandidates = matchData.reduce((acc, curr) => acc + curr.count, 0);
+  const midpointMap = {
+    '90-100%': 95,
+    '80-89%': 85,
+    '70-79%': 75,
+    '60-69%': 65,
+    '< 60%': 50,
+  };
+  const weightedSum = matchData.reduce((acc, curr) => acc + (midpointMap[curr.range] || 60) * curr.count, 0);
+  const avgAiMatch = totalCandidates > 0 ? parseFloat((weightedSum / totalCandidates).toFixed(1)) : 74.0;
+
   return (
     <PageTransition className="space-y-8">
       <Masthead
@@ -29,7 +40,7 @@ export function RecruiterAnalytics() {
 
       <StatStrip
         items={[
-          { label: 'AVERAGE AI MATCH', value: 78.2, decimals: 1, suffix: '%', hint: 'Across 342 pre-screened applicants' },
+          { label: 'AVERAGE AI MATCH', value: avgAiMatch, decimals: 1, suffix: '%', hint: 'Across 342 pre-screened applicants' },
           { label: 'OFFER ACCEPTANCE', value: 88.5, decimals: 1, suffix: '%', hint: 'High candidate brand loyalty' },
           { label: 'AVERAGE TIME-TO-HIRE', value: '12 Days', hint: 'From JNF to final offer sign-off' },
         ]}

@@ -1,0 +1,515 @@
+{
+  "occurrences": {
+    "src\\App.jsx": {
+      "text-ink": 2,
+      "bg-bone": 1,
+      "bg-paper": 1
+    },
+    "src\\components\\layout\\AppShell.jsx": {
+      "bg-ink": 4,
+      "text-ink": 11,
+      "border-ink": 2,
+      "text-bone": 19,
+      "bg-bone": 6,
+      "bg-paper": 3
+    },
+    "src\\components\\layout\\CommandPalette.jsx": {
+      "bg-ink": 1,
+      "text-ink": 10,
+      "bg-bone": 4,
+      "bg-paper": 1
+    },
+    "src\\components\\layout\\JudgeGuide.jsx": {
+      "bg-ink": 2,
+      "text-ink": 8,
+      "border-ink": 1,
+      "text-bone": 2,
+      "bg-bone": 3,
+      "bg-paper": 3
+    },
+    "src\\components\\layout\\NotificationPopover.jsx": {
+      "text-ink": 8,
+      "bg-bone": 3,
+      "bg-paper": 3
+    },
+    "src\\components\\ui\\Badge.jsx": {
+      "bg-ink": 1
+    },
+    "src\\components\\ui\\Button.jsx": {
+      "bg-ink": 2,
+      "text-ink": 3,
+      "border-ink": 1,
+      "text-bone": 3,
+      "bg-bone": 2,
+      "bg-paper": 1
+    },
+    "src\\components\\ui\\Callout.jsx": {
+      "text-ink": 6,
+      "bg-bone": 1
+    },
+    "src\\components\\ui\\Card.jsx": {
+      "border-ink": 1,
+      "bg-paper": 2
+    },
+    "src\\components\\ui\\DataTable.jsx": {
+      "text-ink": 4,
+      "bg-bone": 3,
+      "bg-paper": 1
+    },
+    "src\\components\\ui\\Drawer.jsx": {
+      "bg-ink": 1,
+      "text-ink": 4,
+      "bg-bone": 2,
+      "bg-paper": 2
+    },
+    "src\\components\\ui\\EmptyState.jsx": {
+      "text-ink": 3,
+      "bg-bone": 1,
+      "bg-paper": 1
+    },
+    "src\\components\\ui\\ErrorBoundary.jsx": {
+      "text-ink": 2,
+      "bg-paper": 1
+    },
+    "src\\components\\ui\\MarginNote.jsx": {
+      "text-ink": 2
+    },
+    "src\\components\\ui\\Mark.jsx": {
+      "text-ink": 2
+    },
+    "src\\components\\ui\\Masthead.jsx": {
+      "text-ink": 3
+    },
+    "src\\components\\ui\\MetricCard.jsx": {
+      "text-ink": 4,
+      "bg-bone": 1
+    },
+    "src\\components\\ui\\Rule.jsx": {
+      "bg-ink": 2
+    },
+    "src\\components\\ui\\ScoreDial.jsx": {
+      "text-ink": 3,
+      "fill-ink": 3
+    },
+    "src\\components\\ui\\SectionHeader.jsx": {
+      "text-ink": 2
+    },
+    "src\\components\\ui\\Stamp.jsx": {
+      "text-ink": 1,
+      "border-ink": 1,
+      "bg-bone": 1
+    },
+    "src\\components\\ui\\StatStrip.jsx": {
+      "text-ink": 3
+    },
+    "src\\components\\ui\\Tabs.jsx": {
+      "text-ink": 4,
+      "bg-bone": 2
+    },
+    "src\\components\\ui\\Tag.jsx": {
+      "text-ink": 1
+    },
+    "src\\components\\ui\\TagInput.jsx": {
+      "bg-ink": 1,
+      "text-ink": 5,
+      "bg-bone": 2,
+      "bg-paper": 1
+    },
+    "src\\components\\ui\\Toast.jsx": {
+      "bg-ink": 1,
+      "text-ink": 4,
+      "border-ink": 1,
+      "text-bone": 2,
+      "bg-paper": 3
+    },
+    "src\\pages\\admin\\AdminAtRisk.jsx": {
+      "text-ink": 7,
+      "bg-bone": 3,
+      "bg-paper": 1
+    },
+    "src\\pages\\admin\\AdminCommandCenter.jsx": {
+      "bg-ink": 2,
+      "text-ink": 15,
+      "text-bone": 4,
+      "bg-bone": 1,
+      "bg-paper": 4,
+      "ring-ink": 4
+    },
+    "src\\pages\\admin\\AdminDrives.jsx": {
+      "bg-ink": 1,
+      "text-ink": 17,
+      "border-ink": 1,
+      "bg-bone": 4,
+      "bg-paper": 2
+    },
+    "src\\pages\\admin\\AdminOffers.jsx": {
+      "text-ink": 8,
+      "bg-bone": 2
+    },
+    "src\\pages\\admin\\AdminRecruiters.jsx": {
+      "text-ink": 7,
+      "bg-bone": 2
+    },
+    "src\\pages\\admin\\AdminVerification.jsx": {
+      "text-ink": 18,
+      "bg-bone": 4,
+      "bg-paper": 2
+    },
+    "src\\pages\\landing\\LandingPage.jsx": {
+      "bg-ink": 1,
+      "text-ink": 30,
+      "text-bone": 10,
+      "bg-bone": 6,
+      "bg-paper": 2
+    },
+    "src\\pages\\recruiter\\RecruiterAnalytics.jsx": {
+      "bg-ink": 2,
+      "text-ink": 3,
+      "text-bone": 2
+    },
+    "src\\pages\\recruiter\\RecruiterJobs.jsx": {
+      "text-ink": 5,
+      "bg-bone": 1
+    },
+    "src\\pages\\recruiter\\RecruiterOverview.jsx": {
+      "text-ink": 11,
+      "bg-bone": 1,
+      "bg-paper": 3,
+      "ring-ink": 3
+    },
+    "src\\pages\\recruiter\\RecruiterPipeline.jsx": {
+      "text-ink": 18,
+      "border-ink": 1,
+      "bg-bone": 6,
+      "bg-paper": 1
+    },
+    "src\\pages\\recruiter\\RecruiterSlots.jsx": {
+      "text-ink": 6,
+      "border-ink": 1,
+      "bg-bone": 2,
+      "bg-paper": 2
+    },
+    "src\\pages\\student\\StudentApplications.jsx": {
+      "text-ink": 21,
+      "bg-bone": 3,
+      "bg-paper": 1
+    },
+    "src\\pages\\student\\StudentDrives.jsx": {
+      "text-ink": 11,
+      "bg-bone": 2,
+      "bg-paper": 1,
+      "ring-ink": 1
+    },
+    "src\\pages\\student\\StudentInterviews.jsx": {
+      "text-ink": 10,
+      "bg-paper": 2
+    },
+    "src\\pages\\student\\StudentOverview.jsx": {
+      "bg-ink": 2,
+      "text-ink": 13,
+      "bg-bone": 1,
+      "bg-paper": 2
+    },
+    "src\\pages\\student\\StudentProfile.jsx": {
+      "text-ink": 16,
+      "bg-bone": 5,
+      "bg-paper": 1
+    }
+  },
+  "hexList": [
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 79,
+      "hex": "#14161C",
+      "snippet": "stroke={t.isMajor ? '#14161C' : '#E6DFCF'}"
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 79,
+      "hex": "#E6DFCF",
+      "snippet": "stroke={t.isMajor ? '#14161C' : '#E6DFCF'}"
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 89,
+      "hex": "#E6DFCF",
+      "snippet": "stroke=\"#E6DFCF\""
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 98,
+      "hex": "#E8A33D",
+      "snippet": "stroke=\"#E8A33D\""
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 115,
+      "hex": "#14161C",
+      "snippet": "stroke=\"#14161C\""
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 120,
+      "hex": "#14161C",
+      "snippet": "<circle cx={0} cy={0} r={4.5} fill=\"#14161C\" />"
+    },
+    {
+      "file": "src\\components\\ui\\ScoreDial.jsx",
+      "line": 121,
+      "hex": "#FFFDF8",
+      "snippet": "<circle cx={0} cy={0} r={1.5} fill=\"#FFFDF8\" />"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 6,
+      "hex": "#F6F2E9",
+      "snippet": "--bone: #F6F2E9;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 7,
+      "hex": "#FFFDF8",
+      "snippet": "--paper: #FFFDF8;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 8,
+      "hex": "#14161C",
+      "snippet": "--ink: #14161C;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 9,
+      "hex": "#5B5F6B",
+      "snippet": "--ink-soft: #5B5F6B;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 10,
+      "hex": "#E6DFCF",
+      "snippet": "--line: #E6DFCF;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 11,
+      "hex": "#E8A33D",
+      "snippet": "--ochre: #E8A33D;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 12,
+      "hex": "#FBEFD5",
+      "snippet": "--ochre-tint: #FBEFD5;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 13,
+      "hex": "#8A5A0B",
+      "snippet": "--ochre-deep: #8A5A0B;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 14,
+      "hex": "#1F8A63",
+      "snippet": "--jade: #1F8A63;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 15,
+      "hex": "#DDF1E8",
+      "snippet": "--jade-tint: #DDF1E8;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 16,
+      "hex": "#C4432F",
+      "snippet": "--brick: #C4432F;"
+    },
+    {
+      "file": "src\\index.css",
+      "line": 17,
+      "hex": "#F8E1DC",
+      "snippet": "--brick-tint: #F8E1DC;"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 92,
+      "hex": "#E6DFCF",
+      "snippet": "<CartesianGrid strokeDasharray=\"3 3\" vertical={false} stroke=\"#E6DFCF\" />"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 95,
+      "hex": "#14161C",
+      "snippet": "tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 96,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 100,
+      "hex": "#5B5F6B",
+      "snippet": "tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 101,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 106,
+      "hex": "#F6F2E9",
+      "snippet": "cursor={{ fill: '#F6F2E9' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 122,
+      "hex": "#14161C",
+      "snippet": "fill=\"#14161C\""
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 151,
+      "hex": "#E6DFCF",
+      "snippet": "<CartesianGrid strokeDasharray=\"3 3\" vertical={false} stroke=\"#E6DFCF\" />"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 154,
+      "hex": "#14161C",
+      "snippet": "tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 155,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 159,
+      "hex": "#5B5F6B",
+      "snippet": "tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 160,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 180,
+      "hex": "#14161C",
+      "snippet": "stroke=\"#14161C\""
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 182,
+      "hex": "#14161C",
+      "snippet": "dot={{ fill: '#14161C', r: 3 }}"
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 188,
+      "hex": "#E8A33D",
+      "snippet": "stroke=\"#E8A33D\""
+    },
+    {
+      "file": "src\\pages\\admin\\AdminCommandCenter.jsx",
+      "line": 190,
+      "hex": "#E8A33D",
+      "snippet": "dot={{ fill: '#E8A33D', r: 4 }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 57,
+      "hex": "#E6DFCF",
+      "snippet": "<CartesianGrid strokeDasharray=\"3 3\" vertical={false} stroke=\"#E6DFCF\" />"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 60,
+      "hex": "#14161C",
+      "snippet": "tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 61,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 65,
+      "hex": "#5B5F6B",
+      "snippet": "tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 66,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 70,
+      "hex": "#F6F2E9",
+      "snippet": "cursor={{ fill: '#F6F2E9' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 85,
+      "hex": "#14161C",
+      "snippet": "fill=\"#14161C\""
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 111,
+      "hex": "#E6DFCF",
+      "snippet": "<CartesianGrid strokeDasharray=\"3 3\" vertical={false} stroke=\"#E6DFCF\" />"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 114,
+      "hex": "#14161C",
+      "snippet": "tick={{ fill: '#14161C', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 115,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 119,
+      "hex": "#5B5F6B",
+      "snippet": "tick={{ fill: '#5B5F6B', fontSize: 11, fontFamily: 'IBM Plex Mono' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 120,
+      "hex": "#E6DFCF",
+      "snippet": "axisLine={{ stroke: '#E6DFCF' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 124,
+      "hex": "#F6F2E9",
+      "snippet": "cursor={{ fill: '#F6F2E9' }}"
+    },
+    {
+      "file": "src\\pages\\recruiter\\RecruiterAnalytics.jsx",
+      "line": 139,
+      "hex": "#E8A33D",
+      "snippet": "fill=\"#E8A33D\""
+    }
+  ]
+}

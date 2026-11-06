@@ -21,6 +21,7 @@ export function StoreProvider({ children }) {
   const [offers, setOffers] = useState(initialOffers);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [analytics, setAnalytics] = useState(initialAnalytics);
+  const [recruiterScheduledCount, setRecruiterScheduledCount] = useState(12);
 
   // Student specific active profile (Ananya Sharma)
   const currentStudent = students.find((s) => s.id === 's-1') || students[0];
@@ -258,6 +259,8 @@ export function StoreProvider({ children }) {
       )
     );
 
+    setRecruiterScheduledCount((prev) => prev + 1);
+
     // If scheduled for current student (Ananya Sharma)
     if (candidate && candidate.studentId === currentStudent.id) {
       setStudentInterviews((prev) => [
@@ -343,6 +346,7 @@ export function StoreProvider({ children }) {
         offers,
         notifications,
         analytics,
+        recruiterScheduledCount,
         studentInterviews,
         submitProfile,
         applyToDrive,

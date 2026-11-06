@@ -36,10 +36,11 @@ export const initialAnalytics = {
     { id: 'rp-8', company: 'Capgemini', drives: 2, hired: 78, avgCtc: '7.2 LPA', engagement: 84 },
   ],
   recruiterFunnel: [
-    { stage: 'Total Applicants', count: 342, percentage: 100 },
-    { stage: 'AI Match > 85%', count: 48, percentage: 48 / 342 * 100 },
-    { stage: 'Interviews Scheduled', count: 12, percentage: 12 / 342 * 100 },
-    { stage: 'Offers Extended', count: 16, percentage: 16 / 342 * 100 },
+    { stage: 'Applicants', count: 342, percentage: 100 },
+    { stage: 'Eligible', count: 261, percentage: (261 / 342) * 100 },
+    { stage: 'Shortlisted (AI match > 85%)', count: 48, percentage: (48 / 342) * 100 },
+    { stage: 'Interviewed', count: 31, percentage: (31 / 342) * 100 },
+    { stage: 'Offers', count: 16, percentage: (16 / 342) * 100 },
   ],
   recruiterBranchBreakdown: [
     { branch: 'CSE', count: 195 },
@@ -48,11 +49,11 @@ export const initialAnalytics = {
     { branch: 'Other', count: 14 },
   ],
   aiMatchDistribution: [
-    { range: '90-100%', count: 18 },
-    { range: '80-89%', count: 42 },
+    { range: '90-100%', count: 26 },
+    { range: '80-89%', count: 88 },
     { range: '70-79%', count: 112 },
-    { range: '60-69%', count: 96 },
-    { range: '< 60%', count: 74 },
+    { range: '60-69%', count: 78 },
+    { range: '< 60%', count: 38 },
   ],
 };
 
