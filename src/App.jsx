@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 
 // Providers & Layout
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -8,6 +7,7 @@ import { StoreProvider } from './lib/store';
 import { ToastProvider } from './components/ui/Toast';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AppShell } from './components/layout/AppShell';
+import { PageTurnWipe } from './components/ui/PageTurnWipe';
 
 // Landing Page
 import { LandingPage } from './pages/landing/LandingPage';
@@ -56,12 +56,49 @@ function NotFound() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+
+    const rafId = requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const m = document.querySelector('main');
+      if (m) m.scrollTop = 0;
+    });
+
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      const m = document.querySelector('main');
+      if (m) m.scrollTop = 0;
+    }, 60);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
+  }, [pathname, search]);
+
+  return null;
+}
+
 function AnimatedAppRoutes() {
   const location = useLocation();
+  const topSegment = location.pathname.split('/')[1] || 'landing';
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <>
+      <ScrollToTop />
+      <PageTurnWipe triggerKey={topSegment} />
+      <Routes>
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
 
@@ -205,7 +242,7 @@ function AnimatedAppRoutes() {
         {/* 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AnimatePresence>
+    </>
   );
 }
 

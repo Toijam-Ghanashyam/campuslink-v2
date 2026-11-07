@@ -26,10 +26,8 @@ import {
 import { useStore } from '../../lib/store';
 import { CommandPalette } from './CommandPalette';
 import { NotificationPopover } from './NotificationPopover';
-import { JudgeGuide } from './JudgeGuide';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Backdrop } from '../ui/Backdrop';
-import { PageTurnWipe } from '../ui/PageTurnWipe';
 import { useTheme } from '../../theme/ThemeProvider';
 import { cn } from '../../lib/utils';
 
@@ -95,10 +93,31 @@ export function AppShell({ role = 'student', children }) {
   };
 
   const currentTenant = tenantDetails[role];
-  const wipeRef = useRef(null);
+  const mainRef = useRef(null);
+
+  const scrollToTop = (smooth = true) => {
+    const behavior = smooth ? 'smooth' : 'instant';
+    window.scrollTo({ top: 0, left: 0, behavior });
+    document.documentElement.scrollTo({ top: 0, behavior });
+    document.body.scrollTo({ top: 0, behavior });
+    if (mainRef.current) {
+      if (smooth) {
+        mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        mainRef.current.scrollTop = 0;
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    scrollToTop(false);
+  }, [location.pathname]);
 
   const handleRoleSwitch = (newRole) => {
-    if (newRole === role) return;
+    if (newRole === role) {
+      scrollToTop(true);
+      return;
+    }
     const dest =
       newRole === 'student'
         ? '/student/overview'
@@ -106,11 +125,8 @@ export function AppShell({ role = 'student', children }) {
         ? '/admin/command-center'
         : '/recruiter/overview';
 
-    if (wipeRef.current) {
-      wipeRef.current.start(() => navigate(dest));
-    } else {
-      navigate(dest);
-    }
+    scrollToTop(false);
+    navigate(dest);
   };
 
   return (
@@ -120,16 +136,12 @@ export function AppShell({ role = 'student', children }) {
         isNight ? 'bg-transparent' : 'bg-bg'
       )}
     >
-      <PageTurnWipe ref={wipeRef} />
       <Backdrop />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         currentRole={role}
       />
-
-      {/* Floating Judge Guide */}
-      <JudgeGuide />
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-line h-14 flex items-center justify-between px-4 sm:px-6">
@@ -143,7 +155,15 @@ export function AppShell({ role = 'student', children }) {
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
-          <NavLink to="/" className="flex items-baseline gap-1 group select-none">
+          <NavLink
+            to="/"
+            onClick={() => {
+              window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+              document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+              document.body.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex items-baseline gap-1 group select-none"
+          >
             <span className="font-display font-medium text-xl text-fg tracking-tight">CampusLink</span>
             <span className="font-mono text-xs text-accent-ink font-bold">.register</span>
           </NavLink>
@@ -170,9 +190,6 @@ export function AppShell({ role = 'student', children }) {
           >
             <Search className="w-3.5 h-3.5 text-fg-soft" />
             <span className="flex-1 text-left font-sans text-xs">Search or type a command...</span>
-            <kbd className="px-1.5 py-0.5 rounded-xs bg-surface border border-line font-mono text-[10px] text-fg-soft">
-              Ctrl+K
-            </kbd>
           </button>
         </div>
 
@@ -244,6 +261,9 @@ export function AppShell({ role = 'student', children }) {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    onClick={() => {
+                      scrollToTop(true);
+                    }}
                     className={cn(
                       'relative flex items-center justify-between px-3 py-2 rounded-control text-xs font-medium transition-all group select-none',
                       isActive
@@ -308,7 +328,10 @@ export function AppShell({ role = 'student', children }) {
                       <NavLink
                         key={item.to}
                         to={item.to}
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          scrollToTop(true);
+                        }}
                         className={cn(
                           'flex items-center gap-2.5 px-3 py-2 rounded-control text-xs font-medium transition-colors',
                           isActive ? 'bg-white/10 text-bone font-semibold' : 'text-bone/70 hover:text-bone'
@@ -334,7 +357,7 @@ export function AppShell({ role = 'student', children }) {
         </AnimatePresence>
 
         {/* Main Content Viewport */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto relative z-10">
+        <main ref={mainRef} className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto relative z-10">
           <div className="max-w-[1180px] mx-auto">
             {children}
           </div>

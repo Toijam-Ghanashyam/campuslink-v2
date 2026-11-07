@@ -1,26 +1,26 @@
 // src/components/ui/IntroOverlay.jsx
 import React, { useEffect, useRef, useState } from 'react';
 
-const T_IMPACT = 1.25;
-const T_CRACK = 0.10; // Exact 0.1s sudden full-screen crack propagation
-const T_BREAK = 1.60; // Holds the cracked display for 0.25s so the whole broken screen registers
-const BREAK_SPREAD = 0.28;
-const T_END = T_BREAK + BREAK_SPREAD + 1.55;
+/**
+ * Clean Pitch-Black Loading Intro with Cursor-Only Ripples & Smooth Fade-Out
+ *
+ * - Pitch black (#000000) with white "CampusLink" and "#F59E0B" ".register" (matching Landing Page)
+ * - Smooth horizontal loading bar draws under the wordmark (0.20s -> 1.35s)
+ * - No falling drop and NO big central ripple at the end
+ * - Moving the cursor inside the intro spawns silky water ripples at the cursor position ONLY
+ * - At 1.35s -> 2.15s, the overlay smoothly fades out to reveal the Landing Page
+ */
+
+const T_LOAD_DONE = 1.35;
+const T_FADE_END = 2.15;
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const smooth = (a, b, x) => {
   const t = clamp((x - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
 };
-const easeOut = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
-
-function makeRng(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
+const easeOutCubic = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+const easeInOutSine = (x) => -(Math.cos(Math.PI * clamp(x, 0, 1)) - 1) / 2;
 
 function spacedText(ctx, text, x, y, spacing, align = 'left') {
   let total = 0;
@@ -34,142 +34,24 @@ function spacedText(ctx, text, x, y, spacing, align = 'left') {
   return total;
 }
 
-function buildShards(W, H, rnd) {
-  const D = Math.hypot(W, H);
-  const P = { x: W / 2, y: H / 2 };
-  const rays = 24;
-  const rings = [0, 0.03, 0.075, 0.14, 0.235, 0.37, 0.56, 1.12];
-  const verts = [];
-  const vid = (x, y) => {
-    verts.push({ x, y });
-    return verts.length - 1;
-  };
-  const center = vid(P.x, P.y);
-  const grid = [[...Array(rays)].map(() => center)];
-  const angs = [...Array(rays)].map(
-    (_, k) => ((k + (rnd() - 0.5) * 0.55) / rays) * Math.PI * 2
-  );
-  for (let i = 1; i < rings.length; i += 1) {
-    const row = [];
-    for (let k = 0; k < rays; k += 1) {
-      const a = angs[k] + (rnd() - 0.5) * 0.09;
-      const r = rings[i] * (D / 2) * (1 + (rnd() - 0.5) * 0.28);
-      row.push(vid(P.x + Math.cos(a) * r, P.y + Math.sin(a) * r));
-    }
-    grid.push(row);
+function drawCursorRipple(ctx, x, y, radius, bandWidth, alpha) {
+  if (radius <= 2 || alpha <= 0.003) return;
+  const rInner = Math.max(0, radius - bandWidth);
+  const rOuter = radius + bandWidth;
+  const grad = ctx.createRadialGradient(x, y, rInner, x, y, rOuter);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+  grad.addColorStop(0.35, `rgba(255, 255, 255, ${(alpha * 0.45).toFixed(4)})`);
+  grad.addColorStop(0.5, `rgba(255, 255, 255, ${alpha.toFixed(4)})`);
+  grad.addColorStop(0.65, `rgba(255, 255, 255, ${(alpha * 0.45).toFixed(4)})`);
+  grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, rOuter, 0, Math.PI * 2);
+  if (rInner > 1) {
+    ctx.arc(x, y, rInner, 0, Math.PI * 2, true);
   }
-
-  const mids = new Map();
-  const mid = (a, b) => {
-    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
-    if (!mids.has(key)) {
-      const A = verts[a];
-      const B = verts[b];
-      const mx = (A.x + B.x) / 2;
-      const my = (A.y + B.y) / 2;
-      const len = Math.hypot(B.x - A.x, B.y - A.y);
-      const nx = -(B.y - A.y) / (len || 1);
-      const ny = (B.x - A.x) / (len || 1);
-      const j = (rnd() - 0.5) * len * 0.18;
-      mids.set(key, { x: mx + nx * j, y: my + ny * j });
-    }
-    return mids.get(key);
-  };
-
-  const edges = new Map();
-  const polys = [];
-  const addPoly = (ids) => {
-    const pts = [];
-    for (let n = 0; n < ids.length; n += 1) {
-      const a = ids[n];
-      const b = ids[(n + 1) % ids.length];
-      pts.push({ x: verts[a].x, y: verts[a].y });
-      const m = mid(a, b);
-      pts.push({ x: m.x, y: m.y });
-      const key = a < b ? `${a}-${b}` : `${b}-${a}`;
-      if (!edges.has(key)) edges.set(key, { a, b, m });
-    }
-    polys.push(pts);
-  };
-
-  for (let k = 0; k < rays; k += 1) {
-    const k2 = (k + 1) % rays;
-    addPoly([center, grid[1][k], grid[1][k2]]);
-    for (let i = 1; i < rings.length - 1; i += 1) {
-      const q = [grid[i][k], grid[i][k2], grid[i + 1][k2], grid[i + 1][k]];
-      if (i >= 2 && rnd() < 0.5) {
-        if (rnd() < 0.5) {
-          addPoly([q[0], q[1], q[2]]);
-          addPoly([q[0], q[2], q[3]]);
-        } else {
-          addPoly([q[0], q[1], q[3]]);
-          addPoly([q[1], q[2], q[3]]);
-        }
-      } else {
-        addPoly(q);
-      }
-    }
-  }
-
-  const shards = polys.map((pts) => {
-    let cx = 0;
-    let cy = 0;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    pts.forEach((p) => {
-      cx += p.x;
-      cy += p.y;
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
-    });
-    cx /= pts.length;
-    cy /= pts.length;
-    const dx = cx - P.x;
-    const dy = cy - P.y;
-    const dist = Math.hypot(dx, dy);
-    const d = dist / (D / 2);
-    const dir =
-      dist > 1
-        ? { x: dx / dist, y: dy / dist }
-        : { x: rnd() - 0.5, y: rnd() - 0.5 };
-    const speed = (420 + rnd() * 460) * (1.25 - Math.min(1, d));
-    return {
-      pts,
-      c: { x: cx, y: cy },
-      bb: {
-        x: Math.floor(minX) - 2,
-        y: Math.floor(minY) - 2,
-        w: Math.ceil(maxX - minX) + 4,
-        h: Math.ceil(maxY - minY) + 4,
-      },
-      d,
-      delay: d * BREAK_SPREAD * 1.45 + rnd() * 0.04,
-      vx: dir.x * speed,
-      vy: dir.y * speed - (110 + rnd() * 240),
-      spin: (rnd() - 0.5) * 6.2,
-      // 3D tumbling angular velocities so shards flip realistically in space
-      tumbleX: (rnd() - 0.5) * 7.5,
-      tumbleY: (rnd() - 0.5) * 7.5,
-      grow: 0.45 * (1.05 - Math.min(1, d)) + rnd() * 0.14,
-      phase: rnd() * Math.PI * 2,
-      shine: 0.06 + rnd() * 0.14,
-    };
-  });
-
-  const edgeList = [...edges.values()].map((e) => ({
-    a: verts[e.a],
-    b: verts[e.b],
-    m: e.m,
-    d: Math.min(
-      Math.hypot(verts[e.a].x - P.x, verts[e.a].y - P.y),
-      Math.hypot(verts[e.b].x - P.x, verts[e.b].y - P.y)
-    ),
-  }));
-  return { shards, edges: edgeList, P, D };
+  ctx.fill();
 }
 
 export function ShatterIntro({ onBreak, onDone }) {
@@ -204,149 +86,75 @@ export function ShatterIntro({ onBreak, onDone }) {
     const prevOverflow = html.style.overflow;
     html.style.overflow = 'hidden';
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    canvas.style.width = `${W}px`;
-    canvas.style.height = `${H}px`;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = window.innerWidth;
+    let H = window.innerHeight;
 
-    const freezeMatch = window.location.search.match(/[?&]introT=([\d.]+)/);
-    const freezeAt = freezeMatch ? parseFloat(freezeMatch[1]) : null;
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
+    };
+    resize();
+    window.addEventListener('resize', resize);
 
-    const rnd = makeRng(20260711);
-    const { shards, edges, P, D } = buildShards(W, H, rnd);
+    const fs = clamp(W * 0.065, 38, 88);
+    const markSize = fs * 0.56;
+    const wordFont = `600 ${fs}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    const regFont = `700 ${fs * 0.26}px "JetBrains Mono", ui-monospace, monospace`;
+    const capFont = `500 ${Math.max(10, fs * 0.145)}px "JetBrains Mono", ui-monospace, monospace`;
 
-    const scene = document.createElement('canvas');
-    scene.width = canvas.width;
-    scene.height = canvas.height;
-    const sctx = scene.getContext('2d');
-
-    const specks = [...Array(70)].map(() => ({
-      x: rnd() * W,
-      y: rnd() * H,
-      a: 0.1 + rnd() * 0.35,
-      ph: rnd() * 6.28,
-      fq: 0.6 + rnd() * 1.6,
+    // Faint background stars in the intro
+    const specks = Array.from({ length: 65 }, (_, i) => ({
+      x: ((i * 1973) % 997) / 997,
+      y: ((i * 3571) % 991) / 991,
+      a: 0.12 + ((i * 71) % 28) / 100,
+      ph: i * 1.1,
+      fq: 0.7 + (i % 5) * 0.3,
     }));
 
-    const fs = clamp(W * 0.068, 40, 92);
-    const markSize = fs * 0.58;
-    const wordFont = `600 ${fs}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
-    const regFont = `600 ${fs * 0.26}px "JetBrains Mono", ui-monospace, monospace`;
-    const capFont = `500 ${Math.max(10, fs * 0.15)}px "JetBrains Mono", ui-monospace, monospace`;
+    // Cursor-only water ripples (active ONLY inside IntroOverlay - mid-level balanced pacing)
+    const cursorRipples = [];
+    let lastX = -9999;
+    let lastY = -9999;
+    let lastSpawn = 0;
 
-    const drawScene = (t) => {
-      const c = sctx;
-      c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      c.fillStyle = '#000000';
-      c.fillRect(0, 0, W, H);
-
-      specks.forEach((s) => {
-        const tw = 0.5 + 0.5 * Math.sin(t * s.fq * 2 + s.ph);
-        c.fillStyle = `rgba(255,255,255,${(
-          s.a *
-          tw *
-          smooth(0.1, 0.8, t)
-        ).toFixed(3)})`;
-        c.fillRect(s.x, s.y, 1, 1);
-      });
-
-      const push = 1 + 0.028 * smooth(0, T_IMPACT, t);
-      c.save();
-      c.translate(W / 2, H / 2);
-      c.scale(push, push);
-      c.translate(-W / 2, -H / 2);
-
-      const a = smooth(0.1, 0.68, t);
-      const rise = (1 - easeOut((t - 0.1) / 0.72)) * 14;
-      c.globalAlpha = a;
-      c.textBaseline = 'alphabetic';
-      c.font = wordFont;
-      const wordW = c.measureText('CampusLink').width;
-      c.font = regFont;
-      const regW = c.measureText('.register').width;
-      const gap = fs * 0.28;
-      const totalW = markSize + gap + wordW + fs * 0.12 + regW;
-      const x0 = W / 2 - totalW / 2;
-      const baseY = H / 2 + fs * 0.18 + rise;
-
-      // Monogram Box [CL]
-      const my = baseY - markSize * 0.98;
-      c.fillStyle = '#FFFFFF';
-      c.beginPath();
-      c.roundRect(x0, my, markSize, markSize, markSize * 0.16);
-      c.fill();
-      c.fillStyle = '#000000';
-      c.font = `700 ${markSize * 0.42}px "JetBrains Mono", ui-monospace, monospace`;
-      c.textAlign = 'center';
-      c.fillText('CL', x0 + markSize / 2, my + markSize * 0.65);
-      c.textAlign = 'left';
-
-      // Wordmark
-      c.fillStyle = '#FFFFFF';
-      c.font = wordFont;
-      c.fillText('CampusLink', x0 + markSize + gap, baseY);
-      c.fillStyle = '#FFD23F';
-      c.font = regFont;
-      c.fillText('.register', x0 + markSize + gap + wordW + fs * 0.12, baseY);
-
-      // Caption
-      c.font = capFont;
-      c.fillStyle = 'rgba(255,255,255,0.46)';
-      spacedText(
-        c,
-        'PLACEMENT REGISTER  ·  BPUT PS10',
-        W / 2,
-        baseY + fs * 0.62,
-        fs * 0.05,
-        'center'
-      );
-
-      // Tension Fuse Line Drawing Under Wordmark
-      const lw = Math.min(W * 0.34, 360);
-      const p = easeOut((t - 0.28) / 0.88);
-      const ly = baseY + fs * 0.92;
-      c.globalAlpha = a;
-      c.fillStyle = 'rgba(255,255,255,0.14)';
-      c.fillRect(W / 2 - lw / 2, ly, lw, 1);
-      c.fillStyle = 'rgba(255,255,255,0.95)';
-      c.fillRect(W / 2 - lw / 2, ly, lw * p, 1);
-
-      if (p > 0.01 && p < 0.999) {
-        const hx = W / 2 - lw / 2 + lw * p;
-        const g = c.createRadialGradient(hx, ly + 0.5, 0, hx, ly + 0.5, 14);
-        g.addColorStop(0, 'rgba(255,255,255,0.95)');
-        g.addColorStop(1, 'rgba(255,255,255,0)');
-        c.fillStyle = g;
-        c.fillRect(hx - 14, ly - 13, 28, 28);
+    const spawnCursorRipple = (x, y, maxR = 90, strength = 0.16, rings = 1) => {
+      const now = performance.now() / 1000;
+      for (let r = 0; r < rings; r++) {
+        cursorRipples.push({
+          x,
+          y,
+          born: now + r * 0.08,
+          duration: 0.85 + r * 0.12,
+          maxR: maxR * (1 - r * 0.15),
+          strength: strength * Math.pow(0.72, r),
+        });
       }
-      c.restore();
-      c.globalAlpha = 1;
+      if (cursorRipples.length > 14) {
+        cursorRipples.splice(0, cursorRipples.length - 14);
+      }
     };
 
-    const chips = [...Array(165)].map(() => {
-      const a = rnd() * Math.PI * 2;
-      const sp = 280 + rnd() * 1550;
-      return {
-        a,
-        x: P.x + Math.cos(a) * rnd() * 34,
-        y: P.y + Math.sin(a) * rnd() * 34,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 140,
-        life: 0.5 + rnd() * 1.05,
-        size: 0.9 + rnd() * 2.8,
-        tri: rnd() < 0.38,
-        rot: rnd() * 6.28,
-        spin: (rnd() - 0.5) * 16,
-      };
-    });
+    const onPointerMove = (e) => {
+      const now = performance.now();
+      const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+      if (dist > 38 && now - lastSpawn > 115) {
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastSpawn = now;
+        spawnCursorRipple(e.clientX, e.clientY, 90, 0.16, 1);
+      }
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
 
-    let frozenSceneDrawn = false;
     let t0 = performance.now();
     let raf = 0;
-    let broke = false;
+    let unlocked = false;
     let finished = false;
     let skip = false;
 
@@ -360,202 +168,144 @@ export function ShatterIntro({ onBreak, onDone }) {
       onDone?.();
     };
 
-    const render = (t) => {
+    const render = (t, nowSec) => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      const preImpact = t < T_IMPACT;
-      if (preImpact) {
-        drawScene(t);
-        frozenSceneDrawn = false;
-      } else if (!frozenSceneDrawn) {
-        drawScene(T_IMPACT);
-        frozenSceneDrawn = true;
+
+      const cx = W * 0.5;
+      const cy = H * 0.5;
+
+      // Unlock the landing page hero stagger right as the fade-out begins
+      if (!unlocked && t >= T_LOAD_DONE) {
+        unlocked = true;
+        canvas.style.pointerEvents = 'none';
+        html.classList.remove('intro-hold');
+        html.style.overflow = prevOverflow;
+        onBreak?.();
       }
 
-      // High-impact camera jolt during the 0.1s crack
-      let sx = 0;
-      let sy = 0;
-      const since = t - T_IMPACT;
-      if (since > 0 && since < 0.32) {
-        const k = Math.pow(1 - since / 0.32, 2) * 12;
-        sx = (rnd() - 0.5) * 2 * k;
-        sy = (rnd() - 0.5) * 2 * k;
-      }
+      // Smooth full-screen fade from 1.0 -> 0.0 after loading completes
+      const fadeOutProg = smooth(T_LOAD_DONE, T_FADE_END, t);
+      const overlayAlpha = 1 - easeInOutSine(fadeOutProg);
+
       ctx.save();
-      ctx.translate(sx, sy);
+      ctx.globalAlpha = overlayAlpha;
 
-      if (t < T_BREAK) {
-        ctx.drawImage(scene, 0, 0, W, H);
+      // 1. Pitch-Black Backdrop + Subtle Twinkling Stars
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, W, H);
+
+      for (let i = 0; i < specks.length; i++) {
+        const s = specks[i];
+        const tw = 0.5 + 0.5 * Math.sin(t * s.fq * 2 + s.ph);
+        ctx.fillStyle = `rgba(255, 255, 255, ${(s.a * tw * smooth(0.05, 0.6, t)).toFixed(3)})`;
+        ctx.fillRect(s.x * W, s.y * H, 1.2, 1.2);
       }
 
-      // 0.1s Crack Propagation Across Whole Display from Dead Center
-      const q = clamp(since / T_CRACK, 0, 1);
-      if (since > 0 && t < T_BREAK + 0.04) {
-        const reach = easeOut(q) * D * 0.65;
-        ctx.lineCap = 'round';
-        edges.forEach((e) => {
-          if (e.d > reach) return;
-          const fade = clamp((reach - e.d) / 70, 0, 1);
-          const nearCenter = 1 - Math.min(1, e.d / (D * 0.32));
-
-          // Subtle internal glass glow along primary fractures
-          if (nearCenter > 0.35) {
-            ctx.strokeStyle = `rgba(255,255,255,${(0.24 * fade * nearCenter).toFixed(3)})`;
-            ctx.lineWidth = 3.2;
-            ctx.beginPath();
-            ctx.moveTo(e.a.x, e.a.y);
-            ctx.lineTo(e.m.x, e.m.y);
-            ctx.lineTo(e.b.x, e.b.y);
-            ctx.stroke();
-          }
-
-          // Razor-sharp white glass crack line
-          ctx.strokeStyle = `rgba(255,255,255,${(0.96 * fade).toFixed(3)})`;
-          ctx.lineWidth = 1.15 + nearCenter * 1.05;
-          ctx.beginPath();
-          ctx.moveTo(e.a.x, e.a.y);
-          ctx.lineTo(e.m.x, e.m.y);
-          ctx.lineTo(e.b.x, e.b.y);
-          ctx.stroke();
-        });
-      }
-
-      // Center Impact Shockwave Flash
-      if (since > 0 && since < 0.18) {
-        const f = 1 - since / 0.18;
-        const g = ctx.createRadialGradient(
-          P.x,
-          P.y,
-          0,
-          P.x,
-          P.y,
-          D * 0.44 * (0.35 + q)
-        );
-        g.addColorStop(0, `rgba(255,255,255,${(0.96 * f).toFixed(3)})`);
-        g.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, W, H);
-      }
-
-      // 3D Glass Shards Scatter & Tumble
-      if (t >= T_BREAK - 0.04) {
-        if (!broke && t >= T_BREAK) {
-          broke = true;
-          canvas.style.pointerEvents = 'none';
-          html.classList.remove('intro-hold');
-          html.style.overflow = prevOverflow;
-          onBreak?.();
+      // 2. Cursor-Only Water Ripples (inside IntroOverlay only)
+      for (let i = cursorRipples.length - 1; i >= 0; i--) {
+        const rp = cursorRipples[i];
+        const age = nowSec - rp.born;
+        if (age < 0) continue;
+        if (age >= rp.duration) {
+          cursorRipples.splice(i, 1);
+          continue;
         }
-        const g = 1850;
-        shards.forEach((s) => {
-          const tau = Math.max(0, t - T_BREAK - s.delay);
-          const x = s.c.x + s.vx * tau;
-          const y = s.c.y + s.vy * tau + 0.5 * g * tau * tau;
-          const sc = 1 + s.grow * tau;
-          const rot = s.spin * tau;
-
-          // 3D foreshortening as each glass shard flips in space
-          const flipX = Math.cos(s.tumbleX * tau);
-          const flipY = Math.cos(s.tumbleY * tau);
-          const sx3d =
-            sc * Math.sign(flipX || 1) * Math.max(0.22, Math.abs(flipX));
-          const sy3d =
-            sc * Math.sign(flipY || 1) * Math.max(0.22, Math.abs(flipY));
-
-          const alpha = 1 - smooth(0.58, 1.48, tau);
-          if (alpha <= 0.002) return;
-          if (x < -W * 0.6 || x > W * 1.6 || y > H * 2.2) return;
-
-          ctx.save();
-          ctx.globalAlpha = alpha;
-          ctx.translate(x, y);
-          ctx.rotate(rot);
-          ctx.scale(sx3d, sy3d);
-          ctx.translate(-s.c.x, -s.c.y);
-
-          ctx.beginPath();
-          s.pts.forEach((p, i) =>
-            i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)
-          );
-          ctx.closePath();
-
-          ctx.save();
-          ctx.clip();
-          ctx.drawImage(
-            scene,
-            s.bb.x * dpr,
-            s.bb.y * dpr,
-            s.bb.w * dpr,
-            s.bb.h * dpr,
-            s.bb.x,
-            s.bb.y,
-            s.bb.w,
-            s.bb.h
-          );
-          // Specular flash when the tumbling glass shard catches the light
-          const shine =
-            tau > 0
-              ? s.shine +
-                0.24 * Math.pow(Math.abs(Math.sin(rot * 2.1 + s.phase)), 2)
-              : 0.03;
-          ctx.fillStyle = `rgba(255,255,255,${shine.toFixed(3)})`;
-          ctx.fillRect(s.bb.x, s.bb.y, s.bb.w, s.bb.h);
-          ctx.restore();
-
-          ctx.strokeStyle = `rgba(255,255,255,${tau > 0 ? 0.58 : 0.88})`;
-          ctx.lineWidth = 1.15 / sc;
-          ctx.stroke();
-          ctx.restore();
-        });
+        const p = age / rp.duration;
+        const r = 5 + easeOutCubic(p) * rp.maxR;
+        const band = 10 + p * 18;
+        const a =
+          Math.sin(Math.min(1, p * 3.2) * (Math.PI / 2)) *
+          Math.pow(1 - p, 1.7) *
+          rp.strength;
+        drawCursorRipple(ctx, rp.x, rp.y, r, band, a);
       }
 
-      // Flying Glass Splinters & Dust
-      if (since > 0) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        chips.forEach((c) => {
-          const life = since / c.life;
-          if (life >= 1) return;
-          const drag = Math.exp(-2.4 * since);
-          const px = c.x + (c.vx * (1 - drag)) / 2.4;
-          const py =
-            c.y + (c.vy * (1 - drag)) / 2.4 + 0.5 * 900 * since * since;
-          ctx.fillStyle = `rgba(255,255,255,${(0.88 * (1 - life)).toFixed(3)})`;
-          if (c.tri) {
-            const r = c.rot + c.spin * since;
-            ctx.beginPath();
-            ctx.moveTo(
-              px + Math.cos(r) * c.size * 2.2,
-              py + Math.sin(r) * c.size * 2.2
-            );
-            ctx.lineTo(
-              px + Math.cos(r + 2.4) * c.size * 1.6,
-              py + Math.sin(r + 2.4) * c.size * 1.6
-            );
-            ctx.lineTo(
-              px + Math.cos(r + 4.1) * c.size * 1.2,
-              py + Math.sin(r + 4.1) * c.size * 1.2
-            );
-            ctx.closePath();
-            ctx.fill();
-          } else {
-            ctx.fillRect(px, py, c.size, c.size);
-          }
-        });
-        ctx.restore();
+      // 3. Wordmark ("[CL] CampusLink .register") + Smooth Horizontal Loading Bar
+      const textAlpha = smooth(0.08, 0.65, t);
+      const rise = (1 - easeOutCubic((t - 0.08) / 0.72)) * 12;
+
+      ctx.save();
+      ctx.globalAlpha = overlayAlpha * textAlpha;
+      ctx.textBaseline = 'alphabetic';
+      ctx.font = wordFont;
+      const wordW = ctx.measureText('CampusLink').width;
+      ctx.font = regFont;
+      const regW = ctx.measureText('.register').width;
+      const gap = fs * 0.26;
+      const totalW = markSize + gap + wordW + fs * 0.12 + regW;
+      const x0 = cx - totalW / 2;
+      const baseY = cy + fs * 0.14 + rise;
+
+      // [CL] Monogram Box
+      const my = baseY - markSize * 0.96;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.roundRect(x0, my, markSize, markSize, markSize * 0.16);
+      ctx.fill();
+
+      ctx.fillStyle = '#000000';
+      ctx.font = `700 ${markSize * 0.42}px "JetBrains Mono", ui-monospace, monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('CL', x0 + markSize / 2, my + markSize * 0.65);
+      ctx.textAlign = 'left';
+
+      // "CampusLink" in pure white
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = wordFont;
+      ctx.fillText('CampusLink', x0 + markSize + gap, baseY);
+
+      // ".register" in exact Landing Page accent color (#F59E0B)
+      ctx.fillStyle = '#F59E0B';
+      ctx.font = regFont;
+      ctx.fillText('.register', x0 + markSize + gap + wordW + fs * 0.12, baseY);
+
+      // Caption
+      ctx.font = capFont;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.44)';
+      spacedText(
+        ctx,
+        'PLACEMENT REGISTER  ·  BPUT PS10',
+        cx,
+        baseY + fs * 0.62,
+        fs * 0.05,
+        'center'
+      );
+
+      // Horizontal Loading Line with Glowing Head
+      const lw = Math.min(W * 0.34, 360);
+      const lineProg = easeOutCubic((t - 0.20) / (T_LOAD_DONE - 0.22));
+      const ly = baseY + fs * 0.92;
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+      ctx.fillRect(cx - lw / 2, ly, lw, 1.2);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.fillRect(cx - lw / 2, ly, lw * lineProg, 1.2);
+
+      if (lineProg > 0.01 && lineProg < 0.999) {
+        const hx = cx - lw / 2 + lw * lineProg;
+        const g = ctx.createRadialGradient(hx, ly + 0.5, 0, hx, ly + 0.5, 14);
+        g.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+        g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(hx - 14, ly - 13, 28, 28);
       }
+
+      ctx.restore();
       ctx.restore();
     };
 
     const frame = (now) => {
+      const nowSec = now / 1000;
       let t = (now - t0) / 1000;
-      if (skip && t < T_IMPACT) {
-        t0 -= (T_IMPACT - t) * 1000;
-        t = T_IMPACT;
+      if (skip && t < T_LOAD_DONE) {
+        t0 -= (T_LOAD_DONE - t) * 1000;
+        t = T_LOAD_DONE;
         skip = false;
       }
-      render(t);
-      if (t >= T_END) {
+      render(t, nowSec);
+      if (t >= T_FADE_END) {
         finish();
         return;
       }
@@ -570,7 +320,7 @@ export function ShatterIntro({ onBreak, onDone }) {
             document.fonts.load(regFont),
             document.fonts.load(capFont),
           ]),
-          new Promise((r) => setTimeout(r, 700)),
+          new Promise((r) => setTimeout(r, 500)),
         ]);
       } catch {
         /* fallback */
@@ -579,29 +329,30 @@ export function ShatterIntro({ onBreak, onDone }) {
 
     fontsReady.then(() => {
       if (finished) return;
-      if (freezeAt !== null) {
-        render(freezeAt);
-        if (freezeAt >= T_BREAK) {
-          html.classList.remove('intro-hold');
-        }
-        return;
-      }
       t0 = performance.now();
       raf = requestAnimationFrame(frame);
     });
 
-    const trigger = () => {
+    const onPointerDown = (e) => {
+      if (e.clientX && e.clientY) {
+        spawnCursorRipple(e.clientX, e.clientY, 120, 0.22, 2);
+      }
       skip = true;
     };
     const onKey = (e) => {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') trigger();
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        skip = true;
+      }
     };
-    window.addEventListener('pointerdown', trigger);
+
+    window.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('keydown', onKey);
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('keydown', onKey);
       html.classList.remove('intro-hold');
       html.style.overflow = prevOverflow;
@@ -620,6 +371,5 @@ export function ShatterIntro({ onBreak, onDone }) {
   );
 }
 
-// Export as IntroOverlay as well so existing imports in LandingPage.jsx work seamlessly
 export { ShatterIntro as IntroOverlay };
 export default ShatterIntro;

@@ -1,200 +1,337 @@
+// src/pages/student/StudentOverview.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowRight, CheckCircle2, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { Masthead } from '../../components/ui/Masthead';
-import { StatStrip } from '../../components/ui/StatStrip';
 import { ScoreDial } from '../../components/ui/ScoreDial';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Stamp } from '../../components/ui/Stamp';
-import { Rule } from '../../components/ui/Rule';
-import { PageTransition } from '../../components/ui/PageTransition';
-import { useTilt } from '../../fx/useTilt';
-import { cn } from '../../lib/utils';
+
+const GAP_MODULES = [
+  {
+    id: 'cloud',
+    label: 'Cloud Infrastructure (AWS / Azure)',
+    boost: 4,
+    tag: 'INFRA · LAB VERIFIED',
+  },
+  {
+    id: 'sysdesign',
+    label: 'Distributed System Design',
+    boost: 3,
+    tag: 'ARCHITECTURE · RUBRIC',
+  },
+  {
+    id: 'mock',
+    label: 'Mock Coding Interviews (Hard Algorithmic)',
+    boost: 5,
+    tag: 'DSA · PANEL EVALUATED',
+  },
+  {
+    id: 'k8s',
+    label: 'Certified Kubernetes Foundations',
+    boost: 2,
+    tag: 'DEVOPS · CREDENTIAL',
+  },
+];
 
 export function StudentOverview() {
-  const { currentStudent, applications, studentInterviews } = useStore();
-  const dialTilt = useTilt({ max: 5 });
-
-  const initialGaps = [
-    { id: 'gap-1', skill: 'Cloud Infrastructure (AWS / Azure)', points: 4, inProgress: false },
-    { id: 'gap-2', skill: 'Distributed System Design', points: 3, inProgress: false },
-    { id: 'gap-3', skill: 'Mock Coding Interviews (Hard Algorithmic)', points: 5, inProgress: false },
-    { id: 'gap-4', skill: 'Certified Kubernetes Foundations', points: 2, inProgress: false },
-  ];
-
-  const [gaps, setGaps] = useState(initialGaps);
-
-  const baseScore = currentStudent.readinessScore || 72;
-  const addedPoints = gaps.filter((g) => g.inProgress).reduce((acc, g) => acc + g.points, 0);
-  const currentScore = Math.min(baseScore + addedPoints, 100);
-
-  const getLadderLevel = (score) => {
-    if (score >= 90) return 'Highly Employable';
-    if (score >= 80) return 'Ready';
-    if (score >= 65) return 'Developing';
-    return 'Not Ready';
+  const navigate = useNavigate();
+  const store = useStore() || {};
+  const student = store.currentStudent || store.students?.[0] || {
+    name: 'Ananya Sharma',
+    roll: '220101045',
+    branch: 'CSE',
+    cgpa: 8.8,
+    readiness: 72,
   };
 
-  const currentLevel = getLadderLevel(currentScore);
+  const baseScore = student.readiness || 72;
+  const [completedGaps, setCompletedGaps] = useState({});
+  const [hoveredBoost, setHoveredBoost] = useState(0);
 
   const toggleGap = (id) => {
-    setGaps((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, inProgress: !g.inProgress } : g))
-    );
+    setCompletedGaps((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const ladderTiers = [
-    { label: 'NOT READY', threshold: 0 },
-    { label: 'DEVELOPING', threshold: 65 },
-    { label: 'READY', threshold: 80 },
-    { label: 'HIGHLY EMPLOYABLE', threshold: 90 },
-  ];
+  const earnedBoost = GAP_MODULES.reduce(
+    (sum, m) => sum + (completedGaps[m.id] ? m.boost : 0),
+    0
+  );
+  const currentScore = Math.min(100, baseScore + earnedBoost);
+  const currentTier =
+    currentScore >= 85
+      ? 'HIGHLY EMPLOYABLE'
+      : currentScore >= 75
+      ? 'READY'
+      : currentScore >= 50
+      ? 'DEVELOPING'
+      : 'NOT READY';
 
   return (
-    <PageTransition className="space-y-6">
-      {/* Editorial Masthead */}
-      <Masthead
-        context={`01 · STUDENT DESK · ROLL ${currentStudent.rollNo}`}
-        title={`Good morning, ${currentStudent.name}.`}
-        lede={`B.Tech Computer Science & Engineering (CGPA ${currentStudent.cgpa}). Your academic record is locked. Closing target skill gaps will advance your readiness to Tier-1 shortlists.`}
-        action={
-          <Stamp tone={currentStudent.verified ? 'jade' : 'ochre'}>
-            {currentStudent.verified ? 'VERIFIED' : 'PENDING AUDIT'}
-          </Stamp>
-        }
-      />
+    <div className="space-y-8 pb-12">
+      {/* Top Quick Telemetry Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 border-b border-line pb-5 font-mono text-xs text-fg-soft">
+        <div className="border-l border-line pl-3">
+          <span className="block text-[10px] uppercase tracking-widest opacity-60">
+            ACADEMIC STANDING
+          </span>
+          <span className="font-sans text-sm text-fg">
+            {student.cgpa || '8.80'} CGPA & {student.branch || 'CSE'} discipline
+          </span>
+        </div>
+        <div className="border-l border-line pl-3">
+          <span className="block text-[10px] uppercase tracking-widest opacity-60">
+            ELIGIBLE DRIVES
+          </span>
+          <span className="font-sans text-sm text-fg">
+            Across IT & product MNCs
+          </span>
+        </div>
+        <div className="border-l border-line pl-3">
+          <span className="block text-[10px] uppercase tracking-widest opacity-60">
+            INTERVIEW CALENDAR
+          </span>
+          <span className="font-sans text-sm text-fg">
+            Synchronized with recruiter desk
+          </span>
+        </div>
+        <div className="border-l border-line pl-3">
+          <span className="block text-[10px] uppercase tracking-widest opacity-60">
+            RESUME ARTIFACT
+          </span>
+          <span className="font-sans text-sm text-fg">Verified ATS format</span>
+        </div>
+      </div>
 
-      {/* Ruled StatStrip (No separate card boxes!) */}
-      <StatStrip
-        items={[
-          { label: 'ELIGIBLE DRIVES', value: 18, hint: '8.80 CGPA & CSE discipline' },
-          { label: 'ACTIVE APPLICATIONS', value: applications.length, hint: 'Across IT & product MNCs' },
-          { label: 'CONFIRMED INTERVIEWS', value: studentInterviews.length, hint: 'Synchronized with recruiter desk' },
-          { label: 'AI RESUME SCORE', value: currentStudent.resumeScore, suffix: '%', hint: 'Verified ATS format' },
-        ]}
-      />
-
-      {/* Asymmetric 7/5 Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start pt-2">
-        {/* Left Column (7 cols): ScoreDial Instrument & Readiness Ruler */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="border-b border-line pb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+      {/* Main Two-Column Readiness & Gap Simulator Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: 01 · PLACEMENT READINESS INSTRUMENT */}
+        <div className="lg:col-span-7 space-y-3">
+          <div className="flex items-center justify-between border-b border-line pb-2 font-mono text-[11px] uppercase tracking-widest">
+            <span className="text-fg-soft">
               01 · PLACEMENT READINESS INSTRUMENT
             </span>
-            <span className="font-mono text-[10px] text-ochre-deep uppercase font-semibold">
-              EVALUATION MODEL v2.4
+            <span className="text-accent-ink font-semibold">
+              EVALUATION MODEL V2.4
             </span>
           </div>
 
-          {/* Instrument Paper Object */}
-          <div
-            ref={dialTilt.ref}
-            onPointerMove={dialTilt.onPointerMove}
-            onPointerLeave={dialTilt.onPointerLeave}
-            className="tilt glass-strong rounded-object border border-line p-6 shadow-object flex flex-col items-center"
-          >
-            <ScoreDial
-              value={currentScore}
-              size={230}
-              level={currentLevel}
-              label="Employability Diagnostic"
-              subtext="Aggregated across authenticated grades, mock interviews, and verified project repos."
-            />
+          <Card className="p-6 sm:p-8 space-y-6 relative overflow-hidden">
+            <div className="flex flex-col items-center text-center">
+              <ScoreDial
+                value={currentScore}
+                baseValue={baseScore}
+                previewDelta={hoveredBoost}
+                label="EMPLOYABILITY DIAGNOSTIC"
+              />
 
-            {/* The Horizontal Readiness Ruler */}
-            <div className="w-full mt-6 pt-5 border-t border-line">
-              <div className="flex justify-between font-mono text-[10px] uppercase text-ink-soft mb-2">
-                <span>Progression Ruler</span>
-                <span className="text-ochre-deep font-bold">{currentLevel}</span>
+              <p className="font-sans text-xs sm:text-sm text-fg-soft max-w-md mt-3 leading-relaxed">
+                Aggregated across authenticated grades, mock interviews, and
+                verified project repos.
+              </p>
+            </div>
+
+            {/* Interactive Animated Progression Ruler */}
+            <div className="pt-4 border-t border-line space-y-3">
+              <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest">
+                <span className="text-fg-soft">PROGRESSION RULER</span>
+                <span
+                  className={
+                    currentScore >= 80
+                      ? 'text-jade font-bold'
+                      : 'text-accent-ink font-bold'
+                  }
+                >
+                  {currentTier} ({currentScore}/100)
+                </span>
               </div>
 
-              <div className="relative pt-3 pb-1">
-                {/* Ruler track line */}
-                <div className="h-px w-full bg-ink/40 relative">
-                  {ladderTiers.map((tier, idx) => {
-                    const isReached = currentScore >= tier.threshold;
-                    return (
-                      <div
-                        key={tier.label}
-                        className="absolute top-0 transform -translate-x-1/2"
-                        style={{ left: `${(idx / 3) * 100}%` }}
-                      >
-                        {/* Tick mark */}
-                        <div className={cn('h-2.5 w-px', isReached ? 'bg-ochre' : 'bg-ink/40')} />
-                        <span className={cn('font-mono text-[9px] block mt-1 select-none', isReached ? 'text-ink font-bold' : 'text-ink-soft/60')}>
-                          {tier.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Continuous Illuminated Track + Live Sliding Marker */}
+              <div className="relative h-2.5 w-full rounded-full bg-line/40 overflow-visible">
+                {/* 80+ Target Benchmark Line */}
+                <div
+                  className="absolute -top-1.5 bottom-[-6px] w-[1.5px] bg-jade/70 z-10"
+                  style={{ left: '80%' }}
+                  title="80+ Target Ready Benchmark"
+                />
+
+                {/* Animated Progress Fill */}
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${currentScore}%` }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                  style={{
+                    background:
+                      currentScore >= 80
+                        ? 'linear-gradient(90deg, rgb(var(--c-accent)), rgb(var(--c-jade)))'
+                        : 'linear-gradient(90deg, rgb(var(--c-accent) / 0.55), rgb(var(--c-accent)))',
+                    boxShadow: '0 0 14px rgb(var(--c-accent) / 0.45)',
+                  }}
+                />
+
+                {/* Glowing Live Score Beacon on the Ruler */}
+                <motion.div
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-white bg-accent shadow-[0_0_12px_rgb(var(--c-accent))]"
+                  animate={{ left: `${currentScore}%` }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                />
+              </div>
+
+              {/* 4 Milestone Tier Columns */}
+              <div className="grid grid-cols-4 pt-1 font-mono text-[10px] uppercase tracking-wider">
+                {[
+                  { label: 'NOT READY', min: 0, max: 49 },
+                  { label: 'DEVELOPING', min: 50, max: 74 },
+                  { label: 'READY', min: 75, max: 84 },
+                  { label: 'HIGHLY EMPLOYABLE', min: 85, max: 100 },
+                ].map((m) => {
+                  const isActive =
+                    currentScore >= m.min && currentScore <= m.max;
+                  const isPassed = currentScore > m.max;
+                  return (
+                    <div
+                      key={m.label}
+                      className={`border-l pl-2 transition-colors duration-300 ${
+                        isActive
+                          ? 'border-accent text-fg font-bold'
+                          : isPassed
+                          ? 'border-jade/60 text-jade/80'
+                          : 'border-line text-fg-soft/50'
+                      }`}
+                    >
+                      {m.label}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
-        {/* Right Column (5 cols): Ruled Skill Gaps */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="border-b border-line pb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
-              02 · CLOSE TARGET GAPS
-            </span>
-            <span className="font-mono text-[10px] text-ink-soft">
-              BENCHMARK: 80+ READY
-            </span>
+        {/* Right Column: 02 · CLOSE TARGET GAPS */}
+        <div className="lg:col-span-5 space-y-3">
+          <div className="flex items-center justify-between border-b border-line pb-2 font-mono text-[11px] uppercase tracking-widest">
+            <span className="text-fg-soft">02 · CLOSE TARGET GAPS</span>
+            <span className="text-fg-soft">BENCHMARK: 80+ READY</span>
           </div>
 
-          <p className="font-sans text-xs text-ink-soft leading-relaxed">
-            Targeting <strong className="text-ink">Microsoft India SDE</strong>. Select gaps to simulate completing recommended modules:
-          </p>
+          <div className="space-y-4">
+            <p className="font-sans text-sm text-fg-soft leading-relaxed">
+              Targeting <strong className="text-fg">Microsoft India SDE</strong>.
+              Select gaps to simulate completing recommended modules:
+            </p>
 
-          {/* Ruled rows (No heavy cards!) */}
-          <div className="divide-y divide-line border-y border-line">
-            {gaps.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => toggleGap(item.id)}
-                className={cn(
-                  'py-3.5 px-2 flex items-center justify-between cursor-pointer transition-colors select-none',
-                  item.inProgress ? 'bg-ochre-tint/30' : 'hover:bg-bone/40'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      'w-4 h-4 rounded-xs border flex items-center justify-center transition-colors',
-                      item.inProgress ? 'bg-ochre border-ochre text-btn-fg' : 'border-line bg-paper'
-                    )}
+            <div className="divide-y divide-line border-y border-line">
+              {GAP_MODULES.map((mod) => {
+                const checked = !!completedGaps[mod.id];
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    onClick={() => toggleGap(mod.id)}
+                    onMouseEnter={() =>
+                      !checked && setHoveredBoost(mod.boost)
+                    }
+                    onMouseLeave={() => setHoveredBoost(0)}
+                    className={`w-full py-3.5 px-3 flex items-center justify-between gap-3 text-left transition-all duration-200 group relative overflow-hidden ${
+                      checked
+                        ? 'bg-jade-tint/20'
+                        : 'hover:bg-surface/60 hover:pl-4'
+                    }`}
                   >
-                    {item.inProgress && (
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className={cn('text-xs font-medium', item.inProgress ? 'text-ink font-semibold' : 'text-ink-soft')}>
-                    {item.skill}
-                  </span>
-                </div>
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all duration-200 ${
+                          checked
+                            ? 'bg-jade border-jade text-black shadow-[0_0_10px_rgb(var(--c-jade)/0.5)]'
+                            : 'border-line group-hover:border-accent'
+                        }`}
+                      >
+                        {checked && <CheckCircle2 className="h-3 w-3 stroke-[2.5]" />}
+                      </span>
+                      <div className="min-w-0">
+                        <span
+                          className={`block font-sans text-sm transition-colors ${
+                            checked
+                              ? 'text-fg font-medium'
+                              : 'text-fg-soft group-hover:text-fg'
+                          }`}
+                        >
+                          {mod.label}
+                        </span>
+                        <span className="font-mono text-[9.5px] uppercase tracking-widest text-fg-soft/60">
+                          {mod.tag}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-ochre-deep">
-                    +{item.points}
+                    <span
+                      className={`font-mono text-xs font-bold shrink-0 px-2 py-0.5 rounded transition-all ${
+                        checked
+                          ? 'bg-jade/20 text-jade'
+                          : 'text-accent-ink group-hover:bg-accent/15'
+                      }`}
+                    >
+                      +{mod.boost}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Live Diagnostic Score Summary Bar */}
+            <div className="flex items-center justify-between pt-2 font-mono text-xs">
+              <span className="uppercase tracking-widest text-fg-soft">
+                DIAGNOSTIC SCORE:
+              </span>
+              <div className="flex items-center gap-2">
+                {earnedBoost > 0 && (
+                  <span className="text-jade font-semibold">
+                    (+{earnedBoost} simulated)
                   </span>
-                  {item.inProgress && (
-                    <Stamp tone="ochre" rotate={0}>IN PROGRESS</Stamp>
-                  )}
-                </div>
+                )}
+                <span className="text-sm font-bold text-fg">
+                  {currentScore}/100
+                </span>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="pt-2 font-mono text-[11px] text-ink-soft flex justify-between">
-            <span>DIAGNOSTIC SCORE:</span>
-            <strong className="text-ink font-bold">{currentScore}/100</strong>
+            {currentScore >= 80 ? (
+              <div className="rounded-object border border-jade/40 bg-jade-tint/25 p-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="h-4 w-4 text-jade shrink-0" />
+                  <span className="font-mono text-xs text-fg">
+                    Target 80+ threshold unlocked for Microsoft India SDE.
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => navigate('/student/drives')}
+                  icon={ArrowRight}
+                >
+                  Apply Now
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-object border border-line bg-surface/50 p-3.5 flex items-center justify-between gap-3">
+                <div className="text-fg-soft">
+                  <span className="font-mono text-xs">
+                    Select +{80 - currentScore} more points above to cross the
+                    80+ shortlist benchmark.
+                  </span>
+                </div>
+                <TrendingUp className="h-4 w-4 text-accent shrink-0" />
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </PageTransition>
+    </div>
   );
 }
+
+export default StudentOverview;

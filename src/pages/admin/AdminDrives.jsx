@@ -78,64 +78,93 @@ export function AdminDrives() {
             </div>
 
             {/* True Multi-Resource Timeline Object */}
-            <div className="bg-paper rounded-object border border-line p-5 shadow-object space-y-4">
+            <div className="bg-surface rounded-object border border-line p-5 shadow-object space-y-4">
               <div className="flex items-center justify-between font-mono text-xs border-b border-line pb-2">
-                <span className="font-semibold text-ink uppercase tracking-wider">
+                <span className="font-semibold text-fg uppercase tracking-wider">
                   VENUE INTERVAL GRID · NOV 02, 2026
                 </span>
-                <span className="text-brick font-semibold flex items-center gap-1.5">
+                <span className="text-orange-500 font-semibold flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5" /> 2-HOUR ROOM OVERLAP
                 </span>
               </div>
 
-              {/* Time scale */}
-              <div className="grid grid-cols-8 text-center font-mono text-[10px] text-ink-soft border-b border-line/60 pb-1.5">
-                <span>09:00</span>
-                <span>10:00</span>
-                <span>11:00</span>
-                <span>12:00</span>
-                <span>13:00</span>
-                <span>14:00</span>
-                <span>15:00</span>
-                <span>16:00</span>
+              {/* Time scale aligned with resource tracks */}
+              <div className="flex items-center gap-4 border-b border-line/60 pb-2 font-mono text-[10px] text-fg-soft select-none">
+                <span className="w-28 shrink-0 text-[10px] uppercase tracking-wider font-semibold">VENUE</span>
+                <div className="flex-1 grid grid-cols-8 text-left">
+                  <span>09:00</span>
+                  <span>10:00</span>
+                  <span>11:00</span>
+                  <span>12:00</span>
+                  <span>13:00</span>
+                  <span>14:00</span>
+                  <span>15:00</span>
+                  <span>16:00</span>
+                </div>
               </div>
 
               {/* Resource Rows */}
-              <div className="space-y-3 font-mono text-xs">
+              <div className="space-y-3.5 font-mono text-xs">
                 {/* Computing Lab 2 (Free morning, will receive Cognizant afternoon) */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-[11px] text-ink-soft shrink-0">Lab 2:</span>
-                  <div className="flex-1 h-7 bg-bone/50 rounded border border-line/60 relative overflow-hidden flex items-center px-3 text-[10px] text-ink-soft">
-                    <span>Available window 14:00 - 17:00</span>
+                  <span className="w-28 text-[11px] text-fg-soft shrink-0">Lab 2:</span>
+                  <div className="flex-1 h-7 bg-surface/50 rounded border border-line/60 relative overflow-hidden flex items-center">
+                    <div className="absolute left-[62.5%] w-[37.5%] h-full bg-jade/15 border border-jade/40 rounded flex items-center px-2 text-[10px] font-medium text-fg">
+                      <span className="text-jade font-semibold mr-1.5">Free Window:</span> 14:00 - 17:00
+                    </div>
                   </div>
                 </div>
 
-                {/* Computing Lab 4 (COLLISION) */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-[11px] font-semibold text-brick shrink-0">Lab 4:</span>
-                  <div className="flex-1 h-8 bg-bone rounded border border-line relative overflow-hidden flex items-center">
-                    {/* Cognizant Bar */}
-                    <div className="absolute left-0 w-[37.5%] h-full bg-ochre/30 border border-ochre flex items-center px-2 text-[10px] font-semibold text-ink">
-                      Cognizant (09:00-12:00)
+                {/* Computing Lab 4 (COLLISION - SEPARATE LANES WITH ORANGE MIXING OVERLAP) */}
+                <div className="flex items-start gap-4">
+                  <div className="w-28 shrink-0 pt-1">
+                    <span className="text-[11px] font-semibold text-orange-500 block">Lab 4:</span>
+                    <span className="text-[9.5px] text-orange-500/90 font-mono block">2-HR OVERLAP</span>
+                  </div>
+
+                  <div className="flex-1 space-y-1.5 relative">
+                    {/* Background Collision Corridor Overlay across 10:00 - 12:00 */}
+                    <div className="absolute left-[12.5%] w-[25%] -top-1 -bottom-1 border-x-2 border-dashed border-orange-500/80 bg-orange-500/10 pointer-events-none rounded z-0" />
+
+                    {/* Sub-Lane 1: Cognizant (09:00 - 12:00) */}
+                    <div className="h-7 bg-surface/70 rounded border border-line relative overflow-hidden flex items-center z-10">
+                      {/* 09:00 - 10:00: Non-overlapping company bar */}
+                      <div className="absolute left-0 w-[12.5%] h-full bg-amber-500/15 border-r border-amber-500/30 flex items-center px-2 text-[10px] font-medium text-fg truncate">
+                        Cognizant (09:00)
+                      </div>
+                      {/* 10:00 - 12:00: OVERLAP TIME (Vivid Orange Clash Zone) */}
+                      <div className="absolute left-[12.5%] w-[25%] h-full bg-gradient-to-r from-orange-500/30 to-amber-500/30 border-y border-r border-orange-500 flex items-center justify-between px-2 text-[10px] font-semibold text-orange-600 dark:text-orange-300">
+                        <span className="truncate">Cognizant (10:00–12:00)</span>
+                        <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-orange-500 text-white font-bold shrink-0 shadow-xs">
+                          CLASH
+                        </span>
+                      </div>
                     </div>
-                    {/* Tech Mahindra Bar */}
-                    <div className="absolute left-[12.5%] w-[37.5%] h-full bg-ink/10 border border-ink/40 flex items-center px-2 text-[10px] font-semibold text-ink">
-                      Tech Mahindra (10:00-13:00)
-                    </div>
-                    {/* Hatch Collision Overlay */}
-                    <div className="absolute left-[12.5%] w-[25%] top-0 bottom-0 hatch-brick border-x border-brick flex items-center justify-center">
-                      <span className="font-mono text-[9px] font-bold text-brick bg-paper px-1 py-0.2 rounded shadow-xs">
-                        CLASH
-                      </span>
+
+                    {/* Sub-Lane 2: Tech Mahindra (10:00 - 13:00) */}
+                    <div className="h-7 bg-surface/70 rounded border border-line relative overflow-hidden flex items-center z-10">
+                      {/* 10:00 - 12:00: OVERLAP TIME (Dark Orange Clash Zone) */}
+                      <div className="absolute left-[12.5%] w-[25%] h-full bg-gradient-to-r from-orange-600/35 to-orange-500/35 border-y border-l border-orange-600 flex items-center justify-between px-2 text-[10px] font-semibold text-orange-600 dark:text-orange-200">
+                        <span className="truncate">Tech Mahindra (10:00–12:00)</span>
+                        <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-orange-600 text-white font-bold shrink-0 shadow-xs">
+                          CLASH
+                        </span>
+                      </div>
+                      {/* 12:00 - 13:00: Non-overlapping company bar */}
+                      <div className="absolute left-[37.5%] w-[12.5%] h-full bg-surface border-l border-line flex items-center px-2 text-[10px] font-medium text-fg truncate">
+                        Tech Mahindra (13:00)
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Seminar Hall A */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-[11px] text-ink-soft shrink-0">Hall A:</span>
-                  <div className="flex-1 h-7 bg-bone/50 rounded border border-line/60 relative flex items-center px-3 text-[10px] text-ink-soft">
-                    <span>Reserved for Orientation</span>
+                  <span className="w-28 text-[11px] text-fg-soft shrink-0">Hall A:</span>
+                  <div className="flex-1 h-7 bg-surface/50 rounded border border-line/60 relative overflow-hidden flex items-center">
+                    <div className="absolute left-0 w-[50%] h-full bg-surface border-r border-line rounded flex items-center px-3 text-[10px] text-fg-soft">
+                      <span>Reserved for Orientation (09:00 - 13:00)</span>
+                    </div>
                   </div>
                 </div>
               </div>

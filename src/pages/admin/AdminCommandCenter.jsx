@@ -1,315 +1,485 @@
+// src/pages/admin/AdminCommandCenter.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
   CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  AreaChart,
+  Area,
 } from 'recharts';
-import { Plus } from 'lucide-react';
-import { useStore } from '../../lib/store';
-import { Masthead } from '../../components/ui/Masthead';
-import { StatStrip } from '../../components/ui/StatStrip';
-import { Button } from '../../components/ui/Button';
-import { Drawer } from '../../components/ui/Drawer';
-import { useToast } from '../../components/ui/Toast';
-import { PageTransition } from '../../components/ui/PageTransition';
-import { useThemeTokens } from '../../theme/useThemeTokens';
-import { useMagnetic } from '../../fx/useTilt';
+import { motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
+import { CountUp } from '../../components/ui/CountUp';
 
-export function AdminCommandCenter() {
-  const { analytics } = useStore();
-  const { toast } = useToast();
-  const themeTokens = useThemeTokens();
-  const magAuth = useMagnetic({ strength: 0.25 });
-  const [drawerOpen, setDrawerOpen] = useState(false);
+const BRANCH_CONVERSION = [
+  { branch: 'CSE', rate: 82, placed: 344, total: 420 },
+  { branch: 'IT', rate: 76, placed: 213, total: 280 },
+  { branch: 'ECE', rate: 64, placed: 166, total: 260 },
+  { branch: 'EEE', rate: 58, placed: 116, total: 200 },
+  { branch: 'ME', rate: 49, placed: 73, total: 150 },
+  { branch: 'CE', rate: 41, placed: 45, total: 110 },
+];
 
-  const [formCompany, setFormCompany] = useState('');
-  const [formRole, setFormRole] = useState('');
-  const [formDate, setFormDate] = useState('2026-11-25');
-  const [formVenue, setFormVenue] = useState('Auditorium B');
-  const [formBranches, setFormBranches] = useState('CSE, IT');
+const CTC_TRAJECTORY = [
+  { year: '2022', avg: 5.2, highest: 18.0 },
+  { year: '2023', avg: 6.0, highest: 22.0 },
+  { year: '2024', avg: 6.8, highest: 26.5 },
+  { year: '2025', avg: 8.1, highest: 31.0 },
+  { year: '2026', avg: 9.4, highest: 34.0 },
+];
 
-  const handleCreateDrive = (e) => {
-    e.preventDefault();
-    if (!formCompany || !formRole) {
-      toast('Please enter company and role', 'brick');
-      return;
-    }
-    toast(`Drive for ${formCompany} scheduled! Conflict check passed.`, 'jade');
-    setDrawerOpen(false);
-    setFormCompany('');
-    setFormRole('');
-  };
+function ConversionBarShape(props) {
+  const { x, y, width, height, index, hoveredIdx } = props;
+  if (!height || height <= 0) return null;
+  const isHovered = hoveredIdx === index;
+  const isDimmed = hoveredIdx !== null && hoveredIdx !== index;
 
   return (
-    <PageTransition className="space-y-8">
-      {/* Editorial Masthead */}
-      <Masthead
-        context="01 · PLACEMENT DIRECTORATE · BPUT CENTRAL CAMPUS"
-        title="Placement Command Center."
-        lede="Overseeing 1,420 registered candidates across 6 engineering disciplines and 42 active corporate recruitment partners."
-        action={
-          <span
-            ref={magAuth.ref}
-            onPointerMove={magAuth.onPointerMove}
-            onPointerLeave={magAuth.onPointerLeave}
-            className="inline-block"
+    <g
+      style={{
+        opacity: isDimmed ? 0.45 : 1,
+        transition: 'opacity 0.2s ease',
+      }}
+    >
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx={5}
+        ry={5}
+        fill={isHovered ? 'url(#adminBarHoverGrad)' : 'url(#adminBarGrad)'}
+      />
+      {/* Crisp Luminous Top Edge Cap */}
+      <rect
+        x={x + 1}
+        y={y}
+        width={Math.max(0, width - 2)}
+        height={3}
+        rx={1.5}
+        fill={isHovered ? 'rgb(var(--c-accent))' : 'rgb(var(--c-fg))'}
+      />
+    </g>
+  );
+}
+
+function BranchConversionTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="glass-strong rounded-control border border-line p-3 shadow-object font-mono text-xs space-y-1 min-w-[165px]">
+      <div className="flex items-center justify-between border-b border-line pb-1">
+        <span className="font-bold text-fg">{d.branch} COHORT</span>
+        <span className="text-accent font-bold">{d.rate}% Placed</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px] pt-0.5">
+        <span className="text-fg-soft">Students Placed:</span>
+        <span className="text-fg font-semibold">
+          {d.placed} / {d.total}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TrajectoryTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload || {};
+  return (
+    <div className="glass-strong rounded-control border border-line p-3 shadow-object font-mono text-xs space-y-1 min-w-[175px]">
+      <div className="border-b border-line pb-1 font-bold text-fg">
+        ACADEMIC YEAR {label}
+      </div>
+      <p className="text-accent font-semibold pt-0.5">
+        Highest: ₹{row.highest?.toFixed(1)} LPA
+      </p>
+      <p className="text-jade font-semibold">
+        Average: ₹{row.avg?.toFixed(1)} LPA
+      </p>
+    </div>
+  );
+}
+
+export function AdminCommandCenter() {
+  const navigate = useNavigate();
+  const [hoveredBranchIdx, setHoveredBranchIdx] = useState(null);
+  const [showTargetLine, setShowTargetLine] = useState(true);
+  const [ctcFocus, setCtcFocus] = useState('all'); // 'all' | 'highest' | 'avg'
+
+  const topKpis = [
+    {
+      label: 'ELIGIBLE STUDENTS',
+      value: 1420,
+      decimals: 0,
+      prefix: '',
+      suffix: '',
+      sub: '1,180 verified placement ready',
+      progress: 83,
+      barColor: 'bg-fg',
+      path: '/admin/verification',
+    },
+    {
+      label: 'ACTIVE RECRUITERS',
+      value: 42,
+      decimals: 0,
+      prefix: '',
+      suffix: '',
+      sub: '42 authorized JNFs',
+      progress: 100,
+      barColor: 'bg-jade',
+      path: '/admin/recruiters',
+    },
+    {
+      label: 'OVERALL PLACED %',
+      value: 78.4,
+      decimals: 1,
+      prefix: '',
+      suffix: '%',
+      sub: 'Target benchmark: 85%',
+      progress: 78.4,
+      barColor: 'bg-accent',
+      path: '/admin/offers',
+    },
+    {
+      label: 'HIGHEST CTC',
+      value: 34.0,
+      decimals: 1,
+      prefix: '₹',
+      suffix: ' LPA',
+      sub: 'Average: 9.4 LPA',
+      progress: 88,
+      barColor: 'bg-accent',
+      path: '/admin/drives',
+    },
+  ];
+
+  return (
+    <div className="space-y-10 pb-12">
+      {/* 1. Interactive Top 4 KPI Telemetry Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line border-b border-line pb-6">
+        {topKpis.map((kpi, idx) => (
+          <motion.div
+            key={kpi.label}
+            whileHover={{ y: -2 }}
+            onClick={() => navigate(kpi.path)}
+            className={`group relative cursor-pointer py-3 ${
+              idx === 0 ? 'sm:pr-6' : 'sm:px-6'
+            } space-y-2 transition-colors`}
           >
-            <Button
-              variant="primary"
-              icon={Plus}
-              onClick={() => setDrawerOpen(true)}
-            >
-              Authorize New Drive
-            </Button>
-          </span>
-        }
-      />
+            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-fg-soft">
+              <span>{kpi.label}</span>
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-accent transition-all duration-200" />
+            </div>
 
-      {/* Ruled Macro StatStrip */}
-      <StatStrip
-        items={[
-          { label: 'ELIGIBLE STUDENTS', value: analytics.overview.totalStudents, hint: '1,180 verified placement ready' },
-          { label: 'ACTIVE RECRUITERS', value: analytics.overview.activeRecruiters, hint: '42 authorized JNFs' },
-          { label: 'OVERALL PLACED %', value: analytics.overview.placementPercentage, suffix: '%', decimals: 1, hint: 'Target benchmark: 85%' },
-          { label: 'HIGHEST CTC', value: analytics.overview.highestPackage, prefix: '₹', suffix: ' LPA', decimals: 1, hint: 'Average: 9.4 LPA' },
-        ]}
-      />
+            <div className="font-display text-4xl xl:text-5xl font-semibold tracking-tight text-fg group-hover:text-accent transition-colors duration-200">
+              <CountUp
+                to={kpi.value}
+                decimals={kpi.decimals}
+                prefix={kpi.prefix}
+                suffix={kpi.suffix}
+              />
+            </div>
 
-      {/* Two Recharts Charts in Ruled Grid (No Card Boxes!) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start pt-2">
-        {/* Chart 1: Branch Conversion (Left 6 cols) */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="border-b border-line pb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+            <p className="font-sans text-xs text-fg-soft">{kpi.sub}</p>
+
+            {/* Subtle Animated Progress Hairline */}
+            <div className="h-1 w-full rounded-full bg-line/40 overflow-hidden mt-2">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${kpi.progress}%` }}
+                transition={{ duration: 1.0, delay: idx * 0.08, ease: 'easeOut' }}
+                className={`h-full rounded-full ${kpi.barColor} opacity-75 group-hover:opacity-100 transition-opacity`}
+              />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* 2. Two-Column Interactive Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* CHART 01: BRANCH-WISE CONVERSION (%) */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <span className="font-mono text-xs uppercase tracking-widest text-fg-soft">
               01 · BRANCH-WISE CONVERSION (%)
             </span>
-            <span className="font-mono text-[10px] text-jade uppercase font-semibold">
-              CSE: 82% LEADING
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowTargetLine((v) => !v)}
+                className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider border transition-all ${
+                  showTargetLine
+                    ? 'border-accent/40 bg-accent/10 text-accent-ink'
+                    : 'border-line text-fg-soft hover:text-fg'
+                }`}
+              >
+                85% Benchmark
+              </button>
+              <span className="font-mono text-xs font-semibold text-jade">
+                CSE: 82% LEADING
+              </span>
+            </div>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-[290px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={analytics.branchConversion}
-                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                data={BRANCH_CONVERSION}
+                margin={{ top: 14, right: 8, left: -20, bottom: 4 }}
+                onMouseMove={(st) =>
+                  setHoveredBranchIdx(st?.activeTooltipIndex ?? null)
+                }
+                onMouseLeave={() => setHoveredBranchIdx(null)}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
+                <defs>
+                  <linearGradient id="adminBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgb(var(--c-fg))" stopOpacity="0.95" />
+                    <stop offset="70%" stopColor="rgb(var(--c-fg))" stopOpacity="0.65" />
+                    <stop offset="100%" stopColor="rgb(var(--c-fg))" stopOpacity="0.18" />
+                  </linearGradient>
+                  <linearGradient id="adminBarHoverGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgb(var(--c-accent))" stopOpacity="1" />
+                    <stop offset="75%" stopColor="rgb(var(--c-accent))" stopOpacity="0.65" />
+                    <stop offset="100%" stopColor="rgb(var(--c-accent))" stopOpacity="0.20" />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="rgb(var(--c-line))"
+                  opacity={0.55}
+                />
                 <XAxis
                   dataKey="branch"
-                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-                  axisLine={{ stroke: themeTokens.line }}
+                  axisLine={false}
                   tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-                  axisLine={{ stroke: themeTokens.line }}
-                  tickLine={false}
-                  domain={[0, 100]}
-                />
-                <Tooltip
-                  cursor={{ fill: themeTokens.bg }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] space-y-0.5 border border-line">
-                          <p className="font-bold">{payload[0].payload.branch}</p>
-                          <p className="text-accent">{payload[0].value}% Placed</p>
-                          <p className="text-sidebar-fg/60">{payload[0].payload.placed} of {payload[0].payload.total} candidates</p>
-                        </div>
-                      );
-                    }
-                    return null;
+                  tick={{
+                    fill: 'rgb(var(--c-fg))',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 12,
+                    fontWeight: 600,
                   }}
                 />
+                <YAxis
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: 'rgb(var(--c-fg-soft))',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 11,
+                  }}
+                />
+                <Tooltip
+                  content={<BranchConversionTooltip />}
+                  cursor={{ fill: 'rgb(var(--c-fg) / 0.04)' }}
+                />
+
+                {showTargetLine && (
+                  <ReferenceLine
+                    y={85}
+                    stroke="rgb(var(--c-accent))"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.65}
+                  />
+                )}
+
                 <Bar
-                  dataKey="conversion"
-                  fill={themeTokens.fg}
-                  radius={[3, 3, 0, 0]}
+                  dataKey="rate"
+                  shape={(props) => (
+                    <ConversionBarShape
+                      {...props}
+                      hoveredIdx={hoveredBranchIdx}
+                    />
+                  )}
                   animationDuration={900}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="font-serif italic text-xs text-ink-soft pt-1">
-            Civil and Mechanical convert at roughly half the rate of Computer Science and IT.
+
+          <p className="font-serif italic text-sm text-fg-soft">
+            {hoveredBranchIdx !== null
+              ? `${BRANCH_CONVERSION[hoveredBranchIdx].branch} Cohort: ${BRANCH_CONVERSION[hoveredBranchIdx].placed} of ${BRANCH_CONVERSION[hoveredBranchIdx].total} eligible students placed (${BRANCH_CONVERSION[hoveredBranchIdx].rate}%).`
+              : 'Civil and Mechanical convert at roughly half the rate of Computer Science and IT.'}
           </p>
         </div>
 
-        {/* Chart 2: Historical Package Trends (Right 6 cols) */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="border-b border-line pb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+        {/* CHART 02: COMPENSATION TRAJECTORY (LPA) */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <span className="font-mono text-xs uppercase tracking-widest text-fg-soft">
               02 · COMPENSATION TRAJECTORY (LPA)
             </span>
-            <span className="font-mono text-[10px] text-ochre-deep uppercase font-semibold">
-              HIGHEST: ₹34.0 LPA
-            </span>
+
+            {/* Subtle Interactive Curve Focus Pills */}
+            <div className="flex items-center gap-1.5 font-mono text-[10px]">
+              <button
+                type="button"
+                onClick={() =>
+                  setCtcFocus((prev) => (prev === 'highest' ? 'all' : 'highest'))
+                }
+                onMouseEnter={() => setCtcFocus('highest')}
+                onMouseLeave={() => setCtcFocus('all')}
+                className={`rounded px-2 py-0.5 uppercase tracking-wider border transition-all ${
+                  ctcFocus === 'highest'
+                    ? 'border-accent bg-accent/15 text-accent font-bold'
+                    : 'border-transparent text-accent font-semibold hover:border-accent/40'
+                }`}
+              >
+                HIGHEST: ₹34.0 LPA
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setCtcFocus((prev) => (prev === 'avg' ? 'all' : 'avg'))
+                }
+                onMouseEnter={() => setCtcFocus('avg')}
+                onMouseLeave={() => setCtcFocus('all')}
+                className={`rounded px-2 py-0.5 uppercase tracking-wider border transition-all ${
+                  ctcFocus === 'avg'
+                    ? 'border-jade bg-jade/15 text-jade font-bold'
+                    : 'border-transparent text-jade font-semibold hover:border-jade/40'
+                }`}
+              >
+                AVG: ₹9.4 LPA
+              </button>
+            </div>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-[290px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={analytics.packageTrend}
-                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+              <AreaChart
+                data={CTC_TRAJECTORY}
+                margin={{ top: 14, right: 12, left: -20, bottom: 4 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={themeTokens.line} />
+                <defs>
+                  <linearGradient id="ctcHighestGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="rgb(var(--c-accent))"
+                      stopOpacity={ctcFocus === 'avg' ? 0.05 : 0.28}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="rgb(var(--c-accent))"
+                      stopOpacity="0"
+                    />
+                  </linearGradient>
+                  <linearGradient id="ctcAvgGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="rgb(var(--c-jade))"
+                      stopOpacity={ctcFocus === 'highest' ? 0.05 : 0.25}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="rgb(var(--c-jade))"
+                      stopOpacity="0"
+                    />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="rgb(var(--c-line))"
+                  opacity={0.55}
+                />
                 <XAxis
                   dataKey="year"
-                  tick={{ fill: themeTokens.fg, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-                  axisLine={{ stroke: themeTokens.line }}
+                  axisLine={false}
                   tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: themeTokens.fgSoft, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-                  axisLine={{ stroke: themeTokens.line }}
-                  tickLine={false}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-sidebar text-sidebar-fg p-2 rounded-control font-mono text-[11px] space-y-0.5 border border-line">
-                          <p className="font-bold">Season {payload[0].payload.year}</p>
-                          <p className="text-accent">Highest: ₹{payload[1]?.value} LPA</p>
-                          <p className="text-sidebar-fg/80">Average: ₹{payload[0]?.value} LPA</p>
-                        </div>
-                      );
-                    }
-                    return null;
+                  tick={{
+                    fill: 'rgb(var(--c-fg))',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 12,
+                    fontWeight: 600,
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="avg"
-                  stroke={themeTokens.lagoon}
-                  strokeWidth={2}
-                  dot={{ fill: themeTokens.lagoon, r: 3 }}
-                  name="Average"
+                <YAxis
+                  domain={[0, 36]}
+                  ticks={[0, 9, 18, 27, 36]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: 'rgb(var(--c-fg-soft))',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 11,
+                  }}
                 />
-                <Line
+                <Tooltip
+                  content={<TrajectoryTooltip />}
+                  cursor={{
+                    stroke: 'rgb(var(--c-fg) / 0.25)',
+                    strokeWidth: 1,
+                    strokeDasharray: '3 3',
+                  }}
+                />
+
+                {/* Highest CTC Area + Line */}
+                <Area
                   type="monotone"
                   dataKey="highest"
-                  stroke={themeTokens.accent}
-                  strokeWidth={2.5}
-                  dot={{ fill: themeTokens.accent, r: 4 }}
-                  name="Highest"
+                  stroke="rgb(var(--c-accent))"
+                  strokeWidth={ctcFocus === 'highest' ? 3 : 2.2}
+                  strokeOpacity={ctcFocus === 'avg' ? 0.35 : 1}
+                  fill="url(#ctcHighestGrad)"
+                  dot={{
+                    r: ctcFocus === 'highest' ? 5 : 4,
+                    fill: 'rgb(var(--c-accent))',
+                    strokeWidth: 0,
+                  }}
+                  activeDot={{
+                    r: 6,
+                    fill: 'rgb(var(--c-accent))',
+                    stroke: '#FFFFFF',
+                    strokeWidth: 1.5,
+                  }}
+                  animationDuration={1000}
                 />
-              </LineChart>
+
+                {/* Average CTC Area + Line */}
+                <Area
+                  type="monotone"
+                  dataKey="avg"
+                  stroke="rgb(var(--c-jade))"
+                  strokeWidth={ctcFocus === 'avg' ? 3 : 2.2}
+                  strokeOpacity={ctcFocus === 'highest' ? 0.35 : 1}
+                  fill="url(#ctcAvgGrad)"
+                  dot={{
+                    r: ctcFocus === 'avg' ? 5 : 3.5,
+                    fill: 'rgb(var(--c-jade))',
+                    strokeWidth: 0,
+                  }}
+                  activeDot={{
+                    r: 5.5,
+                    fill: 'rgb(var(--c-jade))',
+                    stroke: '#FFFFFF',
+                    strokeWidth: 1.5,
+                  }}
+                  animationDuration={1000}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
-          <p className="font-serif italic text-xs text-ink-soft pt-1">
-            Highest package has increased 2.1x since 2022 due to cloud infrastructure and AI roles.
+
+          <p className="font-serif italic text-sm text-fg-soft">
+            Highest package has increased 2.1x since 2022 due to cloud
+            infrastructure and AI roles.
           </p>
         </div>
       </div>
-
-      {/* Offers Pipeline Strip (Single Ruled Row with Arrows) */}
-      <div className="border-t border-line pt-6">
-        <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft block mb-3">
-          03 · OFFERS &amp; JOINING FUNNEL STATUS
-        </span>
-        <div className="p-4 bg-bone/50 border border-line rounded-object flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
-          <div>
-            <span className="text-ink-soft block text-[10px]">TOTAL OFFERED</span>
-            <strong className="font-display text-2xl text-ink">16</strong>
-          </div>
-          <span className="text-line text-lg hidden sm:inline">→</span>
-          <div>
-            <span className="text-jade block text-[10px]">ACCEPTED OFFERS</span>
-            <strong className="font-display text-2xl text-jade">11</strong>
-          </div>
-          <span className="text-line text-lg hidden sm:inline">→</span>
-          <div>
-            <span className="text-ochre-deep block text-[10px]">PENDING DECISION</span>
-            <strong className="font-display text-2xl text-ochre-deep">05</strong>
-          </div>
-          <span className="text-line text-lg hidden sm:inline">→</span>
-          <div>
-            <span className="text-brick block text-[10px]">DOCS PENDING</span>
-            <strong className="font-display text-2xl text-brick">03</strong>
-          </div>
-        </div>
-      </div>
-
-      {/* Authorize New Drive Drawer */}
-      <Drawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title="Authorize New Placement Drive"
-        subtitle="Registers job notification form into the automated conflict checker."
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDrawerOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleCreateDrive}>
-              Validate &amp; Authorize
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleCreateDrive} className="space-y-4 font-sans text-xs">
-          <div>
-            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-              Recruiting Partner Name
-            </label>
-            <input
-              type="text"
-              required
-              value={formCompany}
-              onChange={(e) => setFormCompany(e.target.value)}
-              placeholder="e.g. Google India, Amazon Web Services..."
-              className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-            />
-          </div>
-
-          <div>
-            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-              Role Profile
-            </label>
-            <input
-              type="text"
-              required
-              value={formRole}
-              onChange={(e) => setFormRole(e.target.value)}
-              placeholder="e.g. Associate Cloud Engineer, SDE-1..."
-              className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-                Drive Date
-              </label>
-              <input
-                type="date"
-                value={formDate}
-                onChange={(e) => setFormDate(e.target.value)}
-                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-              />
-            </div>
-            <div>
-              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-                Requested Venue
-              </label>
-              <input
-                type="text"
-                value={formVenue}
-                onChange={(e) => setFormVenue(e.target.value)}
-                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-              />
-            </div>
-          </div>
-        </form>
-      </Drawer>
-    </PageTransition>
+    </div>
   );
 }
+
+export default AdminCommandCenter;
