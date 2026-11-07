@@ -1,629 +1,625 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+// src/components/ui/IntroOverlay.jsx
+import React, { useEffect, useRef, useState } from 'react';
 
-// Inset a convex 2D polygon by `insetDist` pixels and build a rounded THREE.Shape
-function createRoundedPolygonShape(pts, insetDist, cornerRadius) {
-  const n = pts.length;
-  // Compute centroid
-  let cx = 0, cy = 0;
-  for (const p of pts) {
-    cx += p.x;
-    cy += p.y;
+const T_IMPACT = 1.25;
+const T_CRACK = 0.10; // Exact 0.1s sudden full-screen crack propagation
+const T_BREAK = 1.60; // Holds the cracked display for 0.25s so the whole broken screen registers
+const BREAK_SPREAD = 0.28;
+const T_END = T_BREAK + BREAK_SPREAD + 1.55;
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const smooth = (a, b, x) => {
+  const t = clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+
+function makeRng(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function spacedText(ctx, text, x, y, spacing, align = 'left') {
+  let total = 0;
+  for (const ch of text) total += ctx.measureText(ch).width + spacing;
+  total -= spacing;
+  let cx = align === 'center' ? x - total / 2 : x;
+  for (const ch of text) {
+    ctx.fillText(ch, cx, y);
+    cx += ctx.measureText(ch).width + spacing;
   }
-  cx /= n;
-  cy /= n;
+  return total;
+}
 
-  // Inset vertices toward centroid
-  const insetPts = pts.map((p) => {
-    const dx = p.x - cx;
-    const dy = p.y - cy;
-    const len = Math.hypot(dx, dy) || 1;
-    const shrink = Math.min(insetDist, len * 0.35);
+function buildShards(W, H, rnd) {
+  const D = Math.hypot(W, H);
+  const P = { x: W / 2, y: H / 2 };
+  const rays = 24;
+  const rings = [0, 0.03, 0.075, 0.14, 0.235, 0.37, 0.56, 1.12];
+  const verts = [];
+  const vid = (x, y) => {
+    verts.push({ x, y });
+    return verts.length - 1;
+  };
+  const center = vid(P.x, P.y);
+  const grid = [[...Array(rays)].map(() => center)];
+  const angs = [...Array(rays)].map(
+    (_, k) => ((k + (rnd() - 0.5) * 0.55) / rays) * Math.PI * 2
+  );
+  for (let i = 1; i < rings.length; i += 1) {
+    const row = [];
+    for (let k = 0; k < rays; k += 1) {
+      const a = angs[k] + (rnd() - 0.5) * 0.09;
+      const r = rings[i] * (D / 2) * (1 + (rnd() - 0.5) * 0.28);
+      row.push(vid(P.x + Math.cos(a) * r, P.y + Math.sin(a) * r));
+    }
+    grid.push(row);
+  }
+
+  const mids = new Map();
+  const mid = (a, b) => {
+    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+    if (!mids.has(key)) {
+      const A = verts[a];
+      const B = verts[b];
+      const mx = (A.x + B.x) / 2;
+      const my = (A.y + B.y) / 2;
+      const len = Math.hypot(B.x - A.x, B.y - A.y);
+      const nx = -(B.y - A.y) / (len || 1);
+      const ny = (B.x - A.x) / (len || 1);
+      const j = (rnd() - 0.5) * len * 0.18;
+      mids.set(key, { x: mx + nx * j, y: my + ny * j });
+    }
+    return mids.get(key);
+  };
+
+  const edges = new Map();
+  const polys = [];
+  const addPoly = (ids) => {
+    const pts = [];
+    for (let n = 0; n < ids.length; n += 1) {
+      const a = ids[n];
+      const b = ids[(n + 1) % ids.length];
+      pts.push({ x: verts[a].x, y: verts[a].y });
+      const m = mid(a, b);
+      pts.push({ x: m.x, y: m.y });
+      const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+      if (!edges.has(key)) edges.set(key, { a, b, m });
+    }
+    polys.push(pts);
+  };
+
+  for (let k = 0; k < rays; k += 1) {
+    const k2 = (k + 1) % rays;
+    addPoly([center, grid[1][k], grid[1][k2]]);
+    for (let i = 1; i < rings.length - 1; i += 1) {
+      const q = [grid[i][k], grid[i][k2], grid[i + 1][k2], grid[i + 1][k]];
+      if (i >= 2 && rnd() < 0.5) {
+        if (rnd() < 0.5) {
+          addPoly([q[0], q[1], q[2]]);
+          addPoly([q[0], q[2], q[3]]);
+        } else {
+          addPoly([q[0], q[1], q[3]]);
+          addPoly([q[1], q[2], q[3]]);
+        }
+      } else {
+        addPoly(q);
+      }
+    }
+  }
+
+  const shards = polys.map((pts) => {
+    let cx = 0;
+    let cy = 0;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    pts.forEach((p) => {
+      cx += p.x;
+      cy += p.y;
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    });
+    cx /= pts.length;
+    cy /= pts.length;
+    const dx = cx - P.x;
+    const dy = cy - P.y;
+    const dist = Math.hypot(dx, dy);
+    const d = dist / (D / 2);
+    const dir =
+      dist > 1
+        ? { x: dx / dist, y: dy / dist }
+        : { x: rnd() - 0.5, y: rnd() - 0.5 };
+    const speed = (420 + rnd() * 460) * (1.25 - Math.min(1, d));
     return {
-      x: p.x - (dx / len) * shrink,
-      y: p.y - (dy / len) * shrink,
+      pts,
+      c: { x: cx, y: cy },
+      bb: {
+        x: Math.floor(minX) - 2,
+        y: Math.floor(minY) - 2,
+        w: Math.ceil(maxX - minX) + 4,
+        h: Math.ceil(maxY - minY) + 4,
+      },
+      d,
+      delay: d * BREAK_SPREAD * 1.45 + rnd() * 0.04,
+      vx: dir.x * speed,
+      vy: dir.y * speed - (110 + rnd() * 240),
+      spin: (rnd() - 0.5) * 6.2,
+      // 3D tumbling angular velocities so shards flip realistically in space
+      tumbleX: (rnd() - 0.5) * 7.5,
+      tumbleY: (rnd() - 0.5) * 7.5,
+      grow: 0.45 * (1.05 - Math.min(1, d)) + rnd() * 0.14,
+      phase: rnd() * Math.PI * 2,
+      shine: 0.06 + rnd() * 0.14,
     };
   });
 
-  const shape = new THREE.Shape();
-  for (let i = 0; i < n; i++) {
-    const prev = insetPts[(i - 1 + n) % n];
-    const curr = insetPts[i];
-    const next = insetPts[(i + 1) % n];
-
-    const v1x = prev.x - curr.x;
-    const v1y = prev.y - curr.y;
-    const v2x = next.x - curr.x;
-    const v2y = next.y - curr.y;
-
-    const l1 = Math.hypot(v1x, v1y) || 1;
-    const l2 = Math.hypot(v2x, v2y) || 1;
-    const r = Math.min(cornerRadius, l1 * 0.32, l2 * 0.32);
-
-    const pStart = { x: curr.x + (v1x / l1) * r, y: curr.y + (v1y / l1) * r };
-    const pEnd = { x: curr.x + (v2x / l2) * r, y: curr.y + (v2y / l2) * r };
-
-    if (i === 0) {
-      shape.moveTo(pStart.x, pStart.y);
-    } else {
-      shape.lineTo(pStart.x, pStart.y);
-    }
-    shape.quadraticCurveTo(curr.x, curr.y, pEnd.x, pEnd.y);
-  }
-  shape.closePath();
-  return { shape, centroid: { x: cx, y: cy } };
+  const edgeList = [...edges.values()].map((e) => ({
+    a: verts[e.a],
+    b: verts[e.b],
+    m: e.m,
+    d: Math.min(
+      Math.hypot(verts[e.a].x - P.x, verts[e.a].y - P.y),
+      Math.hypot(verts[e.b].x - P.x, verts[e.b].y - P.y)
+    ),
+  }));
+  return { shards, edges: edgeList, P, D };
 }
 
-export function IntroOverlay() {
-  const [show, setShow] = useState(true);
-  const [shattering, setShattering] = useState(false);
-  const mountRef = useRef(null);
-  const shatterTriggerRef = useRef(null);
+export function ShatterIntro({ onBreak, onDone }) {
+  const canvasRef = useRef(null);
+  const [active, setActive] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (/[?&]nointro\b/.test(window.location.search)) return false;
+    if (
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+      return false;
+    return true;
+  });
 
-  const handleShatter = useCallback((clientX, clientY) => {
-    if (shatterTriggerRef.current) {
-      shatterTriggerRef.current(clientX, clientY);
-    }
+  useEffect(() => {
+    if (active) return undefined;
+    document.documentElement.classList.remove('intro-hold');
+    onBreak?.();
+    onDone?.();
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const reduced =
-      typeof matchMedia !== 'undefined' &&
-      matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      setShow(false);
-      return;
-    }
+    if (!active) return undefined;
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext('2d');
+    const html = document.documentElement;
+    html.classList.add('intro-hold');
+    const prevOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
 
-    const container = mountRef.current;
-    if (!container || !show) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    const freezeMatch = window.location.search.match(/[?&]introT=([\d.]+)/);
+    const freezeAt = freezeMatch ? parseFloat(freezeMatch[1]) : null;
 
-    // 1. Scene, Camera (1 world unit = 1 CSS pixel at z=0), Renderer
-    const scene = new THREE.Scene();
-    const fov = 30;
-    const calcCameraZ = (h) => h / (2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)));
-    const camera = new THREE.PerspectiveCamera(fov, width / height, 10, 6000);
-    camera.position.set(0, 0, calcCameraZ(height));
+    const rnd = makeRng(20260711);
+    const { shards, edges, P, D } = buildShards(W, H, rnd);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
+    const scene = document.createElement('canvas');
+    scene.width = canvas.width;
+    scene.height = canvas.height;
+    const sctx = scene.getContext('2d');
 
-    // 2. Studio Environment & Key / Rim Lights
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = envTex;
-    scene.environmentIntensity = 0.52;
+    const specks = [...Array(70)].map(() => ({
+      x: rnd() * W,
+      y: rnd() * H,
+      a: 0.1 + rnd() * 0.35,
+      ph: rnd() * 6.28,
+      fq: 0.6 + rnd() * 1.6,
+    }));
 
-    const keyLight = new THREE.DirectionalLight(0xdce8ff, 2.2);
-    keyLight.position.set(-width * 0.4, height * 0.5, 600);
-    scene.add(keyLight);
+    const fs = clamp(W * 0.068, 40, 92);
+    const markSize = fs * 0.58;
+    const wordFont = `600 ${fs}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    const regFont = `600 ${fs * 0.26}px "JetBrains Mono", ui-monospace, monospace`;
+    const capFont = `500 ${Math.max(10, fs * 0.15)}px "JetBrains Mono", ui-monospace, monospace`;
 
-    const rimLight = new THREE.DirectionalLight(0xf59e0b, 1.15);
-    rimLight.position.set(width * 0.45, -height * 0.4, 400);
-    scene.add(rimLight);
+    const drawScene = (t) => {
+      const c = sctx;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.fillStyle = '#000000';
+      c.fillRect(0, 0, W, H);
 
-    // 3. Monolith Slab Dimensions
-    const slabW = Math.min(width * 0.92, 1560);
-    const slabH = Math.min(height * 0.86, 880);
-    const S = slabW / 1600;
-
-    const rootGroup = new THREE.Group();
-    scene.add(rootGroup);
-
-    // 4. Nine Precision Non-Overlapping Radial Fracture Shards
-    // Coordinates in normalized slab space [0..1, 0..1]
-    const basePts = {
-      BL: { x: 0, y: 0 },
-      B0: { x: 0.31, y: 0 },
-      B1: { x: 0.69, y: 0 },
-      BR: { x: 1, y: 0 },
-      R0: { x: 1, y: 0.48 },
-      TR: { x: 1, y: 1 },
-      T1: { x: 0.72, y: 1 },
-      T0: { x: 0.28, y: 1 },
-      TL: { x: 0, y: 1 },
-      L0: { x: 0, y: 0.52 },
-      // 4 Inner Core Junctions surrounding CampusLink.register
-      J0: { x: 0.28, y: 0.34 },
-      J1: { x: 0.72, y: 0.34 },
-      J2: { x: 0.74, y: 0.68 },
-      J3: { x: 0.26, y: 0.68 },
-    };
-
-    // 9 Closed polygons forming a complete, seamless partition
-    const cellDefs = [
-      ['J0', 'J1', 'J2', 'J3'],         // 0: Center Core (CampusLink.register + Loading Bar)
-      ['T0', 'J3', 'J2', 'T1'],         // 1: Top-Center
-      ['T1', 'J2', 'R0', 'TR'],         // 2: Top-Right
-      ['J1', 'R0', 'J2'],               // 3: Right-Center
-      ['B1', 'BR', 'R0', 'J1'],         // 4: Bottom-Right
-      ['B0', 'B1', 'J1', 'J0'],         // 5: Bottom-Center
-      ['BL', 'B0', 'J0', 'L0'],         // 6: Bottom-Left
-      ['L0', 'J0', 'J3'],               // 7: Left-Center
-      ['TL', 'L0', 'J3', 'T0'],         // 8: Top-Left
-    ];
-
-    // High-DPI 2D Master Canvas for Glass Face Artwork & Animated Loading Bar
-    const dpr = 2;
-    const artCanvas = document.createElement('canvas');
-    artCanvas.width = Math.max(1, Math.floor(slabW * dpr));
-    artCanvas.height = Math.max(1, Math.floor(slabH * dpr));
-    const artCtx = artCanvas.getContext('2d');
-    artCtx.scale(dpr, dpr);
-
-    const masterTexture = new THREE.CanvasTexture(artCanvas);
-    masterTexture.colorSpace = THREE.SRGBColorSpace;
-
-    // Draw the branding, telemetry, and live filling loading bar
-    const renderArtwork = (progress) => {
-      artCtx.clearRect(0, 0, slabW, slabH);
-
-      const pad = Math.max(18, 28 * S);
-      // Outer architectural border & '+' crosshairs
-      artCtx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
-      artCtx.lineWidth = 1;
-      artCtx.strokeRect(pad, pad, slabW - pad * 2, slabH - pad * 2);
-
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-      artCtx.font = `500 ${Math.max(10, 12 * S)}px "JetBrains Mono", monospace`;
-      artCtx.textAlign = 'center';
-      artCtx.textBaseline = 'middle';
-      const corners = [
-        [pad, pad],
-        [slabW - pad, pad],
-        [pad, slabH - pad],
-        [slabW - pad, slabH - pad],
-      ];
-      for (const [x, y] of corners) {
-        artCtx.fillText('+', x, y);
-      }
-
-      // Top Telemetry Bar
-      const topY = pad + Math.max(22, 28 * S);
-      artCtx.font = `500 ${Math.max(9.5, 11 * S)}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.42)';
-      artCtx.textAlign = 'left';
-      artCtx.fillText('SYS.INIT // BPUT PS10 PLACEMENT PLATFORM', pad + 20, topY);
-
-      artCtx.textAlign = 'right';
-      artCtx.fillStyle = progress >= 1.0 ? '#36D67E' : 'rgba(245, 158, 11, 0.9)';
-      artCtx.fillText(
-        progress >= 1.0
-          ? '● ENGINE ONLINE · SHATTERING...'
-          : `● INITIALIZING ENGINE [${Math.round(progress * 100)}%]`,
-        slabW - pad - 20,
-        topY
-      );
-
-      // Centerpiece Eyebrow
-      const centerY = slabH * 0.44;
-      artCtx.textAlign = 'center';
-      artCtx.font = `600 ${Math.max(10, 12 * S)}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.48)';
-      artCtx.fillText(
-        'AUTONOMOUS PLACEMENT & SEMANTIC MATCHING ENGINE',
-        slabW * 0.5,
-        centerY - Math.max(54, 76 * S)
-      );
-
-      // Monumental Brand Title: "CampusLink.register"
-      const titleSize = Math.min(slabW * 0.082, slabH * 0.19);
-      artCtx.font = `600 ${titleSize}px "Plus Jakarta Sans", -apple-system, sans-serif`;
-
-      const mainWord = 'CampusLink';
-      const suffixWord = '.register';
-      const mainWidth = artCtx.measureText(mainWord).width;
-
-      artCtx.font = `500 ${titleSize * 0.44}px "JetBrains Mono", monospace`;
-      const suffixWidth = artCtx.measureText(suffixWord).width;
-
-      const totalWidth = mainWidth + suffixWidth + 8 * S;
-      const startX = (slabW - totalWidth) * 0.5;
-
-      // "CampusLink" metallic vertical gradient
-      artCtx.font = `600 ${titleSize}px "Plus Jakarta Sans", -apple-system, sans-serif`;
-      artCtx.textAlign = 'left';
-      const titleGrad = artCtx.createLinearGradient(
-        0,
-        centerY - titleSize * 0.6,
-        0,
-        centerY + titleSize * 0.4
-      );
-      titleGrad.addColorStop(0, '#FFFFFF');
-      titleGrad.addColorStop(0.55, '#E4E4E7');
-      titleGrad.addColorStop(1, '#9CA3AF');
-      artCtx.fillStyle = titleGrad;
-      artCtx.fillText(mainWord, startX, centerY);
-
-      // ".register" in warm amber gold
-      artCtx.font = `600 ${titleSize * 0.44}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = '#F59E0B';
-      artCtx.fillText(suffixWord, startX + mainWidth + 8 * S, centerY - titleSize * 0.04);
-
-      // Subtitle
-      artCtx.textAlign = 'center';
-      artCtx.font = `400 ${Math.max(13, 16 * S)}px "Plus Jakarta Sans", -apple-system, sans-serif`;
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.58)';
-      artCtx.fillText(
-        'Every shortlist, readiness score, and conflict-free interview slot — explained.',
-        slabW * 0.5,
-        centerY + Math.max(44, 58 * S)
-      );
-
-      // LIVE ANIMATED LOADING PROGRESS BAR (Keeps our signature sleek loader!)
-      const barW = Math.max(260, 360 * S);
-      const barH = 3.5;
-      const barX = (slabW - barW) * 0.5;
-      const barY = centerY + Math.max(74, 98 * S);
-
-      // Background Track
-      artCtx.beginPath();
-      artCtx.roundRect(barX, barY, barW, barH, 999);
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      artCtx.fill();
-
-      // Filling Animated Progress Bar
-      const fillW = barW * Math.min(1.0, Math.max(0.02, progress));
-      artCtx.beginPath();
-      artCtx.roundRect(barX, barY, fillW, barH, 999);
-      const barGrad = artCtx.createLinearGradient(barX, 0, barX + fillW, 0);
-      barGrad.addColorStop(0, '#F59E0B');
-      barGrad.addColorStop(1, '#FBBF24');
-      artCtx.fillStyle = barGrad;
-      artCtx.fill();
-
-      // Loading Status Monospace Label
-      artCtx.font = `500 ${Math.max(10, 11.5 * S)}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.46)';
-      const statusMsg =
-        progress < 0.35
-          ? 'Institutional Placement Register · Initializing...'
-          : progress < 0.70
-          ? 'Synthesizing Explainable Matching Embeddings...'
-          : progress < 0.98
-          ? 'Interval Overlap Scheduling Matrix Ready'
-          : 'Placement Gateway Online · Fracturing Glass...';
-      artCtx.fillText(statusMsg, slabW * 0.5, barY + 22);
-
-      // Bottom Trigger Pill Hint
-      const pillW = Math.max(260, 320 * S);
-      const pillH = Math.max(34, 40 * S);
-      const pillX = (slabW - pillW) * 0.5;
-      const pillY = slabH * 0.82;
-
-      artCtx.beginPath();
-      artCtx.roundRect(pillX, pillY, pillW, pillH, 999);
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      artCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-      artCtx.lineWidth = 1;
-      artCtx.fill();
-      artCtx.stroke();
-
-      artCtx.font = `600 ${Math.max(10, 11.5 * S)}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = '#FFFFFF';
-      artCtx.fillText('CLICK ANYWHERE TO SHATTER →', slabW * 0.5, pillY + pillH * 0.52);
-
-      // Bottom Footer Specs
-      const botY = slabH - pad - Math.max(16, 20 * S);
-      artCtx.font = `500 ${Math.max(9, 10.5 * S)}px "JetBrains Mono", monospace`;
-      artCtx.fillStyle = 'rgba(255, 255, 255, 0.32)';
-      artCtx.textAlign = 'left';
-      artCtx.fillText('© BPUT CAMPUSLINK REGISTER · ODISHA', pad + 20, botY);
-      artCtx.textAlign = 'right';
-      artCtx.fillText('REAL-TIME 3D CRYSTALLINE SHATTER', slabW - pad - 20, botY);
-
-      masterTexture.needsUpdate = true;
-    };
-
-    // Render initial frame at 0%
-    renderArtwork(0.0);
-
-    const makeGlassMaterial = () => {
-      return new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#141419'),
-        roughness: 0.28,
-        metalness: 0.08,
-        clearcoat: 0.85,
-        clearcoatRoughness: 0.10,
-        specularIntensity: 0.85,
-        iridescence: 0.65,
-        iridescenceIOR: 1.32,
-        iridescenceThicknessRange: [240, 640],
-        envMapIntensity: 1.15,
-      });
-    };
-
-    // Construct 9 3D Glass Shards
-    const shards = cellDefs.map((keys, idx) => {
-      const polyPts = keys.map((k) => ({
-        x: (basePts[k].x - 0.5) * slabW,
-        y: (basePts[k].y - 0.5) * slabH,
-      }));
-
-      // Centroid
-      let cx = 0, cy = 0;
-      for (const p of polyPts) {
-        cx += p.x;
-        cy += p.y;
-      }
-      cx /= polyPts.length;
-      cy /= polyPts.length;
-
-      // Local coordinates centered around centroid
-      const localPts = polyPts.map((p) => ({ x: p.x - cx, y: p.y - cy }));
-      const { shape: localShape } = createRoundedPolygonShape(localPts, 5.5 * S, 14 * S);
-
-      const depth = 14 * S;
-      const extrudeGeo = new THREE.ExtrudeGeometry(localShape, {
-        depth,
-        bevelEnabled: true,
-        bevelThickness: 2.6 * S,
-        bevelSize: 2.4 * S,
-        bevelSegments: 3,
-        curveSegments: 8,
+      specks.forEach((s) => {
+        const tw = 0.5 + 0.5 * Math.sin(t * s.fq * 2 + s.ph);
+        c.fillStyle = `rgba(255,255,255,${(
+          s.a *
+          tw *
+          smooth(0.1, 0.8, t)
+        ).toFixed(3)})`;
+        c.fillRect(s.x, s.y, 1, 1);
       });
 
-      const glassMat = makeGlassMaterial();
-      const glassMesh = new THREE.Mesh(extrudeGeo, glassMat);
-      glassMesh.userData.shardIndex = idx;
+      const push = 1 + 0.028 * smooth(0, T_IMPACT, t);
+      c.save();
+      c.translate(W / 2, H / 2);
+      c.scale(push, push);
+      c.translate(-W / 2, -H / 2);
 
-      // Printed Typography Face mapped exactly to master slab UV coordinates
-      const faceGeo = new THREE.ShapeGeometry(localShape, 8);
-      const posAttr = faceGeo.attributes.position;
-      const uvs = new Float32Array(posAttr.count * 2);
-      for (let i = 0; i < posAttr.count; i++) {
-        const wx = posAttr.getX(i) + cx;
-        const wy = posAttr.getY(i) + cy;
-        uvs[i * 2] = wx / slabW + 0.5;
-        uvs[i * 2 + 1] = wy / slabH + 0.5;
+      const a = smooth(0.1, 0.68, t);
+      const rise = (1 - easeOut((t - 0.1) / 0.72)) * 14;
+      c.globalAlpha = a;
+      c.textBaseline = 'alphabetic';
+      c.font = wordFont;
+      const wordW = c.measureText('CampusLink').width;
+      c.font = regFont;
+      const regW = c.measureText('.register').width;
+      const gap = fs * 0.28;
+      const totalW = markSize + gap + wordW + fs * 0.12 + regW;
+      const x0 = W / 2 - totalW / 2;
+      const baseY = H / 2 + fs * 0.18 + rise;
+
+      // Monogram Box [CL]
+      const my = baseY - markSize * 0.98;
+      c.fillStyle = '#FFFFFF';
+      c.beginPath();
+      c.roundRect(x0, my, markSize, markSize, markSize * 0.16);
+      c.fill();
+      c.fillStyle = '#000000';
+      c.font = `700 ${markSize * 0.42}px "JetBrains Mono", ui-monospace, monospace`;
+      c.textAlign = 'center';
+      c.fillText('CL', x0 + markSize / 2, my + markSize * 0.65);
+      c.textAlign = 'left';
+
+      // Wordmark
+      c.fillStyle = '#FFFFFF';
+      c.font = wordFont;
+      c.fillText('CampusLink', x0 + markSize + gap, baseY);
+      c.fillStyle = '#FFD23F';
+      c.font = regFont;
+      c.fillText('.register', x0 + markSize + gap + wordW + fs * 0.12, baseY);
+
+      // Caption
+      c.font = capFont;
+      c.fillStyle = 'rgba(255,255,255,0.46)';
+      spacedText(
+        c,
+        'PLACEMENT REGISTER  ·  BPUT PS10',
+        W / 2,
+        baseY + fs * 0.62,
+        fs * 0.05,
+        'center'
+      );
+
+      // Tension Fuse Line Drawing Under Wordmark
+      const lw = Math.min(W * 0.34, 360);
+      const p = easeOut((t - 0.28) / 0.88);
+      const ly = baseY + fs * 0.92;
+      c.globalAlpha = a;
+      c.fillStyle = 'rgba(255,255,255,0.14)';
+      c.fillRect(W / 2 - lw / 2, ly, lw, 1);
+      c.fillStyle = 'rgba(255,255,255,0.95)';
+      c.fillRect(W / 2 - lw / 2, ly, lw * p, 1);
+
+      if (p > 0.01 && p < 0.999) {
+        const hx = W / 2 - lw / 2 + lw * p;
+        const g = c.createRadialGradient(hx, ly + 0.5, 0, hx, ly + 0.5, 14);
+        g.addColorStop(0, 'rgba(255,255,255,0.95)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g;
+        c.fillRect(hx - 14, ly - 13, 28, 28);
       }
-      faceGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      c.restore();
+      c.globalAlpha = 1;
+    };
 
-      const faceMat = new THREE.MeshBasicMaterial({
-        map: masterTexture,
-        transparent: true,
-        depthWrite: false,
-      });
-      const faceMesh = new THREE.Mesh(faceGeo, faceMat);
-      faceMesh.position.z = depth + 2.8 * S;
-
-      const group = new THREE.Group();
-      group.position.set(cx, cy, 0);
-      group.add(glassMesh);
-      group.add(faceMesh);
-      rootGroup.add(group);
-
-      const angle = Math.atan2(cy, cx);
-      const dist = Math.hypot(cx, cy);
-
+    const chips = [...Array(165)].map(() => {
+      const a = rnd() * Math.PI * 2;
+      const sp = 280 + rnd() * 1550;
       return {
-        idx,
-        group,
-        glassMesh,
-        glassMat,
-        faceGeo,
-        extrudeGeo,
-        centroid: { x: cx, y: cy },
-        zPos: 0,
-        zVel: 0,
-        rx: 0,
-        ry: 0,
-        rz: 0,
-        // Shatter explosion kinematics
-        vx: Math.cos(angle) * (340 + dist * 0.95) * S,
-        vy: Math.sin(angle) * (320 + dist * 0.85) * S + 140 * S,
-        vz: (620 + Math.random() * 380) * S,
-        avx: (Math.random() - 0.5) * 5.4,
-        avy: (Math.random() - 0.5) * 5.4,
-        avz: (Math.random() - 0.5) * 3.6,
-        delay: idx === 0 ? 0 : 0.02 * idx,
+        a,
+        x: P.x + Math.cos(a) * rnd() * 34,
+        y: P.y + Math.sin(a) * rnd() * 34,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 140,
+        life: 0.5 + rnd() * 1.05,
+        size: 0.9 + rnd() * 2.8,
+        tri: rnd() < 0.38,
+        rot: rnd() * 6.28,
+        spin: (rnd() - 0.5) * 16,
       };
     });
 
-    // Interaction & Animation Loop State
-    const raycaster = new THREE.Raycaster();
-    const pointerNDC = new THREE.Vector2(0, 0);
-    let pointerActive = false;
-    let hoveredIdx = -1;
-    let isShattering = false;
-    let shatterElapsed = 0;
-    let introElapsed = 0;
-    const LOAD_DURATION = 1.15; // 1.15s loading phase before automatic glass shatter
+    let frozenSceneDrawn = false;
+    let t0 = performance.now();
+    let raf = 0;
+    let broke = false;
+    let finished = false;
+    let skip = false;
 
-    const handlePointerMove = (e) => {
-      pointerActive = true;
-      pointerNDC.x = (e.clientX / width) * 2 - 1;
-      pointerNDC.y = -(e.clientY / height) * 2 + 1;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(raf);
+      html.classList.remove('intro-hold');
+      html.style.overflow = prevOverflow;
+      setActive(false);
+      onDone?.();
     };
 
-    const handlePointerLeave = () => {
-      pointerActive = false;
-      hoveredIdx = -1;
-    };
-
-    // The Glass Shatter Explosion Trigger
-    shatterTriggerRef.current = (clickX = width * 0.5, clickY = height * 0.5) => {
-      if (isShattering) return;
-      isShattering = true;
-      setShattering(true);
-
-      const impactX = clickX - width * 0.5;
-      const impactY = -(clickY - height * 0.5);
-
-      shards.forEach((s) => {
-        const dx = s.centroid.x - impactX;
-        const dy = s.centroid.y - impactY;
-        const angle = Math.atan2(dy, dx);
-        const dist = Math.hypot(dx, dy);
-        s.vx = Math.cos(angle) * (380 + dist * 1.1) * S + (Math.random() - 0.5) * 140 * S;
-        s.vy = Math.sin(angle) * (340 + dist * 0.95) * S + 160 * S;
-        s.vz = (640 + Math.random() * 420) * S;
-      });
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
-        shatterTriggerRef.current(width * 0.5, height * 0.5);
+    const render = (t) => {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      const preImpact = t < T_IMPACT;
+      if (preImpact) {
+        drawScene(t);
+        frozenSceneDrawn = false;
+      } else if (!frozenSceneDrawn) {
+        drawScene(T_IMPACT);
+        frozenSceneDrawn = true;
       }
-    };
 
-    const handleResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      camera.aspect = width / height;
-      camera.position.z = calcCameraZ(height);
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
+      // High-impact camera jolt during the 0.1s crack
+      let sx = 0;
+      let sy = 0;
+      const since = t - T_IMPACT;
+      if (since > 0 && since < 0.32) {
+        const k = Math.pow(1 - since / 0.32, 2) * 12;
+        sx = (rnd() - 0.5) * 2 * k;
+        sy = (rnd() - 0.5) * 2 * k;
+      }
+      ctx.save();
+      ctx.translate(sx, sy);
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerleave', handlePointerLeave);
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', handleResize);
+      if (t < T_BREAK) {
+        ctx.drawImage(scene, 0, 0, W, H);
+      }
 
-    const clock = new THREE.Clock();
-    let frameId;
+      // 0.1s Crack Propagation Across Whole Display from Dead Center
+      const q = clamp(since / T_CRACK, 0, 1);
+      if (since > 0 && t < T_BREAK + 0.04) {
+        const reach = easeOut(q) * D * 0.65;
+        ctx.lineCap = 'round';
+        edges.forEach((e) => {
+          if (e.d > reach) return;
+          const fade = clamp((reach - e.d) / 70, 0, 1);
+          const nearCenter = 1 - Math.min(1, e.d / (D * 0.32));
 
-    const animate = () => {
-      const dt = Math.min(clock.getDelta(), 0.05);
-      introElapsed += dt;
-
-      if (!isShattering) {
-        // 1. Advance loading progress
-        const progress = Math.min(1.0, introElapsed / LOAD_DURATION);
-        renderArtwork(progress);
-
-        // 2. Automatically trigger glass shatter as soon as load completes!
-        if (introElapsed >= LOAD_DURATION) {
-          shatterTriggerRef.current(width * 0.5, height * 0.5);
-        }
-
-        // Global block tilt toward pointer
-        const targetRotY = pointerActive
-          ? THREE.MathUtils.degToRad(pointerNDC.x * 6.5)
-          : 0;
-        const targetRotX = pointerActive
-          ? THREE.MathUtils.degToRad(-pointerNDC.y * 5.0)
-          : 0;
-        rootGroup.rotation.y = THREE.MathUtils.damp(rootGroup.rotation.y, targetRotY, 6, dt);
-        rootGroup.rotation.x = THREE.MathUtils.damp(rootGroup.rotation.x, targetRotX, 6, dt);
-
-        // Raycast to find hovered shard
-        if (pointerActive) {
-          raycaster.setFromCamera(pointerNDC, camera);
-          const hits = raycaster.intersectObjects(shards.map((s) => s.glassMesh));
-          hoveredIdx = hits.length > 0 ? hits[0].object.userData.shardIndex : -1;
-        } else {
-          hoveredIdx = -1;
-        }
-
-        // Spring hover physics for shards
-        shards.forEach((s) => {
-          const isHovered = s.idx === hoveredIdx;
-          const targetZ = isHovered ? 42 * S : 0;
-
-          // Spring physics (k=180, c=18)
-          const force = 180 * (targetZ - s.zPos) - 18 * s.zVel;
-          s.zVel += force * dt;
-          s.zPos += s.zVel * dt;
-          s.group.position.z = s.zPos;
-
-          // Lift & tip shard on hover
-          let targetRx = 0;
-          let targetRy = 0;
-          if (isHovered) {
-            targetRy = THREE.MathUtils.clamp(pointerNDC.x * 0.16, -0.22, 0.22);
-            targetRx = THREE.MathUtils.clamp(-pointerNDC.y * 0.16, -0.22, 0.22);
+          // Subtle internal glass glow along primary fractures
+          if (nearCenter > 0.35) {
+            ctx.strokeStyle = `rgba(255,255,255,${(0.24 * fade * nearCenter).toFixed(3)})`;
+            ctx.lineWidth = 3.2;
+            ctx.beginPath();
+            ctx.moveTo(e.a.x, e.a.y);
+            ctx.lineTo(e.m.x, e.m.y);
+            ctx.lineTo(e.b.x, e.b.y);
+            ctx.stroke();
           }
-          s.rx = THREE.MathUtils.damp(s.rx, targetRx, 10, dt);
-          s.ry = THREE.MathUtils.damp(s.ry, targetRy, 10, dt);
-          s.group.rotation.set(s.rx, s.ry, 0);
 
-          s.glassMat.iridescence = THREE.MathUtils.damp(
-            s.glassMat.iridescence,
-            isHovered ? 1.0 : 0.65,
-            8,
-            dt
-          );
-          s.glassMat.envMapIntensity = THREE.MathUtils.damp(
-            s.glassMat.envMapIntensity,
-            isHovered ? 1.9 : 1.15,
-            8,
-            dt
-          );
+          // Razor-sharp white glass crack line
+          ctx.strokeStyle = `rgba(255,255,255,${(0.96 * fade).toFixed(3)})`;
+          ctx.lineWidth = 1.15 + nearCenter * 1.05;
+          ctx.beginPath();
+          ctx.moveTo(e.a.x, e.a.y);
+          ctx.lineTo(e.m.x, e.m.y);
+          ctx.lineTo(e.b.x, e.b.y);
+          ctx.stroke();
         });
-      } else {
-        // 3D Glass Shatter Physics Sequence
-        shatterElapsed += dt;
-        shards.forEach((s) => {
-          const t = Math.max(0, shatterElapsed - s.delay);
-          if (t <= 0) return;
-
-          s.vy -= 980 * S * dt; // Gravity pulling downward
-          s.group.position.x += s.vx * dt;
-          s.group.position.y += s.vy * dt;
-          s.group.position.z += s.vz * dt;
-
-          s.group.rotation.x += s.avx * dt;
-          s.group.rotation.y += s.avy * dt;
-          s.group.rotation.z += s.avz * dt;
-        });
-
-        // After 0.85s of glass shatter physics, unmount completely
-        if (shatterElapsed >= 0.85) {
-          setShow(false);
-          return;
-        }
       }
 
-      renderer.render(scene, camera);
-      frameId = requestAnimationFrame(animate);
+      // Center Impact Shockwave Flash
+      if (since > 0 && since < 0.18) {
+        const f = 1 - since / 0.18;
+        const g = ctx.createRadialGradient(
+          P.x,
+          P.y,
+          0,
+          P.x,
+          P.y,
+          D * 0.44 * (0.35 + q)
+        );
+        g.addColorStop(0, `rgba(255,255,255,${(0.96 * f).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // 3D Glass Shards Scatter & Tumble
+      if (t >= T_BREAK - 0.04) {
+        if (!broke && t >= T_BREAK) {
+          broke = true;
+          canvas.style.pointerEvents = 'none';
+          html.classList.remove('intro-hold');
+          html.style.overflow = prevOverflow;
+          onBreak?.();
+        }
+        const g = 1850;
+        shards.forEach((s) => {
+          const tau = Math.max(0, t - T_BREAK - s.delay);
+          const x = s.c.x + s.vx * tau;
+          const y = s.c.y + s.vy * tau + 0.5 * g * tau * tau;
+          const sc = 1 + s.grow * tau;
+          const rot = s.spin * tau;
+
+          // 3D foreshortening as each glass shard flips in space
+          const flipX = Math.cos(s.tumbleX * tau);
+          const flipY = Math.cos(s.tumbleY * tau);
+          const sx3d =
+            sc * Math.sign(flipX || 1) * Math.max(0.22, Math.abs(flipX));
+          const sy3d =
+            sc * Math.sign(flipY || 1) * Math.max(0.22, Math.abs(flipY));
+
+          const alpha = 1 - smooth(0.58, 1.48, tau);
+          if (alpha <= 0.002) return;
+          if (x < -W * 0.6 || x > W * 1.6 || y > H * 2.2) return;
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.translate(x, y);
+          ctx.rotate(rot);
+          ctx.scale(sx3d, sy3d);
+          ctx.translate(-s.c.x, -s.c.y);
+
+          ctx.beginPath();
+          s.pts.forEach((p, i) =>
+            i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)
+          );
+          ctx.closePath();
+
+          ctx.save();
+          ctx.clip();
+          ctx.drawImage(
+            scene,
+            s.bb.x * dpr,
+            s.bb.y * dpr,
+            s.bb.w * dpr,
+            s.bb.h * dpr,
+            s.bb.x,
+            s.bb.y,
+            s.bb.w,
+            s.bb.h
+          );
+          // Specular flash when the tumbling glass shard catches the light
+          const shine =
+            tau > 0
+              ? s.shine +
+                0.24 * Math.pow(Math.abs(Math.sin(rot * 2.1 + s.phase)), 2)
+              : 0.03;
+          ctx.fillStyle = `rgba(255,255,255,${shine.toFixed(3)})`;
+          ctx.fillRect(s.bb.x, s.bb.y, s.bb.w, s.bb.h);
+          ctx.restore();
+
+          ctx.strokeStyle = `rgba(255,255,255,${tau > 0 ? 0.58 : 0.88})`;
+          ctx.lineWidth = 1.15 / sc;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+
+      // Flying Glass Splinters & Dust
+      if (since > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        chips.forEach((c) => {
+          const life = since / c.life;
+          if (life >= 1) return;
+          const drag = Math.exp(-2.4 * since);
+          const px = c.x + (c.vx * (1 - drag)) / 2.4;
+          const py =
+            c.y + (c.vy * (1 - drag)) / 2.4 + 0.5 * 900 * since * since;
+          ctx.fillStyle = `rgba(255,255,255,${(0.88 * (1 - life)).toFixed(3)})`;
+          if (c.tri) {
+            const r = c.rot + c.spin * since;
+            ctx.beginPath();
+            ctx.moveTo(
+              px + Math.cos(r) * c.size * 2.2,
+              py + Math.sin(r) * c.size * 2.2
+            );
+            ctx.lineTo(
+              px + Math.cos(r + 2.4) * c.size * 1.6,
+              py + Math.sin(r + 2.4) * c.size * 1.6
+            );
+            ctx.lineTo(
+              px + Math.cos(r + 4.1) * c.size * 1.2,
+              py + Math.sin(r + 4.1) * c.size * 1.2
+            );
+            ctx.closePath();
+            ctx.fill();
+          } else {
+            ctx.fillRect(px, py, c.size, c.size);
+          }
+        });
+        ctx.restore();
+      }
+      ctx.restore();
     };
 
-    frameId = requestAnimationFrame(animate);
+    const frame = (now) => {
+      let t = (now - t0) / 1000;
+      if (skip && t < T_IMPACT) {
+        t0 -= (T_IMPACT - t) * 1000;
+        t = T_IMPACT;
+        skip = false;
+      }
+      render(t);
+      if (t >= T_END) {
+        finish();
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+    };
+
+    const fontsReady = (async () => {
+      try {
+        await Promise.race([
+          Promise.all([
+            document.fonts.load(wordFont),
+            document.fonts.load(regFont),
+            document.fonts.load(capFont),
+          ]),
+          new Promise((r) => setTimeout(r, 700)),
+        ]);
+      } catch {
+        /* fallback */
+      }
+    })();
+
+    fontsReady.then(() => {
+      if (finished) return;
+      if (freezeAt !== null) {
+        render(freezeAt);
+        if (freezeAt >= T_BREAK) {
+          html.classList.remove('intro-hold');
+        }
+        return;
+      }
+      t0 = performance.now();
+      raf = requestAnimationFrame(frame);
+    });
+
+    const trigger = () => {
+      skip = true;
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') trigger();
+    };
+    window.addEventListener('pointerdown', trigger);
+    window.addEventListener('keydown', onKey);
 
     return () => {
-      cancelAnimationFrame(frameId);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerleave', handlePointerLeave);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', handleResize);
-      shards.forEach((s) => {
-        s.extrudeGeo.dispose();
-        s.faceGeo.dispose();
-        s.glassMat.dispose();
-      });
-      masterTexture.dispose();
-      envTex.dispose();
-      pmrem.dispose();
-      renderer.dispose();
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('keydown', onKey);
+      html.classList.remove('intro-hold');
+      html.style.overflow = prevOverflow;
     };
-  }, [show]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
-  if (!show) return null;
-
+  if (!active) return null;
   return (
-    <div
-      onClick={(e) => handleShatter(e.clientX, e.clientY)}
-      className={`fixed inset-0 z-[100] cursor-pointer select-none transition-colors duration-400 ${
-        shattering ? 'bg-transparent pointer-events-none' : 'bg-[#050507]'
-      }`}
-      aria-label="CampusLink Intro Glass Vault — Loading and shattering into register"
-    >
-      <div ref={mountRef} className="w-full h-full" />
-    </div>
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="fixed inset-0 z-[300]"
+      style={{ background: 'transparent' }}
+    />
   );
 }
+
+// Export as IntroOverlay as well so existing imports in LandingPage.jsx work seamlessly
+export { ShatterIntro as IntroOverlay };
+export default ShatterIntro;

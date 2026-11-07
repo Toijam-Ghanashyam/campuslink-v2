@@ -1,22 +1,23 @@
+// src/theme/tokens.js
 // SINGLE SOURCE OF TRUTH for both themes. Edit hex values here only.
-// Everything else (CSS variables, contrast check, charts, 3D) is derived from this file.
 export const tokens = {
   day: {
-    bg: '#F4F5F7', surface: '#FFFFFF', fg: '#0E121B', fgSoft: '#475569', line: '#E2E8F0',
-    accent: '#D97706', accentTint: '#FEF3C7', accentDeep: '#92400E',
-    jade: '#0B6846', jadeTint: '#E1F6ED', brick: '#A82A18', brickTint: '#FBE8E5',
-    lagoon: '#09645E', lagoonLight: '#5EEAD4',
-    sidebar: '#0E121B', sidebarFg: '#F8FAFC', btn: '#0E121B', btnFg: '#F8FAFC', btnHover: '#D97706', btnHoverFg: '#0E121B',
-    darkSection: '#0E121B', darkSectionFg: '#F8FAFC',
-    glassBase: '#FFFFFF', glassAlpha: '0.72', glassBorderBase: '#FFFFFF', glassBorderAlpha: '0.85',
-    blobA: '#CBD5E1', blobB: '#FDE68A', blobC: '#FECDD3',
-    markAlpha: '0.55',
-    threeA: '#D97706', threeB: '#09645E', threeDust: '#D97706', threeEdge: '#09645E', threeAdditive: '0',
-    checkBackdrops: ['#F4F5F7', '#CBD5E1', '#FDE68A', '#FECDD3'],
+    // "Ink & Highlighter": true-ink black on warm paper, with one highlighter-yellow accent. No pastel AI blobs.
+    bg: '#EFEEE9', surface: '#FBFBF8', fg: '#0A0A0B', fgSoft: '#5A5A56', line: '#D6D5CE',
+    accent: '#FFD23F', accentTint: '#FFF1B8', accentDeep: '#5A4300', accentInk: '#6B4E00',
+    jade: '#0C6B47', jadeTint: '#DDF1E7', brick: '#B3261E', brickTint: '#F7E1DE',
+    lagoon: '#1F1F21', lagoonLight: '#9A9A94',
+    sidebar: '#0A0A0B', sidebarFg: '#F4F4F0', btn: '#0A0A0B', btnFg: '#F8F8F4', btnHover: '#FFD23F', btnHoverFg: '#0A0A0B',
+    darkSection: '#0A0A0B', darkSectionFg: '#F4F4F0',
+    glassBase: '#FFFFFF', glassAlpha: '0.78', glassBorderBase: '#0A0A0B', glassBorderAlpha: '0.10',
+    blobA: '#FFFFFF', blobB: '#FFD23F', blobC: '#E4E2DA',
+    markAlpha: '0.7',
+    threeA: '#0A0A0B', threeB: '#5A5A56', threeDust: '#0A0A0B', threeEdge: '#0A0A0B', threeAdditive: '0',
+    checkBackdrops: ['#EFEEE9', '#FFFFFF', '#FFF1B8'],
   },
   night: {
     bg: '#000000', surface: '#0A0A0E', fg: '#FFFFFF', fgSoft: '#A1A1AA', line: '#26262E',
-    accent: '#F59E0B', accentTint: '#2A1E0B', accentDeep: '#FBBF24',
+    accent: '#F59E0B', accentTint: '#2A1E0B', accentDeep: '#FBBF24', accentInk: '#F59E0B',
     jade: '#3CCB8B', jadeTint: '#12251B', brick: '#FF6A55', brickTint: '#2D1714',
     lagoon: '#2DD4BF', lagoonLight: '#14B8A6',
     sidebar: '#050508', sidebarFg: '#FFFFFF', btn: '#F59E0B', btnFg: '#000000', btnHover: '#FFFFFF', btnHoverFg: '#000000',

@@ -145,7 +145,7 @@ export function AppShell({ role = 'student', children }) {
 
           <NavLink to="/" className="flex items-baseline gap-1 group select-none">
             <span className="font-display font-medium text-xl text-fg tracking-tight">CampusLink</span>
-            <span className="font-mono text-xs text-accent font-bold">.register</span>
+            <span className="font-mono text-xs text-accent-ink font-bold">.register</span>
           </NavLink>
 
           <div className="hidden sm:block h-3.5 w-px bg-line mx-2" />

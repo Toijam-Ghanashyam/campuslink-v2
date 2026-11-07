@@ -112,7 +112,7 @@ export function CommandPalette({ open, onClose, currentRole }) {
                           <p className="text-[11px] text-fg-soft capitalize">{item.category}</p>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-fg-soft group-hover:text-accent opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-fg-soft group-hover:text-accent-ink opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all" />
                     </button>
                   );
                 })

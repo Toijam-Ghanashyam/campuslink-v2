@@ -27,7 +27,7 @@ export function ThemeToggle({ className = '' }) {
         </>
       ) : (
         <>
-          <Sun className="w-3.5 h-3.5 text-accent fill-accent/20" />
+          <Sun className="w-3.5 h-3.5 text-accent-ink fill-accent-ink/20" />
           <span className="text-[11px] uppercase tracking-wider">DAY</span>
         </>
       )}

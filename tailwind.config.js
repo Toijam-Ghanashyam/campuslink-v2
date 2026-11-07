@@ -10,14 +10,13 @@ export default {
     extend: {
       colors: {
         bg: c('bg'), surface: c('surface'), fg: c('fg'), 'fg-soft': c('fg-soft'), line: c('line'),
-        accent: c('accent'), 'accent-tint': c('accent-tint'), 'accent-deep': c('accent-deep'),
+        accent: c('accent'), 'accent-tint': c('accent-tint'), 'accent-deep': c('accent-deep'), 'accent-ink': c('accent-ink'),
         jade: c('jade'), 'jade-tint': c('jade-tint'), brick: c('brick'), 'brick-tint': c('brick-tint'),
         lagoon: c('lagoon'), sidebar: c('sidebar'), 'sidebar-fg': c('sidebar-fg'),
         btn: c('btn'), 'btn-fg': c('btn-fg'), 'btn-hover': c('btn-hover'), 'btn-hover-fg': c('btn-hover-fg'),
         'dark-section': c('dark-section'), 'dark-section-fg': c('dark-section-fg'),
         glass: 'rgb(var(--c-glass-base) / var(--glass-alpha))',
         'glass-border': 'rgb(var(--c-glass-border-base) / var(--glass-border-alpha))',
-        // legacy aliases so nothing breaks while migrating
         bone: c('bg'), paper: c('surface'), ink: c('fg'), 'ink-soft': c('fg-soft'),
         ochre: c('accent'), 'ochre-tint': c('accent-tint'), 'ochre-deep': c('accent-deep'),
       },

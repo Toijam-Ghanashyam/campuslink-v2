@@ -1,8 +1,9 @@
+/* src/styles/themes.base.css */
 :root[data-theme='day'] {
   --glass-blur: 22px; --glass-saturate: 1.6; --glass-highlight: 0.9;
-  --glass-shadow: 0 10px 40px -12px rgb(14 18 27 / 0.12);
+  --glass-shadow: 0 10px 40px -14px rgb(10 10 11 / 0.18);
   --grain-opacity: 0.025;
-  --backdrop-a-alpha: 0.45; --backdrop-b-alpha: 0.4; --backdrop-c-alpha: 0.35;
+  --backdrop-a-alpha: 0.7; --backdrop-b-alpha: 0.18; --backdrop-c-alpha: 0;
   --glow: 0 0 0 0 transparent;
 }
 :root[data-theme='night'] {
@@ -16,4 +17,3 @@
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
-

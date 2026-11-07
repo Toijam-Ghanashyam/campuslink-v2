@@ -162,7 +162,7 @@ export function JudgeGuide() {
                       }
                       setOpen(false);
                     }}
-                    className="font-mono text-[10px] text-accent hover:text-fg flex items-center gap-0.5 shrink-0 uppercase tracking-wider font-semibold"
+                    className="font-mono text-[10px] text-accent-ink hover:text-fg flex items-center gap-0.5 shrink-0 uppercase tracking-wider font-semibold"
                   >
                     <span>Go</span>
                     <ArrowRight className="w-2.5 h-2.5" />

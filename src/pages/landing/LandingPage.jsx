@@ -201,7 +201,7 @@ export function LandingPage() {
               <span className="font-display font-medium text-2xl text-fg tracking-tight">
                 CampusLink
               </span>
-              <span className="font-mono text-xs text-accent font-bold">.register</span>
+              <span className="font-mono text-xs text-accent-ink font-bold">.register</span>
             </div>
           </div>
 
@@ -243,7 +243,7 @@ export function LandingPage() {
             isNight ? 'bg-black border-white/[0.09]' : 'border-line'
           }`}
         >
-          {(use3d || isNight) && (
+          {mode !== 'lite' && (
             <div
               className="absolute inset-0 z-0 pointer-events-none transition-transform duration-100 ease-out"
               style={{ transform: 'translate3d(calc(var(--mx, 0) * -16px), 0, 0)' }}
@@ -255,7 +255,10 @@ export function LandingPage() {
           )}
 
           {/* Centered Hero Content Hierarchy (Matching Screenshot 1) */}
-          <div className="pt-20 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10 text-center">
+          <div
+            data-vortex-mask
+            className="pt-20 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10 text-center"
+          >
             {/* Centered Eyebrow */}
             <span
               className={`font-mono text-xs uppercase tracking-[0.2em] font-semibold inline-block mb-4 ${
@@ -341,6 +344,7 @@ export function LandingPage() {
 
             {/* Centered "Physical Register" Showcase Dock (Dual Cards over Lower Funnel) */}
             <div
+              data-reveal-late
               className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-6 pt-12 text-left transition-transform duration-100 ease-out"
               style={{
                 transform:
@@ -429,7 +433,7 @@ export function LandingPage() {
                   <button
                     type="button"
                     onClick={() => navigate('/admin/drives')}
-                    className="font-mono text-[11px] uppercase tracking-wider text-accent font-semibold hover:underline"
+                    className="font-mono text-[11px] uppercase tracking-wider text-accent-ink font-semibold hover:underline"
                   >
                     1-Click Resolve →
                   </button>
@@ -504,7 +508,7 @@ export function LandingPage() {
                         transition={{ duration: 0.3 }}
                         className="space-y-3"
                       >
-                        <span className="font-mono text-4xl font-bold text-accent block">
+                        <span className="font-mono text-4xl font-bold text-accent-ink block">
                           {pipelineSteps[currentStepIdx].num}
                         </span>
                         <h3 className="font-display font-medium text-3xl sm:text-4xl text-fg leading-tight">
@@ -583,7 +587,7 @@ export function LandingPage() {
                 }`}
               >
                 <div className="flex items-start gap-6 min-w-0">
-                  <span className="font-display text-4xl text-fg-soft/40 font-normal shrink-0 group-hover:text-accent transition-colors">
+                  <span className="font-display text-4xl text-fg-soft/40 font-normal shrink-0 group-hover:text-accent-ink transition-colors">
                     {desk.roman}
                   </span>
                   <div className="space-y-1">
