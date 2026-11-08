@@ -130,28 +130,28 @@ export function RecruiterAnalytics() {
   return (
     <div className="space-y-10 pb-12">
       {/* Top 3 Animated Executive KPI Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-line pb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 border-b border-line pb-5">
         {/* KPI 1: Average AI Match */}
         <motion.div
-          whileHover={{ y: -2 }}
-          className="group relative rounded-object border border-line/80 bg-surface/40 p-5 space-y-3 overflow-hidden transition-colors hover:border-accent/50"
+          whileHover={{ y: -1 }}
+          className="group relative rounded-object border border-line/80 bg-surface/40 p-3.5 sm:p-4 space-y-2 overflow-hidden transition-colors hover:border-accent/50"
         >
-          <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-fg-soft">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
             <span>AVERAGE AI MATCH</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-jade/15 border border-jade/30 px-2 py-0.5 text-[10px] font-bold text-jade">
+            <span className="inline-flex items-center gap-1 rounded-full bg-jade/15 border border-jade/30 px-1.5 py-0.5 text-[9.5px] font-bold text-jade">
               <TrendingUp className="h-3 w-3" /> +6.4%
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-semibold tracking-tight text-fg">
+            <span className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-fg leading-tight">
               <CountUp to={74.0} decimals={1} suffix="%" />
             </span>
           </div>
-          <p className="font-sans text-xs text-fg-soft">
+          <p className="font-sans text-[11px] text-fg-soft leading-tight">
             Across 342 pre-screened applicants
           </p>
           {/* Animated Mini Progress Bar */}
-          <div className="h-1.5 w-full rounded-full bg-line/50 overflow-hidden">
+          <div className="h-1 w-full rounded-full bg-line/50 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: '74%' }}
@@ -163,24 +163,24 @@ export function RecruiterAnalytics() {
 
         {/* KPI 2: Offer Acceptance */}
         <motion.div
-          whileHover={{ y: -2 }}
-          className="group relative rounded-object border border-line/80 bg-surface/40 p-5 space-y-3 overflow-hidden transition-colors hover:border-jade/50"
+          whileHover={{ y: -1 }}
+          className="group relative rounded-object border border-line/80 bg-surface/40 p-3.5 sm:p-4 space-y-2 overflow-hidden transition-colors hover:border-jade/50"
         >
-          <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-fg-soft">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
             <span>OFFER ACCEPTANCE</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-jade/15 border border-jade/30 px-2 py-0.5 text-[10px] font-bold text-jade">
+            <span className="inline-flex items-center gap-1 rounded-full bg-jade/15 border border-jade/30 px-1.5 py-0.5 text-[9.5px] font-bold text-jade">
               <Award className="h-3 w-3" /> HIGH RETENTION
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-semibold tracking-tight text-fg">
+            <span className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-fg leading-tight">
               <CountUp to={88.5} decimals={1} suffix="%" />
             </span>
           </div>
-          <p className="font-sans text-xs text-fg-soft">
+          <p className="font-sans text-[11px] text-fg-soft leading-tight">
             High candidate brand loyalty
           </p>
-          <div className="h-1.5 w-full rounded-full bg-line/50 overflow-hidden">
+          <div className="h-1 w-full rounded-full bg-line/50 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: '88.5%' }}
@@ -192,21 +192,21 @@ export function RecruiterAnalytics() {
 
         {/* KPI 3: Average Time-to-Hire */}
         <motion.div
-          whileHover={{ y: -2 }}
-          className="group relative rounded-object border border-line/80 bg-surface/40 p-5 space-y-3 overflow-hidden transition-colors hover:border-accent/50"
+          whileHover={{ y: -1 }}
+          className="group relative rounded-object border border-line/80 bg-surface/40 p-3.5 sm:p-4 space-y-2 overflow-hidden transition-colors hover:border-accent/50"
         >
-          <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-fg-soft">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
             <span>AVERAGE TIME-TO-HIRE</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 border border-accent/35 px-2 py-0.5 text-[10px] font-bold text-accent-ink">
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 border border-accent/35 px-1.5 py-0.5 text-[9.5px] font-bold text-accent-ink">
               <Zap className="h-3 w-3" /> -4.2d FASTER
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-semibold tracking-tight text-fg">
+            <span className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-fg leading-tight">
               <CountUp to={12} decimals={0} suffix=" Days" />
             </span>
           </div>
-          <p className="font-sans text-xs text-fg-soft">
+          <p className="font-sans text-[11px] text-fg-soft leading-tight">
             From JNF to final offer sign-off
           </p>
           {/* Segmented Timeline Velocity Meter */}
@@ -217,7 +217,7 @@ export function RecruiterAnalytics() {
                 initial={{ opacity: 0, scaleY: 0 }}
                 animate={{ opacity: 1, scaleY: 1 }}
                 transition={{ delay: i * 0.05 }}
-                className={`h-1.5 rounded-full ${
+                className={`h-1 rounded-full ${
                   i < 9 ? 'bg-accent' : 'bg-jade'
                 }`}
               />
@@ -355,7 +355,7 @@ export function RecruiterAnalytics() {
                 <span className="block text-[10px] text-fg-soft">{b.branch}</span>
                 <span className="text-xs font-bold text-fg">{b.share}</span>
                 <span className="block text-[9px] text-jade">
-                  {b.shortlisted} पात्र
+                  {b.shortlisted} eligible
                 </span>
               </div>
             ))}

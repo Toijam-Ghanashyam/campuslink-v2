@@ -127,7 +127,15 @@ function InteractiveDesksSection({ navigate, isNight }) {
               key={desk.roman}
               onMouseEnter={() => setActiveIdx(idx)}
               onPointerMove={handleRowPointerMove}
-              onClick={() => navigate(desk.path)}
+              onClick={() =>
+                navigate(
+                  idx === 0
+                    ? '/login?role=student'
+                    : idx === 1
+                    ? '/login?role=admin'
+                    : '/login?role=recruiter'
+                )
+              }
               style={{ '--mx': '50%', '--my': '50%' }}
               className="group relative cursor-pointer py-8 px-6 lg:px-8 transition-colors duration-300 overflow-hidden select-none"
             >
@@ -405,7 +413,14 @@ function InteractiveClosingCTA({ navigate, isNight }) {
               type="button"
               whileHover={{ scale: 1.04, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(quickDesk)}
+              onClick={() => {
+                const targetRole = quickDesk.includes('admin')
+                  ? 'admin'
+                  : quickDesk.includes('recruiter')
+                  ? 'recruiter'
+                  : 'student';
+                navigate(`/login?role=${targetRole}`);
+              }}
               className={`rounded-full border px-8 py-4 font-mono text-xs uppercase tracking-widest transition-all flex items-center gap-2.5 ${
                 isNight
                   ? 'border-white/25 bg-black/80 text-white hover:border-accent hover:shadow-[0_0_25px_rgba(245,158,11,0.22)]'
@@ -420,7 +435,7 @@ function InteractiveClosingCTA({ navigate, isNight }) {
               type="button"
               whileHover={{ scale: 1.04, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate('/admin/command-center')}
+              onClick={() => navigate('/login?role=admin')}
               className={`rounded-full px-8 py-4 font-mono text-xs font-bold uppercase tracking-widest transition-all ${
                 isNight
                   ? 'bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.28)] hover:bg-accent hover:text-black'
@@ -436,8 +451,15 @@ function InteractiveClosingCTA({ navigate, isNight }) {
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ onEnter } = {}) {
   const navigate = useNavigate();
+  const handleGetStarted = () => {
+    if (typeof onEnter === 'function') {
+      onEnter();
+    } else {
+      navigate('/login');
+    }
+  };
   const { theme } = useTheme();
   const isNight = theme === 'night';
   const { markPipelineScrolled } = useStore();
@@ -621,7 +643,7 @@ export function LandingPage() {
             {isNight ? (
               <button
                 type="button"
-                onClick={() => navigate('/student/overview')}
+                onClick={handleGetStarted}
                 className="rounded-full border border-white/25 bg-black/80 px-5 py-2 font-mono text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
               >
                 <span>GET STARTED</span>
@@ -630,7 +652,7 @@ export function LandingPage() {
             ) : (
               <Button
                 variant="primary"
-                onClick={() => navigate('/student/overview')}
+                onClick={handleGetStarted}
                 icon={ArrowRight}
               >
                 Launch System Demo
@@ -727,7 +749,7 @@ export function LandingPage() {
               {isNight ? (
                 <button
                   type="button"
-                  onClick={() => navigate('/student/overview')}
+                  onClick={() => navigate('/login')}
                   className="rounded-full bg-white text-black px-7 py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)]"
                 >
                   Launch System Demo
@@ -836,7 +858,7 @@ export function LandingPage() {
                   <span className="font-mono text-[11px] text-fg-soft">Automated Mitigation Ready</span>
                   <button
                     type="button"
-                    onClick={() => navigate('/admin/drives')}
+                    onClick={() => navigate('/login?role=admin')}
                     className="font-mono text-[11px] uppercase tracking-wider text-accent-ink font-semibold hover:underline"
                   >
                     1-Click Resolve →
@@ -1196,3 +1218,5 @@ export function LandingPage() {
     </ReactLenis>
   );
 }
+
+export default LandingPage;

@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Cpu,
+  LogOut,
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { CommandPalette } from './CommandPalette';
@@ -73,21 +74,18 @@ export function AppShell({ role = 'student', children }) {
 
   const tenantDetails = {
     student: {
-      tag: '01 · STUDENT DESK',
-      title: 'BPUT Central Student Hub',
-      sub: 'Roll 220101045 · CSE',
+      tag: 'STUDENT',
+      title: 'Student Login',
       avatar: 'AS',
     },
     admin: {
-      tag: '02 · PLACEMENT DIRECTORATE',
+      tag: 'PLACEMENT DIRECTORATE',
       title: 'BPUT Central Campus',
-      sub: '42 Active Corporate Partners',
       avatar: 'AD',
     },
     recruiter: {
-      tag: '03 · CORPORATE TA DESK',
-      title: 'Microsoft India TA Portal',
-      sub: 'Associate SDE Drive 2026',
+      tag: 'CORPORATE',
+      title: 'Microsoft India',
       avatar: 'MS',
     },
   };
@@ -176,7 +174,7 @@ export function AppShell({ role = 'student', children }) {
               {currentTenant.tag}
             </span>
             <span className="font-sans text-xs font-semibold text-fg leading-tight mt-0.5">
-              {currentTenant.title} <span className="font-normal text-fg-soft">({currentTenant.sub})</span>
+              {currentTenant.title}
             </span>
           </div>
         </div>
@@ -235,9 +233,24 @@ export function AppShell({ role = 'student', children }) {
             />
           </div>
 
-          {/* User Profile Avatar */}
-          <div className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line">
-            {currentTenant.avatar}
+          {/* User Profile Avatar & Sign Out */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line">
+              {currentTenant.avatar}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('campuslink_auth');
+                } catch {}
+                navigate('/login');
+              }}
+              title="Sign Out to Login Portal"
+              className="p-1.5 rounded-control text-fg-soft hover:text-fg hover:bg-surface/80 border border-transparent hover:border-line transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </header>
@@ -366,3 +379,5 @@ export function AppShell({ role = 'student', children }) {
     </div>
   );
 }
+
+export default AppShell;

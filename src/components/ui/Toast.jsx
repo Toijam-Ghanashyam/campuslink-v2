@@ -84,3 +84,6 @@ export function useToast() {
   return context;
 }
 
+export const ToastViewport = ToastProvider;
+export default ToastProvider;
+

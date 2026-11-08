@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 
 export function StatStrip({ items = [], className }) {
   return (
-    <div className={cn('w-full border-y border-line my-6 py-5', className)}>
+    <div className={cn('w-full border-y border-line my-3.5 py-3', className)}>
       <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-line">
         {items.map((item, idx) => {
           const isNumeric =
@@ -15,16 +15,16 @@ export function StatStrip({ items = [], className }) {
             <div
               key={idx}
               className={cn(
-                'py-3 md:py-1 px-4 flex flex-col justify-between',
+                'py-1.5 md:py-0.5 px-4 flex flex-col justify-between space-y-1',
                 idx === 0 && 'md:pl-0',
                 idx === items.length - 1 && 'md:pr-0'
               )}
             >
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold text-ink-soft block mb-1">
+              <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-fg-soft block">
                 {item.label}
               </span>
 
-              <div className="font-display text-4xl sm:text-5xl text-ink tracking-tight tabular-nums leading-none my-1">
+              <div className="font-display text-2xl sm:text-3xl font-semibold text-fg tracking-tight tabular-nums leading-tight">
                 {isNumeric ? (
                   <CountUp
                     to={typeof item.value === 'number' ? item.value : parseFloat(item.value)}
@@ -42,7 +42,7 @@ export function StatStrip({ items = [], className }) {
               </div>
 
               {item.hint && (
-                <span className="font-sans text-xs text-ink-soft/80 mt-1 block leading-tight">
+                <span className="font-sans text-[11px] text-fg-soft leading-tight">
                   {item.hint}
                 </span>
               )}

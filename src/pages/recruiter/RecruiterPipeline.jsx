@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, FileText, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, FileText, ArrowRight, X } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { Tabs } from '../../components/ui/Tabs';
@@ -12,6 +13,150 @@ import { Drawer } from '../../components/ui/Drawer';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { cn } from '../../lib/utils';
+
+function SlotPickerPopover({ candidate, availableSlots, onBookSlot, onClose, anchorRef }) {
+  const popoverRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, openUpward: false });
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!anchorRef.current) return;
+      const rect = anchorRef.current.getBoundingClientRect();
+      const popoverWidth = 288;
+      const popoverHeight = 230;
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpward = spaceBelow < popoverHeight && rect.top > popoverHeight;
+
+      const top = openUpward
+        ? Math.max(12, rect.top - popoverHeight - 6)
+        : Math.min(window.innerHeight - popoverHeight - 12, rect.bottom + 6);
+
+      const left = Math.max(12, Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 16));
+
+      setPos({ top, left, openUpward });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    const handleClickOutside = (e) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target) &&
+        anchorRef.current &&
+        !anchorRef.current.contains(e.target)
+      ) {
+        onClose();
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [anchorRef, onClose]);
+
+  return createPortal(
+    <motion.div
+      ref={popoverRef}
+      initial={{ opacity: 0, scale: 0.95, y: pos.openUpward ? 6 : -6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: pos.openUpward ? 6 : -6 }}
+      transition={{ duration: 0.15 }}
+      style={{
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        width: 288,
+        zIndex: 99999,
+      }}
+      className="bg-surface/95 backdrop-blur-xl rounded-object border border-line shadow-2xl p-3 text-left space-y-2 font-mono text-xs"
+    >
+      <div className="border-b border-line pb-1.5 flex items-center justify-between">
+        <span className="text-[10px] uppercase font-semibold text-fg-soft block">
+          CONFLICT-FREE SLOTS (NOV 05, 2026)
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-fg-soft hover:text-fg text-xs p-0.5 rounded cursor-pointer leading-none"
+          aria-label="Close slot picker"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="space-y-1">
+        {availableSlots.map((slot, sIdx) => (
+          <button
+            key={sIdx}
+            type="button"
+            disabled={!slot.available}
+            onClick={() => onBookSlot(candidate, slot)}
+            className={cn(
+              'w-full text-left p-2 rounded-control text-xs transition-colors flex items-center justify-between border',
+              slot.available
+                ? 'border-line hover:border-fg hover:bg-fg/5 text-fg cursor-pointer'
+                : 'border-line/40 bg-surface/30 text-fg-soft/40 cursor-not-allowed'
+            )}
+          >
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-fg-soft shrink-0" />
+              <span>{slot.time}</span>
+            </div>
+            {!slot.available && (
+              <span className="text-[9px] text-brick font-semibold">
+                CLASH: TCS
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </motion.div>,
+    document.body
+  );
+}
+
+function SlotActionButton({ candidate, availableSlots, onBookSlot, isActive, onToggle, onClose }) {
+  const buttonRef = useRef(null);
+
+  return (
+    <div className="relative inline-block text-left">
+      <Button
+        ref={buttonRef}
+        size="sm"
+        variant={candidate.interviewSlot ? 'ghost' : 'primary'}
+        disabled={Boolean(candidate.interviewSlot)}
+        onClick={onToggle}
+      >
+        {candidate.interviewSlot ? 'Booked' : 'Schedule Slot'}
+      </Button>
+
+      <AnimatePresence>
+        {isActive && (
+          <SlotPickerPopover
+            candidate={candidate}
+            availableSlots={availableSlots}
+            onBookSlot={onBookSlot}
+            onClose={onClose}
+            anchorRef={buttonRef}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function RecruiterPipeline() {
   const { pipeline, scheduleInterviewSlot } = useStore();
@@ -128,68 +273,21 @@ export function RecruiterPipeline() {
                       <button
                         type="button"
                         onClick={() => setSelectedBioCandidate(candidate)}
-                        className="text-ink hover:text-ochre-deep font-semibold underline underline-offset-4"
+                        className="text-fg hover:text-accent font-semibold underline underline-offset-4 cursor-pointer"
                       >
                         View Bio →
                       </button>
 
-                      <div className="relative inline-block text-left">
-                        <Button
-                          size="sm"
-                          variant={candidate.interviewSlot ? 'ghost' : 'primary'}
-                          disabled={Boolean(candidate.interviewSlot)}
-                          onClick={() =>
-                            setActiveSlotPopoverId((prev) => (prev === candidate.id ? null : candidate.id))
-                          }
-                        >
-                          {candidate.interviewSlot ? 'Booked' : 'Schedule Slot'}
-                        </Button>
-
-                        {/* Slot Booking Popover (L2 Object) */}
-                        <AnimatePresence>
-                          {activeSlotPopoverId === candidate.id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: 4 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: 4 }}
-                              className="absolute right-0 top-10 w-72 bg-paper rounded-object border border-line shadow-object z-40 p-3 text-left space-y-2 font-mono text-xs"
-                            >
-                              <div className="border-b border-line pb-1.5">
-                                <span className="text-[10px] uppercase font-semibold text-ink-soft block">
-                                  CONFLICT-FREE SLOTS (NOV 05, 2026)
-                                </span>
-                              </div>
-
-                              <div className="space-y-1">
-                                {availableSlots.map((slot, sIdx) => (
-                                  <button
-                                    key={sIdx}
-                                    type="button"
-                                    disabled={!slot.available}
-                                    onClick={() => handleBookSlot(candidate, slot)}
-                                    className={cn(
-                                      'w-full text-left p-2 rounded-control text-xs transition-colors flex items-center justify-between border',
-                                      slot.available
-                                        ? 'border-line hover:border-ink hover:bg-bone/40 text-ink cursor-pointer'
-                                        : 'border-line/40 bg-bone/30 text-ink-soft/40 cursor-not-allowed'
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock className="w-3 h-3 text-ink-soft" />
-                                      <span>{slot.time}</span>
-                                    </div>
-                                    {!slot.available && (
-                                      <span className="text-[9px] text-brick font-semibold">
-                                        CLASH: TCS
-                                      </span>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                      <SlotActionButton
+                        candidate={candidate}
+                        availableSlots={availableSlots}
+                        onBookSlot={handleBookSlot}
+                        isActive={activeSlotPopoverId === candidate.id}
+                        onToggle={() =>
+                          setActiveSlotPopoverId((prev) => (prev === candidate.id ? null : candidate.id))
+                        }
+                        onClose={() => setActiveSlotPopoverId(null)}
+                      />
                     </div>
                   </td>
                 </motion.tr>

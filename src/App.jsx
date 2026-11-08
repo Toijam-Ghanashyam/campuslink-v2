@@ -12,6 +12,9 @@ import { PageTurnWipe } from './components/ui/PageTurnWipe';
 // Landing Page
 import { LandingPage } from './pages/landing/LandingPage';
 
+// Auth / Login Page
+import { LoginPage } from './pages/auth/LoginPage';
+
 // Student Portal Pages
 import { StudentOverview } from './pages/student/StudentOverview';
 import { StudentProfile } from './pages/student/StudentProfile';
@@ -90,6 +93,18 @@ function ScrollToTop() {
   return null;
 }
 
+function ProtectedPortal({ role, children }) {
+  const isAuth =
+    typeof window !== 'undefined' &&
+    sessionStorage.getItem('campuslink_auth') === '1';
+
+  if (!isAuth) {
+    return <Navigate to={`/login?role=${role}`} replace />;
+  }
+
+  return <AppShell role={role}>{children}</AppShell>;
+}
+
 function AnimatedAppRoutes() {
   const location = useLocation();
   const topSegment = location.pathname.split('/')[1] || 'landing';
@@ -102,46 +117,51 @@ function AnimatedAppRoutes() {
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
 
+        {/* Authentication / Role Portal Gateway */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signin" element={<Navigate to="/login" replace />} />
+        <Route path="/auth" element={<Navigate to="/login" replace />} />
+
         {/* Student Portal */}
         <Route path="/student" element={<Navigate to="/student/overview" replace />} />
         <Route
           path="/student/overview"
           element={
-            <AppShell role="student">
+            <ProtectedPortal role="student">
               <StudentOverview />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/student/profile"
           element={
-            <AppShell role="student">
+            <ProtectedPortal role="student">
               <StudentProfile />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/student/drives"
           element={
-            <AppShell role="student">
+            <ProtectedPortal role="student">
               <StudentDrives />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/student/applications"
           element={
-            <AppShell role="student">
+            <ProtectedPortal role="student">
               <StudentApplications />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/student/interviews"
           element={
-            <AppShell role="student">
+            <ProtectedPortal role="student">
               <StudentInterviews />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
 
@@ -150,49 +170,49 @@ function AnimatedAppRoutes() {
         <Route
           path="/admin/command-center"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminCommandCenter />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/admin/verification"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminVerification />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/admin/recruiters"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminRecruiters />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/admin/drives"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminDrives />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/admin/at-risk"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminAtRisk />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/admin/offers"
           element={
-            <AppShell role="admin">
+            <ProtectedPortal role="admin">
               <AdminOffers />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
 
@@ -201,41 +221,41 @@ function AnimatedAppRoutes() {
         <Route
           path="/recruiter/overview"
           element={
-            <AppShell role="recruiter">
+            <ProtectedPortal role="recruiter">
               <RecruiterOverview />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/recruiter/jobs"
           element={
-            <AppShell role="recruiter">
+            <ProtectedPortal role="recruiter">
               <RecruiterJobs />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/recruiter/pipeline"
           element={
-            <AppShell role="recruiter">
+            <ProtectedPortal role="recruiter">
               <RecruiterPipeline />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/recruiter/slots"
           element={
-            <AppShell role="recruiter">
+            <ProtectedPortal role="recruiter">
               <RecruiterSlots />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
         <Route
           path="/recruiter/analytics"
           element={
-            <AppShell role="recruiter">
+            <ProtectedPortal role="recruiter">
               <RecruiterAnalytics />
-            </AppShell>
+            </ProtectedPortal>
           }
         />
 

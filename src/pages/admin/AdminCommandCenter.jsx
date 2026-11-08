@@ -160,24 +160,24 @@ export function AdminCommandCenter() {
   ];
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-8 pb-10">
       {/* 1. Interactive Top 4 KPI Telemetry Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line border-b border-line pb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line border-b border-line pb-4">
         {topKpis.map((kpi, idx) => (
           <motion.div
             key={kpi.label}
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -1 }}
             onClick={() => navigate(kpi.path)}
-            className={`group relative cursor-pointer py-3 ${
-              idx === 0 ? 'sm:pr-6' : 'sm:px-6'
-            } space-y-2 transition-colors`}
+            className={`group relative cursor-pointer py-1.5 ${
+              idx === 0 ? 'sm:pr-5' : 'sm:px-5'
+            } space-y-1 transition-colors`}
           >
-            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-fg-soft">
+            <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
               <span>{kpi.label}</span>
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-accent transition-all duration-200" />
+              <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-accent transition-all duration-200" />
             </div>
 
-            <div className="font-display text-4xl xl:text-5xl font-semibold tracking-tight text-fg group-hover:text-accent transition-colors duration-200">
+            <div className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-fg group-hover:text-accent transition-colors duration-200 leading-tight">
               <CountUp
                 to={kpi.value}
                 decimals={kpi.decimals}
@@ -186,10 +186,10 @@ export function AdminCommandCenter() {
               />
             </div>
 
-            <p className="font-sans text-xs text-fg-soft">{kpi.sub}</p>
+            <p className="font-sans text-[11px] text-fg-soft leading-normal">{kpi.sub}</p>
 
             {/* Subtle Animated Progress Hairline */}
-            <div className="h-1 w-full rounded-full bg-line/40 overflow-hidden mt-2">
+            <div className="h-0.5 w-full rounded-full bg-line/40 overflow-hidden mt-1.5">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${kpi.progress}%` }}

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../../theme/ThemeProvider.jsx';
 
-export function Backdrop() {
+export function Backdrop({ forceDark = false, className = '' }) {
   const { theme } = useTheme();
-  const isNight = theme === 'night';
+  const isNight = forceDark || theme === 'night';
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export function Backdrop() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 -z-10 bg-[#000000] overflow-hidden select-none"
+      className={`pointer-events-none fixed inset-0 -z-10 bg-[#000000] overflow-hidden select-none ${className}`}
       aria-hidden="true"
     >
       <canvas ref={canvasRef} className="h-full w-full block opacity-90" />

@@ -78,7 +78,19 @@ export function PageTurnWipe({ triggerKey }) {
 
   useEffect(() => {
     if (triggerKey !== undefined && prevKeyRef.current !== triggerKey) {
+      const prevKey = prevKeyRef.current;
       prevKeyRef.current = triggerKey;
+
+      // Never show the neon-blue silk transition when returning to landing page or going to login page
+      if (triggerKey === 'landing' || triggerKey === '' || triggerKey === 'login') {
+        return;
+      }
+
+      // Also do not play if coming from landing to login or vice versa
+      if (prevKey === 'landing' && triggerKey === 'login') {
+        return;
+      }
+
       setActiveRun((n) => n + 1);
     }
   }, [triggerKey]);
