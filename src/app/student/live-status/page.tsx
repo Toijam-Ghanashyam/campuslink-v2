@@ -100,9 +100,28 @@ export default function CandidateLiveStatusPage() {
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
       <div className="max-w-3xl mx-auto space-y-6">
-        <header className="border-b border-slate-800 pb-4">
-          <h1 className="text-2xl font-bold">Candidate Live Dispatch Board</h1>
-          <p className="text-xs text-slate-400">Keep this screen open during drive day for real-time interview calls.</p>
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Link href="/student" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                &larr; Back to Dashboard
+              </Link>
+            </div>
+            <h1 className="text-2xl font-bold">Candidate Live Dispatch Board</h1>
+            <p className="text-xs text-slate-400">Keep this screen open during drive day for real-time interview calls.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/student/drives">
+              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
+                Drives
+              </Button>
+            </Link>
+            <Link href="/student/remediation">
+              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
+                Remediation
+              </Button>
+            </Link>
+          </div>
         </header>
 
         {/* Live Call Pager Banner */}

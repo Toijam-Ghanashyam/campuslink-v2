@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -119,13 +120,32 @@ export default function StudentRemediationStudio() {
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
       <div className="max-w-7xl mx-auto space-y-6">
-        <header className="border-b border-slate-800 pb-4">
-          <h1 className="text-3xl font-extrabold tracking-tight text-indigo-400">
-            Native Student Remediation Studio
-          </h1>
-          <p className="text-sm text-slate-400">
-            Personalized Skill Gap Remediation &amp; Interactive Code Sandbox
-          </p>
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Link href="/student" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                &larr; Back to Dashboard
+              </Link>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-indigo-400">
+              Native Student Remediation Studio
+            </h1>
+            <p className="text-sm text-slate-400">
+              Personalized Skill Gap Remediation &amp; Interactive Code Sandbox
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/student/drives">
+              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
+                Drives
+              </Button>
+            </Link>
+            <Link href="/student/live-status">
+              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
+                Live Status
+              </Button>
+            </Link>
+          </div>
         </header>
 
         {/* AI Diagnostic Gap Analysis Feed */}
