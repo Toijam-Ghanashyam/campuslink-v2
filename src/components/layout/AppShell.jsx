@@ -244,8 +244,12 @@ export function AppShell({ role = 'student', children }) {
                     : 'text-fg-soft hover:text-fg'
                 )}
               >
-                {r === 'student' ? 'STU' : r === 'admin' ? 'TPO' : 'REC'}
-                <span className="hidden md:inline">{r === 'student' ? 'dent' : r === 'admin' ? ' / Admin' : 'ruiter'}</span>
+                <span className="md:hidden">
+                  {r === 'student' ? 'STU' : r === 'admin' ? 'ADM' : 'REC'}
+                </span>
+                <span className="hidden md:inline">
+                  {r === 'student' ? 'STUDENT' : r === 'admin' ? 'ADMIN' : 'RECRUITER'}
+                </span>
               </button>
             ))}
           </div>
@@ -257,7 +261,7 @@ export function AppShell({ role = 'student', children }) {
             title="Switch portal in menu"
             className="sm:hidden px-2 py-1 rounded-control bg-accent-tint text-accent-deep border border-accent/30 font-mono text-[9.5px] font-bold uppercase select-none min-h-[32px] flex items-center gap-1 shrink-0"
           >
-            <span>{role === 'student' ? 'STU' : role === 'admin' ? 'TPO' : 'REC'}</span>
+            <span>{role === 'student' ? 'STU' : role === 'admin' ? 'ADM' : 'REC'}</span>
             <ChevronDown className="w-3 h-3 opacity-60" />
           </button>
 
@@ -460,7 +464,7 @@ export function AppShell({ role = 'student', children }) {
                             role === r ? 'bg-accent text-btn-hover-fg' : 'text-sidebar-fg/70 hover:text-sidebar-fg'
                           )}
                         >
-                          {r === 'student' ? 'Student' : r === 'admin' ? 'TPO' : 'Recruiter'}
+                          {r === 'student' ? 'STUDENT' : r === 'admin' ? 'ADMIN' : 'RECRUITER'}
                         </button>
                       ))}
                     </div>

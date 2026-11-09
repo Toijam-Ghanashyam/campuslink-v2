@@ -326,7 +326,7 @@ function InteractiveClosingCTA({ navigate, isNight }) {
                   : 'text-fg-soft hover:text-fg'
               }`}
             >
-              BEFORE: 40 WHATSAPP GROUPS
+              BEFORE: MANUAL SPREADSHEETS
             </button>
             <button
               type="button"
@@ -358,7 +358,7 @@ function InteractiveClosingCTA({ navigate, isNight }) {
                     : 'text-fg'
                 }`}
               >
-                Stop babysitting spreadsheets.
+                Beyond manual spreadsheets.
               </span>
               <span
                 className={`block mt-1 transition-all duration-300 ${
@@ -369,7 +369,7 @@ function InteractiveClosingCTA({ navigate, isNight }) {
                     : 'text-fg-soft/50'
                 }`}
               >
-                Let the register own the drive.
+                Autonomous campus hiring, unified.
               </span>
             </h2>
           </div>
@@ -407,11 +407,11 @@ function InteractiveClosingCTA({ navigate, isNight }) {
             })}
           </div>
 
-          {/* 6. Dual Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
+          {/* 6. Centered Action Button */}
+          <div className="flex items-center justify-center pt-3">
             <motion.button
               type="button"
-              whileHover={{ scale: 1.04, y: -2 }}
+              whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 const targetRole = quickDesk.includes('admin')
@@ -421,28 +421,14 @@ function InteractiveClosingCTA({ navigate, isNight }) {
                   : 'student';
                 navigate(`/login?role=${targetRole}`);
               }}
-              className={`rounded-full border px-8 py-4 font-mono text-xs uppercase tracking-widest transition-all flex items-center gap-2.5 ${
+              className={`rounded-full px-9 py-4 font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2.5 shadow-lg ${
                 isNight
-                  ? 'border-white/25 bg-black/80 text-white hover:border-accent hover:shadow-[0_0_25px_rgba(245,158,11,0.22)]'
-                  : 'border-fg/30 bg-bg text-fg hover:border-fg'
+                  ? 'bg-white text-black shadow-[0_0_35px_rgba(255,255,255,0.25)] hover:bg-neutral-200'
+                  : 'bg-[#0A0A0C] text-white shadow-[0_10px_25px_rgba(0,0,0,0.15)] hover:bg-neutral-800'
               }`}
             >
               <span>GET STARTED</span>
-              <span className="text-accent">»</span>
-            </motion.button>
-
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate('/login?role=admin')}
-              className={`rounded-full px-8 py-4 font-mono text-xs font-bold uppercase tracking-widest transition-all ${
-                isNight
-                  ? 'bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.28)] hover:bg-accent hover:text-black'
-                  : 'bg-fg text-bg shadow-object hover:bg-accent hover:text-fg'
-              }`}
-            >
-              REQUEST A DEMO
+              <span className="text-accent font-bold">»</span>
             </motion.button>
           </div>
         </div>
@@ -667,9 +653,9 @@ export function LandingPage({ onEnter } = {}) {
                 onClick={handleGetStarted}
                 icon={ArrowRight}
                 size="sm"
-                className="hidden sm:inline-flex text-xs sm:text-sm"
+                className="hidden sm:inline-flex text-xs sm:text-sm font-mono uppercase tracking-wider"
               >
-                Launch Demo
+                Get Started
               </Button>
             )}
           </div>
@@ -720,9 +706,9 @@ export function LandingPage({ onEnter } = {}) {
                     handleGetStarted();
                   }}
                   icon={ArrowRight}
-                  className="w-full justify-center text-xs"
+                  className="w-full justify-center text-xs font-mono uppercase tracking-wider"
                 >
-                  Launch System Demo
+                  Get Started
                 </Button>
               </div>
             </motion.div>
@@ -784,7 +770,7 @@ export function LandingPage({ onEnter } = {}) {
 
             {/* Centered Subtitle */}
             <p className="font-sans text-sm sm:text-base lg:text-lg text-fg-soft leading-relaxed max-w-2xl mx-auto mt-4 sm:mt-6">
-              CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
+              CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of fragmented manual spreadsheets.
             </p>
 
             {/* Centered Dual Pill CTA Buttons (Matching Screenshot 1) */}
@@ -818,9 +804,10 @@ export function LandingPage({ onEnter } = {}) {
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="rounded-full bg-white text-black px-6 sm:px-7 py-3 sm:py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)] flex items-center justify-center"
+                  className="rounded-full bg-white text-black px-6 sm:px-7 py-3 sm:py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)] flex items-center justify-center gap-2"
                 >
-                  Launch System Demo
+                  <span>GET STARTED</span>
+                  <span>»</span>
                 </button>
               ) : (
                 <button
