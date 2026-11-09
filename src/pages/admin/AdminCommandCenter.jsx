@@ -109,34 +109,34 @@ function TrajectoryTooltip({ active, payload, label }) {
 export function AdminCommandCenter() {
   const navigate = useNavigate();
   const [hoveredBranchIdx, setHoveredBranchIdx] = useState(null);
+  const [ctcFocus, setCtcFocus] = useState('all');
   const [showTargetLine, setShowTargetLine] = useState(true);
-  const [ctcFocus, setCtcFocus] = useState('all'); // 'all' | 'highest' | 'avg'
 
   const topKpis = [
     {
-      label: 'ELIGIBLE STUDENTS',
-      value: 1420,
+      label: 'STUDENTS PLACED',
+      value: 1240,
       decimals: 0,
       prefix: '',
       suffix: '',
-      sub: '1,180 verified placement ready',
-      progress: 83,
-      barColor: 'bg-fg',
-      path: '/admin/verification',
-    },
-    {
-      label: 'ACTIVE RECRUITERS',
-      value: 42,
-      decimals: 0,
-      prefix: '',
-      suffix: '',
-      sub: '42 authorized JNFs',
-      progress: 100,
+      sub: 'Eligible: 1,582 across BPUT',
+      progress: 78.4,
       barColor: 'bg-jade',
-      path: '/admin/recruiters',
+      path: '/admin/offers',
     },
     {
-      label: 'OVERALL PLACED %',
+      label: 'ACTIVE DRIVES',
+      value: 38,
+      decimals: 0,
+      prefix: '',
+      suffix: '',
+      sub: '14 drives in final round',
+      progress: 68,
+      barColor: 'bg-accent',
+      path: '/admin/drives',
+    },
+    {
+      label: 'PLACEMENT CONVERSION',
       value: 78.4,
       decimals: 1,
       prefix: '',
@@ -160,24 +160,22 @@ export function AdminCommandCenter() {
   ];
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-6 sm:space-y-8 pb-10">
       {/* 1. Interactive Top 4 KPI Telemetry Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line border-b border-line pb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-0 lg:divide-x divide-line border-b border-line pb-4">
         {topKpis.map((kpi, idx) => (
           <motion.div
             key={kpi.label}
             whileHover={{ y: -1 }}
             onClick={() => navigate(kpi.path)}
-            className={`group relative cursor-pointer py-1.5 ${
-              idx === 0 ? 'sm:pr-5' : 'sm:px-5'
-            } space-y-1 transition-colors`}
+            className={`group relative cursor-pointer p-3 sm:p-4 lg:px-5 lg:py-1.5 rounded-lg lg:rounded-none bg-surface/30 lg:bg-transparent border border-line lg:border-none space-y-1 transition-all`}
           >
-            <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
-              <span>{kpi.label}</span>
-              <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-accent transition-all duration-200" />
+            <div className="flex items-center justify-between font-mono text-[9.5px] sm:text-[10px] uppercase tracking-wider text-fg-soft">
+              <span className="truncate">{kpi.label}</span>
+              <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-accent transition-all duration-200 shrink-0" />
             </div>
 
-            <div className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-fg group-hover:text-accent transition-colors duration-200 leading-tight">
+            <div className="font-display text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-fg group-hover:text-accent transition-colors duration-200 leading-tight">
               <CountUp
                 to={kpi.value}
                 decimals={kpi.decimals}
@@ -186,7 +184,7 @@ export function AdminCommandCenter() {
               />
             </div>
 
-            <p className="font-sans text-[11px] text-fg-soft leading-normal">{kpi.sub}</p>
+            <p className="font-sans text-[10.5px] sm:text-[11px] text-fg-soft leading-normal truncate">{kpi.sub}</p>
 
             {/* Subtle Animated Progress Hairline */}
             <div className="h-0.5 w-full rounded-full bg-line/40 overflow-hidden mt-1.5">
@@ -202,20 +200,20 @@ export function AdminCommandCenter() {
       </div>
 
       {/* 2. Two-Column Interactive Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
         {/* CHART 01: BRANCH-WISE CONVERSION (%) */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+        <div className="space-y-4 rounded-xl border border-line bg-surface/30 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-2.5">
             <span className="font-mono text-xs uppercase tracking-widest text-fg-soft">
               01 · BRANCH-WISE CONVERSION (%)
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowTargetLine((v) => !v)}
                 className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider border transition-all ${
                   showTargetLine
-                    ? 'border-accent/40 bg-accent/10 text-accent-ink'
+                    ? 'border-accent/40 bg-accent/10 text-accent-ink font-semibold'
                     : 'border-line text-fg-soft hover:text-fg'
                 }`}
               >
@@ -227,11 +225,11 @@ export function AdminCommandCenter() {
             </div>
           </div>
 
-          <div className="h-[290px] w-full pt-2">
+          <div className="h-[250px] sm:h-[290px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={BRANCH_CONVERSION}
-                margin={{ top: 14, right: 8, left: -20, bottom: 4 }}
+                margin={{ top: 14, right: 8, left: -22, bottom: 4 }}
                 onMouseMove={(st) =>
                   setHoveredBranchIdx(st?.activeTooltipIndex ?? null)
                 }
@@ -306,7 +304,7 @@ export function AdminCommandCenter() {
             </ResponsiveContainer>
           </div>
 
-          <p className="font-serif italic text-sm text-fg-soft">
+          <p className="font-serif italic text-xs sm:text-sm text-fg-soft">
             {hoveredBranchIdx !== null
               ? `${BRANCH_CONVERSION[hoveredBranchIdx].branch} Cohort: ${BRANCH_CONVERSION[hoveredBranchIdx].placed} of ${BRANCH_CONVERSION[hoveredBranchIdx].total} eligible students placed (${BRANCH_CONVERSION[hoveredBranchIdx].rate}%).`
               : 'Civil and Mechanical convert at roughly half the rate of Computer Science and IT.'}
@@ -314,14 +312,14 @@ export function AdminCommandCenter() {
         </div>
 
         {/* CHART 02: COMPENSATION TRAJECTORY (LPA) */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+        <div className="space-y-4 rounded-xl border border-line bg-surface/30 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-2.5">
             <span className="font-mono text-xs uppercase tracking-widest text-fg-soft">
               02 · COMPENSATION TRAJECTORY (LPA)
             </span>
 
             {/* Subtle Interactive Curve Focus Pills */}
-            <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <div className="flex items-center gap-1.5 font-mono text-[10px] flex-wrap">
               <button
                 type="button"
                 onClick={() =>
@@ -355,11 +353,11 @@ export function AdminCommandCenter() {
             </div>
           </div>
 
-          <div className="h-[290px] w-full pt-2">
+          <div className="h-[250px] sm:h-[290px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={CTC_TRAJECTORY}
-                margin={{ top: 14, right: 12, left: -20, bottom: 4 }}
+                margin={{ top: 14, right: 12, left: -22, bottom: 4 }}
               >
                 <defs>
                   <linearGradient id="ctcHighestGrad" x1="0" y1="0" x2="0" y2="1">
@@ -472,7 +470,7 @@ export function AdminCommandCenter() {
             </ResponsiveContainer>
           </div>
 
-          <p className="font-serif italic text-sm text-fg-soft">
+          <p className="font-serif italic text-xs sm:text-sm text-fg-soft">
             Highest package has increased 2.1x since 2022 due to cloud
             infrastructure and AI roles.
           </p>

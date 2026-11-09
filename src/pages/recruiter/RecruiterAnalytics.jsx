@@ -103,20 +103,22 @@ function SpreadTooltip({ active, payload }) {
   return (
     <div className="glass-strong rounded-control border border-line p-3 shadow-object font-mono text-xs space-y-1.5 min-w-[185px]">
       <div className="flex items-center justify-between border-b border-line pb-1">
-        <span className="font-bold text-fg">SCORE: {d.range}</span>
+        <span className="font-bold text-fg">{d.range}</span>
         <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-            d.elite ? 'bg-jade/20 text-jade' : 'bg-accent/20 text-accent-ink'
+          className={`font-semibold ${
+            d.elite ? 'text-jade' : 'text-accent-ink'
           }`}
         >
           {d.tier}
         </span>
       </div>
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-fg-soft">Cohort Volume:</span>
-        <span className="text-accent-ink font-bold">
-          {d.candidates} applicants
-        </span>
+        <span className="text-fg-soft">Candidates:</span>
+        <span className="text-fg font-bold">{d.candidates} students</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-fg-soft">Gaussian Density:</span>
+        <span className="text-fg-soft font-mono">{d.density} idx</span>
       </div>
     </div>
   );
@@ -128,9 +130,9 @@ export function RecruiterAnalytics() {
   const [showShortlistedOverlay, setShowShortlistedOverlay] = useState(true);
 
   return (
-    <div className="space-y-10 pb-12">
-      {/* Top 3 Animated Executive KPI Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 border-b border-line pb-5">
+    <div className="space-y-6 sm:space-y-8 pb-12">
+      {/* Top Interactive Metric Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
         {/* KPI 1: Average AI Match */}
         <motion.div
           whileHover={{ y: -1 }}
@@ -193,7 +195,7 @@ export function RecruiterAnalytics() {
         {/* KPI 3: Average Time-to-Hire */}
         <motion.div
           whileHover={{ y: -1 }}
-          className="group relative rounded-object border border-line/80 bg-surface/40 p-3.5 sm:p-4 space-y-2 overflow-hidden transition-colors hover:border-accent/50"
+          className="group relative rounded-object border border-line/80 bg-surface/40 p-3.5 sm:p-4 space-y-2 overflow-hidden transition-colors hover:border-accent/50 sm:col-span-2 lg:col-span-1"
         >
           <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-fg-soft">
             <span>AVERAGE TIME-TO-HIRE</span>
@@ -227,17 +229,17 @@ export function RecruiterAnalytics() {
       </div>
 
       {/* Bottom 2-Column Interactive Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* CHART 01: APPLICANTS BY BRANCH */}
-        <div className="rounded-2xl border border-line bg-surface/40 p-6 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+        <div className="rounded-xl sm:rounded-2xl border border-line bg-surface/40 p-4 sm:p-6 space-y-4 sm:space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
             <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
               <Users className="h-3.5 w-3.5 text-accent" />
               <span className="text-fg font-semibold">
                 01 · APPLICANTS BY BRANCH
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowShortlistedOverlay((v) => !v)}
@@ -255,11 +257,11 @@ export function RecruiterAnalytics() {
             </div>
           </div>
 
-          <div className="h-[290px] w-full">
+          <div className="h-[250px] sm:h-[290px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={BRANCH_DATA}
-                margin={{ top: 18, right: 12, left: -16, bottom: 4 }}
+                margin={{ top: 18, right: 12, left: -22, bottom: 4 }}
                 onMouseMove={(st) =>
                   setHoveredBranch(st?.activeTooltipIndex ?? null)
                 }
@@ -340,7 +342,7 @@ export function RecruiterAnalytics() {
           </div>
 
           {/* Interactive Branch Telemetry Pills */}
-          <div className="grid grid-cols-4 gap-2 pt-2 border-t border-line/70">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-line/70">
             {BRANCH_DATA.map((b, idx) => (
               <div
                 key={b.branch}
@@ -349,7 +351,7 @@ export function RecruiterAnalytics() {
                 className={`rounded-control border p-2 text-center font-mono transition-all cursor-default ${
                   hoveredBranch === idx
                     ? 'border-accent bg-accent/10 scale-[1.02]'
-                    : 'border-line/60 bg-bg/40'
+                    : 'border-line/60 bg-surface/50'
                 }`}
               >
                 <span className="block text-[10px] text-fg-soft">{b.branch}</span>
@@ -363,24 +365,24 @@ export function RecruiterAnalytics() {
         </div>
 
         {/* CHART 02: AI MATCH SCORE SPREAD (Histogram + Superimposed Gaussian Curve) */}
-        <div className="rounded-2xl border border-line bg-surface/40 p-6 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+        <div className="rounded-xl sm:rounded-2xl border border-line bg-surface/40 p-4 sm:p-6 space-y-4 sm:space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
             <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
               <CheckCircle2 className="h-3.5 w-3.5 text-jade" />
               <span className="text-fg font-semibold">
                 02 · AI MATCH SCORE SPREAD
               </span>
             </div>
-            <span className="rounded-full bg-jade/15 border border-jade/35 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-jade">
+            <span className="rounded-full bg-jade/15 border border-jade/35 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-jade self-start sm:self-auto">
               48 IN &gt;85% TIER
             </span>
           </div>
 
-          <div className="h-[290px] w-full">
+          <div className="h-[250px] sm:h-[290px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={SCORE_SPREAD_DATA}
-                margin={{ top: 18, right: 12, left: -16, bottom: 4 }}
+                margin={{ top: 18, right: 12, left: -22, bottom: 4 }}
                 onMouseMove={(st) =>
                   setHoveredSpread(st?.activeTooltipIndex ?? null)
                 }
@@ -491,7 +493,7 @@ export function RecruiterAnalytics() {
           </div>
 
           {/* Interactive Score Tier Breakdown Pills */}
-          <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-line/70">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-2 border-t border-line/70">
             {SCORE_SPREAD_DATA.map((s, idx) => (
               <div
                 key={s.range}
@@ -500,7 +502,7 @@ export function RecruiterAnalytics() {
                 className={`rounded-control border p-2 text-center font-mono transition-all cursor-default ${
                   hoveredSpread === idx
                     ? 'border-accent bg-accent/10 scale-[1.03]'
-                    : 'border-line/60 bg-bg/40'
+                    : 'border-line/60 bg-surface/50'
                 }`}
               >
                 <span className="block text-[9.5px] text-fg-soft truncate">

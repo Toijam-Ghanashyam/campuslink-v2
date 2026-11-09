@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ExternalLink, CheckCircle2, Clock, FileText, ArrowRight } from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { Tabs } from '../../components/ui/Tabs';
@@ -18,18 +18,18 @@ function OfferLetterCard({ offer }) {
       ref={tilt.ref}
       onPointerMove={tilt.onPointerMove}
       onPointerLeave={tilt.onPointerLeave}
-      className="tilt glass-strong rounded-object border border-line p-6 shadow-object space-y-4 max-w-2xl"
+      className="tilt glass-strong rounded-object border border-line p-4 sm:p-6 shadow-object space-y-4 max-w-2xl w-full"
     >
-      <div className="flex items-start justify-between border-b border-line pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-line pb-4">
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft block">
+          <span className="font-mono text-[9.5px] sm:text-[10px] uppercase tracking-wider text-fg-soft block">
             AUTHENTICATED OFFER RECORD · BPUT SEASON 2026
           </span>
-          <h3 className="font-display font-medium text-2xl text-fg mt-0.5">
+          <h3 className="font-display font-medium text-xl sm:text-2xl text-fg mt-0.5">
             {offer.company}
           </h3>
           <p className="font-mono text-xs text-fg-soft mt-0.5">
-            CTC: <strong className="text-fg font-mono text-base">{offer.ctc}</strong> · Joining: {offer.joiningDate}
+            CTC: <strong className="text-fg font-mono text-sm sm:text-base">{offer.ctc}</strong> · Joining: {offer.joiningDate}
           </p>
         </div>
         <Stamp tone="jade">{offer.status}</Stamp>
@@ -42,11 +42,11 @@ function OfferLetterCard({ offer }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
           {offer.documents.map((doc, dIdx) => (
             <div key={dIdx} className="p-2.5 bg-bg/50 rounded-xs border border-line flex items-center justify-between">
-              <span className="text-fg">{doc.name}</span>
+              <span className="text-fg truncate pr-2">{doc.name}</span>
               {doc.status === 'verified' ? (
-                <span className="text-jade font-semibold">✓ Done</span>
+                <span className="text-jade font-semibold shrink-0">✓ Done</span>
               ) : (
-                <span className="text-accent-deep font-semibold">Pending</span>
+                <span className="text-accent-deep dark:text-accent font-semibold shrink-0">Pending</span>
               )}
             </div>
           ))}
@@ -96,11 +96,11 @@ export function StudentApplications() {
                 {/* Header Row */}
                 <div
                   onClick={() => toggleExpand(app.id)}
-                  className="py-4 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-bone/40 select-none"
+                  className="py-3.5 sm:py-4 px-2 sm:px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer hover:bg-fg/5 select-none transition-colors"
                 >
-                  <div className="flex-1 space-y-0.5">
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="font-display font-medium text-xl text-ink">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h3 className="font-display font-medium text-lg sm:text-xl text-fg">
                         {app.company}
                       </h3>
                       <Stamp
@@ -115,18 +115,18 @@ export function StudentApplications() {
                         {app.status}
                       </Stamp>
                     </div>
-                    <p className="font-sans text-xs text-ink-soft">
-                      {app.role} · Package: <span className="font-mono text-ink font-semibold">{app.ctc}</span>
+                    <p className="font-sans text-xs text-fg-soft">
+                      {app.role} · Package: <span className="font-mono text-fg font-semibold">{app.ctc}</span>
                     </p>
                   </div>
 
                   {/* Stage thread on 2px line */}
-                  <div className="hidden md:flex items-center gap-1.5 font-mono text-[10.5px]">
+                  <div className="flex items-center gap-1.5 font-mono text-[10px] sm:text-[10.5px]">
                     {stages.map((st, sIdx) => {
                       const isComplete = sIdx <= currentStageIndex;
                       return (
-                        <div key={st} className="flex items-center gap-1.5">
-                          <span className={cn(isComplete ? 'text-ink font-bold' : 'text-ink-soft/50')}>
+                        <div key={st} className="flex items-center gap-1 sm:gap-1.5">
+                          <span className={cn(isComplete ? 'text-fg font-bold' : 'text-fg-soft/50')}>
                             {st}
                           </span>
                           {sIdx < stages.length - 1 && (
@@ -138,24 +138,21 @@ export function StudentApplications() {
                   </div>
 
                   {/* Fit Score & Chevron */}
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
                     <div className="text-right">
-                      <span className="font-mono text-[10px] uppercase text-ink-soft block">
+                      <span className="font-mono text-[9.5px] uppercase text-fg-soft block">
                         AI FIT
                       </span>
-                      <span className="font-mono font-bold text-sm text-ink tabular-nums">
+                      <span className="font-mono font-bold text-xs sm:text-sm text-fg tabular-nums">
                         {app.fitScore}%
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      className="w-7 h-7 rounded flex items-center justify-center text-ink-soft hover:text-ink transition-colors"
-                    >
+                    <div className="w-7 h-7 rounded flex items-center justify-center text-fg-soft hover:text-fg transition-colors">
                       <ChevronDown
                         className={cn('w-4 h-4 transition-transform duration-200', isExpanded && 'rotate-180')}
                       />
-                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -167,7 +164,7 @@ export function StudentApplications() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden bg-bone/30 border-t border-line px-5 py-5 space-y-5"
+                      className="overflow-hidden bg-surface/50 border-t border-line px-3 sm:px-5 py-4 sm:py-5 space-y-5"
                     >
                       {/* Margin Note with Highlighters */}
                       <MarginNote label={`AI EVALUATION DIAGNOSTIC · LEVEL: ${app.level.toUpperCase()}`} strong>
@@ -186,18 +183,18 @@ export function StudentApplications() {
 
                       {/* Factor Weightage Bars */}
                       <div className="space-y-2 pt-1 max-w-2xl">
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft block font-semibold">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-soft block font-semibold">
                           DECISION FACTOR WEIGHTAGE &amp; ALIGNMENT
                         </span>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           {app.breakdown?.map((factor, fIdx) => (
                             <div key={fIdx} className="space-y-1">
-                              <div className="flex items-center justify-between font-mono text-[11px]">
-                                <span className="text-ink">
-                                  {factor.factor} <span className="text-ink-soft">({factor.weight}% weight)</span>
+                              <div className="flex items-center justify-between font-mono text-[10.5px] sm:text-[11px]">
+                                <span className="text-fg">
+                                  {factor.factor} <span className="text-fg-soft">({factor.weight}% weight)</span>
                                 </span>
-                                <strong className="text-ink">{factor.score}/100</strong>
+                                <strong className="text-fg">{factor.score}/100</strong>
                               </div>
                               <div className="h-1.5 w-full bg-line/60 rounded-full overflow-hidden">
                                 <motion.div
@@ -206,7 +203,7 @@ export function StudentApplications() {
                                   transition={{ duration: 0.5, delay: fIdx * 0.08 }}
                                   className={cn(
                                     'h-full rounded-full',
-                                    factor.score >= 80 ? 'bg-jade' : factor.score >= 60 ? 'bg-ochre' : 'bg-brick'
+                                    factor.score >= 80 ? 'bg-jade' : factor.score >= 60 ? 'bg-accent' : 'bg-brick'
                                   )}
                                 />
                               </div>
@@ -217,13 +214,13 @@ export function StudentApplications() {
 
                       {/* Remediation Action Link */}
                       {app.status === 'Rejected' && (
-                        <div className="pt-2 flex items-center gap-2 font-mono text-xs">
-                          <span className="text-ink-soft">Actionable Roadmap:</span>
+                        <div className="pt-2 flex items-center gap-2 font-mono text-xs flex-wrap">
+                          <span className="text-fg-soft">Actionable Roadmap:</span>
                           <a
                             href="https://notion.so"
                             target="_blank"
                             rel="noreferrer"
-                            className="text-ink font-semibold hover:text-ochre-deep inline-flex items-center gap-1 underline underline-offset-4"
+                            className="text-fg font-semibold hover:text-accent-deep dark:hover:text-accent inline-flex items-center gap-1 underline underline-offset-4"
                           >
                             <span>Open Notion Remediation Module</span>
                             <ArrowRight className="w-3 h-3" />
@@ -250,3 +247,5 @@ export function StudentApplications() {
     </PageTransition>
   );
 }
+
+export default StudentApplications;

@@ -48,10 +48,13 @@ export function RecruiterJobs() {
 
       <div className="divide-y divide-line border-y border-line">
         {jobs.map((job) => (
-          <div key={job.id} className="py-5 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-bone/40 transition-colors">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
-                <h3 className="font-display font-medium text-xl text-ink">
+          <div
+            key={job.id}
+            className="py-4 sm:py-5 px-2 sm:px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-fg/5 transition-colors"
+          >
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="font-display font-medium text-lg sm:text-xl text-fg">
                   {job.title}
                 </h3>
                 <Stamp tone="ochre">
@@ -59,21 +62,21 @@ export function RecruiterJobs() {
                 </Stamp>
               </div>
 
-              <p className="font-sans text-xs text-ink-soft">
-                Package: <strong className="font-mono text-ink">{job.package}</strong> · Location: {job.location} · Deadline: {job.deadline}
+              <p className="font-sans text-xs text-fg-soft leading-normal">
+                Package: <strong className="font-mono text-fg">{job.package}</strong> · Location: {job.location} · Deadline: {job.deadline}
               </p>
 
-              <div className="flex items-center gap-6 pt-1 font-mono text-[11px] text-ink-soft">
-                <span>Submissions: <strong className="text-ink">{job.applicants}</strong></span>
-                <span>AI Qualified (&gt;85%): <strong className="text-ochre-deep font-bold">{job.shortlisted}</strong></span>
+              <div className="flex items-center gap-4 sm:gap-6 pt-1 font-mono text-[10.5px] sm:text-[11px] text-fg-soft flex-wrap">
+                <span>Submissions: <strong className="text-fg">{job.applicants}</strong></span>
+                <span>AI Qualified (&gt;85%): <strong className="text-accent-deep dark:text-accent font-bold">{job.shortlisted}</strong></span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Button variant="secondary" size="sm">
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              <Button variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                 Edit JNF
               </Button>
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" className="flex-1 sm:flex-initial">
                 View Qualified Pool →
               </Button>
             </div>
@@ -83,3 +86,5 @@ export function RecruiterJobs() {
     </PageTransition>
   );
 }
+
+export default RecruiterJobs;

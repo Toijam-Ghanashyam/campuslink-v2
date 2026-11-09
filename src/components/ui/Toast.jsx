@@ -28,21 +28,23 @@ export function ToastProvider({ children }) {
     jade: CheckCircle2,
     brick: AlertCircle,
     ochre: AlertTriangle,
+    accent: AlertTriangle,
     ink: Info,
   };
 
   const toneStyles = {
     jade: 'bg-surface text-fg border-jade/40 shadow-hover text-jade',
     brick: 'bg-surface text-fg border-brick/40 shadow-hover text-brick',
-    ochre: 'bg-surface text-fg border-accent/50 shadow-hover text-accent-deep',
+    ochre: 'bg-surface text-fg border-accent/50 shadow-hover text-accent-deep dark:text-accent',
+    accent: 'bg-surface text-fg border-accent/50 shadow-hover text-accent-deep dark:text-accent',
     ink: 'bg-sidebar text-sidebar-fg border-line shadow-hover',
   };
 
   return (
     <ToastContext.Provider value={{ toast: addToast, removeToast }}>
       {children}
-      {/* Toast Container */}
-      <div className="fixed bottom-6 inset-x-0 z-50 flex flex-col items-center pointer-events-none gap-2 px-4">
+      {/* Toast Container - Clears Mobile Bottom Navigation Bar (h-16) */}
+      <div className="fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto sm:max-w-md z-[70] flex flex-col pointer-events-none gap-2">
         <AnimatePresence>
           {toasts.map((item) => {
             const Icon = icons[item.tone] || Info;
@@ -54,16 +56,19 @@ export function ToastProvider({ children }) {
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-object border max-w-md shadow-object text-sm font-medium',
+                  'pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-object border shadow-object text-xs sm:text-sm font-medium w-full',
                   toneStyles[item.tone] || toneStyles.ink
                 )}
               >
-                <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
-                <span className="text-fg text-xs sm:text-sm flex-1">{item.message}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
+                  <span className="truncate">{item.message}</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => removeToast(item.id)}
-                  className="opacity-60 hover:opacity-100 p-0.5 ml-1"
+                  className="opacity-60 hover:opacity-100 transition-opacity p-0.5 ml-2 cursor-pointer"
+                  aria-label="Close notification"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -84,6 +89,4 @@ export function useToast() {
   return context;
 }
 
-export const ToastViewport = ToastProvider;
 export default ToastProvider;
-

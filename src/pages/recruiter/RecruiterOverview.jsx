@@ -36,7 +36,7 @@ export function RecruiterOverview() {
   };
 
   return (
-    <PageTransition className="space-y-8">
+    <PageTransition className="space-y-6 sm:space-y-8">
       <Masthead
         context="01 · RECRUITER DESK · MICROSOFT INDIA"
         title="Associate Software Engineer."
@@ -46,12 +46,13 @@ export function RecruiterOverview() {
             ref={magJnf.ref}
             onPointerMove={magJnf.onPointerMove}
             onPointerLeave={magJnf.onPointerLeave}
-            className="inline-block"
+            className="inline-block w-full sm:w-auto"
           >
             <Button
               variant="primary"
               icon={Plus}
               onClick={() => setDrawerOpen(true)}
+              className="w-full sm:w-auto"
             >
               Post New JNF
             </Button>
@@ -71,8 +72,8 @@ export function RecruiterOverview() {
 
       {/* Recruitment Selection Funnel */}
       <div className="space-y-4 pt-2">
-        <div className="border-b border-line pb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+        <div className="border-b border-line pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+          <span className="font-mono text-[10.5px] sm:text-[11px] uppercase tracking-wider font-semibold text-fg-soft">
             CANDIDATE SELECTION FUNNEL CONVERSION
           </span>
           <span className="font-mono text-[10px] text-jade uppercase font-semibold">
@@ -84,18 +85,18 @@ export function RecruiterOverview() {
           {funnel.map((stage, idx) => (
             <div key={stage.stage} className="space-y-1">
               <div className="flex items-center justify-between font-mono text-xs">
-                <span className="text-ink font-semibold">{stage.stage}</span>
-                <span className="text-ink-soft">
-                  <strong className="text-ink font-display text-sm">{stage.count}</strong> candidates ({stage.percentage.toFixed(1)}%)
+                <span className="text-fg font-semibold">{stage.stage}</span>
+                <span className="text-fg-soft">
+                  <strong className="text-fg font-display text-xs sm:text-sm">{stage.count}</strong> candidates ({stage.percentage.toFixed(1)}%)
                 </span>
               </div>
-              <div className="h-2 w-full bg-bone rounded-full overflow-hidden border border-line">
+              <div className="h-2 w-full bg-surface/50 rounded-full overflow-hidden border border-line">
                 <motion.div
                   initial={{ width: 0 }}
                   whileInView={{ width: `${Math.max(stage.percentage, 4)}%` }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.7, delay: idx * 0.12 }}
-                  className="h-full bg-ochre rounded-full"
+                  className="h-full bg-accent rounded-full"
                 />
               </div>
             </div>
@@ -103,75 +104,78 @@ export function RecruiterOverview() {
         </div>
       </div>
 
-      {/* Post JNF Drawer */}
+      {/* Slide-Over Drawer: Post New JNF */}
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Post New Job Notification Form (JNF)"
-        subtitle="Registers job criteria with automated eligibility and AI candidate matching."
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDrawerOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handlePostJob}>
-              Publish JNF
-            </Button>
-          </>
-        }
+        title="Post Job Notification Form (JNF)"
+        subtitle="Deploys verified recruitment requirements across all BPUT engineering campuses"
       >
-        <form onSubmit={handlePostJob} className="space-y-4 font-sans text-xs">
+        <form onSubmit={handlePostJob} className="space-y-4">
           <div>
-            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-              Job Title / Designation
+            <label className="font-mono text-[11px] uppercase tracking-wider text-fg-soft block mb-1">
+              Job Title / Designation *
             </label>
             <input
               type="text"
               required
               value={jobRole}
               onChange={(e) => setJobRole(e.target.value)}
-              placeholder="e.g. Associate SDE - Cloud & AI Systems"
-              className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
+              placeholder="e.g., Software Development Engineer - 1"
+              className="w-full px-3 py-2 rounded-control border border-line bg-surface text-fg font-sans text-sm focus:outline-none focus:border-accent min-h-[40px]"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-                Offered CTC Package
+              <label className="font-mono text-[11px] uppercase tracking-wider text-fg-soft block mb-1">
+                Annual Compensation (CTC)
               </label>
               <input
                 type="text"
                 value={jobCtc}
                 onChange={(e) => setJobCtc(e.target.value)}
-                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                className="w-full px-3 py-2 rounded-control border border-line bg-surface text-fg font-mono text-sm focus:outline-none focus:border-accent min-h-[40px]"
               />
             </div>
+
             <div>
-              <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-                Minimum CGPA Cut-off
+              <label className="font-mono text-[11px] uppercase tracking-wider text-fg-soft block mb-1">
+                Minimum CGPA Cutoff
               </label>
               <input
                 type="text"
                 value={minCgpa}
                 onChange={(e) => setMinCgpa(e.target.value)}
-                className="w-full p-2.5 rounded-control border border-line bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                className="w-full px-3 py-2 rounded-control border border-line bg-surface text-fg font-mono text-sm focus:outline-none focus:border-accent min-h-[40px]"
               />
             </div>
           </div>
 
           <div>
-            <label className="font-mono text-[10.5px] uppercase font-semibold text-ink-soft block mb-1">
-              Required Technical Stack
+            <label className="font-mono text-[11px] uppercase tracking-wider text-fg-soft block mb-1">
+              Key Competency Tags (Semantic Matching)
             </label>
-            <TagInput
-              tags={skills}
-              onChange={setSkills}
-              placeholder="Type required skill and press Enter..."
-            />
+            <TagInput tags={skills} onChange={setSkills} />
+          </div>
+
+          <div className="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-line">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setDrawerOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" className="w-full sm:w-auto">
+              Broadcast JNF to BPUT
+            </Button>
           </div>
         </form>
       </Drawer>
     </PageTransition>
   );
 }
+
+export default RecruiterOverview;

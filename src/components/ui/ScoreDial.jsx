@@ -8,6 +8,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
  * - 41 radial micro-ticks that illuminate progressively up to the current score
  * - Continuous plasma energy pulse travelling along the active arc
  * - Optional `previewDelta` prop to show a ghost boost arc when hovering gap modules
+ * - Fully responsive SVG scaling across mobile and desktop
  */
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -157,259 +158,259 @@ export function ScoreDial({
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative flex flex-col items-center select-none group"
+      className="relative flex flex-col items-center select-none group w-full"
     >
-      <svg
-        width={size}
-        height={Math.round(size * 0.74)}
-        viewBox="0 0 300 218"
-        className="overflow-visible"
-      >
-        <defs>
-          {/* Active Arc Plasma Gradient */}
-          <linearGradient id={`dial-grad-${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgb(var(--c-accent))" stopOpacity="0.65" />
-            <stop offset="60%" stopColor="rgb(var(--c-accent))" stopOpacity="1" />
-            <stop offset="100%" stopColor={tier.color} stopOpacity="1" />
-          </linearGradient>
-
-          {/* Soft Ambient Core Radial Glow */}
-          <radialGradient id={`dial-core-${uid}`} cx="50%" cy="62%" r="50%">
-            <stop
-              offset="0%"
-              stopColor={tier.color}
-              stopOpacity={hovered ? '0.22' : '0.12'}
-            />
-            <stop offset="70%" stopColor={tier.color} stopOpacity="0.03" />
-            <stop offset="100%" stopColor={tier.color} stopOpacity="0" />
-          </radialGradient>
-
-          {/* Glow Filter for Arc & Needle Tip */}
-          <filter id={`dial-glow-${uid}`} x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur stdDeviation="3.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* 1. Ambient Core Telemetry Aura */}
-        <circle cx={cx} cy={cy} r={118} fill={`url(#dial-core-${uid})`} />
-
-        {/* 2. Slowly Counter-Rotating Gyroscopic Outer Bezel Ring */}
-        <g
-          style={{
-            transformOrigin: `${cx}px ${cy}px`,
-            animation: 'spin 38s linear infinite',
-          }}
-          className="opacity-30 transition-opacity duration-500 group-hover:opacity-60"
+      <div className="w-full flex justify-center" style={{ maxWidth: size }}>
+        <svg
+          viewBox="0 0 300 218"
+          className="w-full h-auto max-w-[280px] sm:max-w-[320px] overflow-visible"
         >
-          <circle
-            cx={cx}
-            cy={cy}
-            r={rOuterBezel}
-            fill="none"
-            stroke="rgb(var(--c-fg))"
-            strokeWidth="0.75"
-            strokeDasharray="3 8 14 8"
-          />
-        </g>
+          <defs>
+            {/* Active Arc Plasma Gradient */}
+            <linearGradient id={`dial-grad-${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgb(var(--c-accent))" stopOpacity="0.65" />
+              <stop offset="60%" stopColor="rgb(var(--c-accent))" stopOpacity="1" />
+              <stop offset="100%" stopColor={tier.color} stopOpacity="1" />
+            </linearGradient>
 
-        {/* 3. Inner Radar Reference Arc */}
-        <path
-          d={describeArc(cx, cy, rInnerRing, startAngle, endAngle)}
-          fill="none"
-          stroke="rgb(var(--c-line))"
-          strokeWidth="1"
-          strokeDasharray="2 5"
-          opacity="0.75"
-        />
+            {/* Soft Ambient Core Radial Glow */}
+            <radialGradient id={`dial-core-${uid}`} cx="50%" cy="62%" r="50%">
+              <stop
+                offset="0%"
+                stopColor={tier.color}
+                stopOpacity={hovered ? '0.22' : '0.12'}
+              />
+              <stop offset="70%" stopColor={tier.color} stopOpacity="0.03" />
+              <stop offset="100%" stopColor={tier.color} stopOpacity="0" />
+            </radialGradient>
 
-        {/* 4. Base Unlit Track Arc */}
-        <path
-          d={fullArcPath}
-          fill="none"
-          stroke="rgb(var(--c-line))"
-          strokeWidth="8"
-          strokeLinecap="round"
-          opacity="0.55"
-        />
+            {/* Glow Filter for Arc & Needle Tip */}
+            <filter id={`dial-glow-${uid}`} x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
 
-        {/* 5. Ghost Preview Arc (Lights up when hovering a Gap Module on the right) */}
-        {previewDelta > 0 && previewArcPath && (
+          {/* 1. Ambient Core Telemetry Aura */}
+          <circle cx={cx} cy={cy} r={118} fill={`url(#dial-core-${uid})`} />
+
+          {/* 2. Slowly Counter-Rotating Gyroscopic Outer Bezel Ring */}
+          <g
+            style={{
+              transformOrigin: `${cx}px ${cy}px`,
+              animation: 'spin 38s linear infinite',
+            }}
+            className="opacity-30 transition-opacity duration-500 group-hover:opacity-60"
+          >
+            <circle
+              cx={cx}
+              cy={cy}
+              r={rOuterBezel}
+              fill="none"
+              stroke="rgb(var(--c-fg))"
+              strokeWidth="0.75"
+              strokeDasharray="3 8 14 8"
+            />
+          </g>
+
+          {/* 3. Inner Radar Reference Arc */}
           <path
-            d={previewArcPath}
+            d={describeArc(cx, cy, rInnerRing, startAngle, endAngle)}
             fill="none"
-            stroke="rgb(var(--c-jade))"
+            stroke="rgb(var(--c-line))"
+            strokeWidth="1"
+            strokeDasharray="2 5"
+            opacity="0.75"
+          />
+
+          {/* 4. Base Unlit Track Arc */}
+          <path
+            d={fullArcPath}
+            fill="none"
+            stroke="rgb(var(--c-line))"
             strokeWidth="8"
             strokeLinecap="round"
-            strokeDasharray="4 4"
-            opacity="0.75"
-          >
-            <animate
-              attributeName="stroke-dashoffset"
-              from="16"
-              to="0"
-              dur="0.8s"
-              repeatCount="indefinite"
-            />
-          </path>
-        )}
+            opacity="0.55"
+          />
 
-        {/* 6. Active Illuminated Plasma Arc */}
-        {activeArcPath && (
-          <>
+          {/* 5. Ghost Preview Arc (Lights up when hovering a Gap Module on the right) */}
+          {previewDelta > 0 && previewArcPath && (
             <path
-              d={activeArcPath}
+              d={previewArcPath}
               fill="none"
-              stroke={`url(#dial-grad-${uid})`}
-              strokeWidth="8.5"
+              stroke="rgb(var(--c-jade))"
+              strokeWidth="8"
               strokeLinecap="round"
-              filter={`url(#dial-glow-${uid})`}
-              className="score-dial-arc"
-            />
-            {/* Continuous Travelling Shimmer Pulse Along the Active Arc */}
-            <path
-              d={activeArcPath}
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="3"
-              strokeLinecap="round"
-              pathLength="100"
-              strokeDasharray="12 120"
-              opacity="0.65"
+              strokeDasharray="4 4"
+              opacity="0.75"
             >
               <animate
                 attributeName="stroke-dashoffset"
-                from="112"
-                to="-20"
-                dur="2.4s"
+                from="16"
+                to="0"
+                dur="0.8s"
                 repeatCount="indefinite"
               />
             </path>
-          </>
-        )}
+          )}
 
-        {/* 7. 41 Precision Radial Bezel Ticks */}
-        {ticks.map((t) => (
-          <line
-            key={t.i}
-            x1={t.p1.x}
-            y1={t.p1.y}
-            x2={t.p2.x}
-            y2={t.p2.y}
-            stroke={
-              t.nearTip
-                ? '#FFFFFF'
-                : t.active
-                ? tier.color
-                : 'rgb(var(--c-fg-soft))'
-            }
-            strokeWidth={t.isMajor ? 2.1 : t.isMedium ? 1.4 : 0.9}
-            strokeLinecap="round"
-            opacity={t.nearTip ? 1 : t.active ? 0.9 : t.isMajor ? 0.45 : 0.22}
-          />
-        ))}
+          {/* 6. Active Illuminated Plasma Arc */}
+          {activeArcPath && (
+            <>
+              <path
+                d={activeArcPath}
+                fill="none"
+                stroke={`url(#dial-grad-${uid})`}
+                strokeWidth="8.5"
+                strokeLinecap="round"
+                filter={`url(#dial-glow-${uid})`}
+                className="score-dial-arc"
+              />
+              {/* Continuous Travelling Shimmer Pulse Along the Active Arc */}
+              <path
+                d={activeArcPath}
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="3"
+                strokeLinecap="round"
+                pathLength="100"
+                strokeDasharray="12 120"
+                opacity="0.65"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="112"
+                  to="-20"
+                  dur="2.4s"
+                  repeatCount="indefinite"
+                />
+              </path>
+            </>
+          )}
 
-        {/* 8. Scale Labels (0, 50, 80 Target Benchmark, 100) */}
-        <text
-          x={polarToCartesian(cx, cy, rTrack - 18, startAngle).x}
-          y={polarToCartesian(cx, cy, rTrack - 18, startAngle).y + 12}
-          textAnchor="middle"
-          className="fill-fg-soft font-mono text-[10px]"
-        >
-          0
-        </text>
-        <text
-          x={cx}
-          y={cy - rTrack - 23}
-          textAnchor="middle"
-          className="fill-fg-soft font-mono text-[10px]"
-        >
-          50
-        </text>
-        <text
-          x={polarToCartesian(cx, cy, rTrack - 18, endAngle).x}
-          y={polarToCartesian(cx, cy, rTrack - 18, endAngle).y + 12}
-          textAnchor="middle"
-          className="fill-fg-soft font-mono text-[10px]"
-        >
-          100
-        </text>
+          {/* 7. 41 Precision Radial Bezel Ticks */}
+          {ticks.map((t) => (
+            <line
+              key={t.i}
+              x1={t.p1.x}
+              y1={t.p1.y}
+              x2={t.p2.x}
+              y2={t.p2.y}
+              stroke={
+                t.nearTip
+                  ? '#FFFFFF'
+                  : t.active
+                  ? tier.color
+                  : 'rgb(var(--c-fg-soft))'
+              }
+              strokeWidth={t.isMajor ? 2.1 : t.isMedium ? 1.4 : 0.9}
+              strokeLinecap="round"
+              opacity={t.nearTip ? 1 : t.active ? 0.9 : t.isMajor ? 0.45 : 0.22}
+            />
+          ))}
 
-        {/* 80+ Target Benchmark Marker on the Outer Ring */}
-        <g transform={`translate(${benchmarkPt.x}, ${benchmarkPt.y})`}>
-          <circle
-            r="3"
-            fill={animVal >= 80 ? 'rgb(var(--c-jade))' : 'rgb(var(--c-accent))'}
-          />
-          <circle
-            r="6"
-            fill="none"
-            stroke={animVal >= 80 ? 'rgb(var(--c-jade))' : 'rgb(var(--c-accent))'}
-            strokeWidth="0.8"
-            opacity="0.6"
+          {/* 8. Scale Labels (0, 50, 80 Target Benchmark, 100) */}
+          <text
+            x={polarToCartesian(cx, cy, rTrack - 18, startAngle).x}
+            y={polarToCartesian(cx, cy, rTrack - 18, startAngle).y + 12}
+            textAnchor="middle"
+            className="fill-fg-soft font-mono text-[10px]"
           >
-            <animate
-              attributeName="r"
-              values="4;8;4"
-              dur="2s"
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="opacity"
-              values="0.7;0.1;0.7"
-              dur="2s"
-              repeatCount="indefinite"
-            />
-          </circle>
-        </g>
+            0
+          </text>
+          <text
+            x={cx}
+            y={cy - rTrack - 23}
+            textAnchor="middle"
+            className="fill-fg-soft font-mono text-[10px]"
+          >
+            50
+          </text>
+          <text
+            x={polarToCartesian(cx, cy, rTrack - 18, endAngle).x}
+            y={polarToCartesian(cx, cy, rTrack - 18, endAngle).y + 12}
+            textAnchor="middle"
+            className="fill-fg-soft font-mono text-[10px]"
+          >
+            100
+          </text>
 
-        {/* 9. Precision Tapered Instrument Needle & Target Reticle Tip */}
-        <g filter={`url(#dial-glow-${uid})`}>
-          <line
-            x1={needleTail.x}
-            y1={needleTail.y}
-            x2={needleTip.x}
-            y2={needleTip.y}
-            stroke="rgb(var(--c-fg))"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            className="score-dial-needle"
-          />
-          {/* Glowing Reticle Ring at Needle Tip */}
+          {/* 80+ Target Benchmark Marker on the Outer Ring */}
+          <g transform={`translate(${benchmarkPt.x}, ${benchmarkPt.y})`}>
+            <circle
+              r="3"
+              fill={animVal >= 80 ? 'rgb(var(--c-jade))' : 'rgb(var(--c-accent))'}
+            />
+            <circle
+              r="6"
+              fill="none"
+              stroke={animVal >= 80 ? 'rgb(var(--c-jade))' : 'rgb(var(--c-accent))'}
+              strokeWidth="0.8"
+              opacity="0.6"
+            >
+              <animate
+                attributeName="r"
+                values="4;8;4"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.7;0.1;0.7"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </g>
+
+          {/* 9. Precision Tapered Instrument Needle & Target Reticle Tip */}
+          <g filter={`url(#dial-glow-${uid})`}>
+            <line
+              x1={needleTail.x}
+              y1={needleTail.y}
+              x2={needleTip.x}
+              y2={needleTip.y}
+              stroke="rgb(var(--c-fg))"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              className="score-dial-needle"
+            />
+            {/* Glowing Reticle Ring at Needle Tip */}
+            <circle
+              cx={needleTip.x}
+              cy={needleTip.y}
+              r="4.2"
+              fill={tier.color}
+              stroke="#FFFFFF"
+              strokeWidth="1.2"
+            />
+          </g>
+
+          {/* Center Pivot Hub */}
           <circle
-            cx={needleTip.x}
-            cy={needleTip.y}
-            r="4.2"
-            fill={tier.color}
-            stroke="#FFFFFF"
-            strokeWidth="1.2"
+            cx={cx}
+            cy={cy}
+            r="6"
+            fill="rgb(var(--c-surface))"
+            stroke={tier.color}
+            strokeWidth="2.2"
           />
-        </g>
+          <circle cx={cx} cy={cy} r="2.2" fill={tier.color} />
 
-        {/* Center Pivot Hub */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r="6"
-          fill="rgb(var(--c-surface))"
-          stroke={tier.color}
-          strokeWidth="2.2"
-        />
-        <circle cx={cx} cy={cy} r="2.2" fill={tier.color} />
-
-        {/* 10. Live Digital Score Readout */}
-        <text
-          x={cx}
-          y={cy + 50}
-          textAnchor="middle"
-          className="fill-fg font-display text-[45px] font-semibold tracking-tight"
-        >
-          {Math.round(animVal)}
-        </text>
-      </svg>
+          {/* 10. Live Digital Score Readout */}
+          <text
+            x={cx}
+            y={cy + 50}
+            textAnchor="middle"
+            className="fill-fg font-display text-[45px] font-semibold tracking-tight"
+          >
+            {Math.round(animVal)}
+          </text>
+        </svg>
+      </div>
 
       {/* Status Tier Pill + Live Boost Tag */}
       <div className="mt-0.5 flex flex-col items-center gap-1.5">

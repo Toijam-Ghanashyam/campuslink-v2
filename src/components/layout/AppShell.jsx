@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   LogOut,
+  ChevronDown,
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { CommandPalette } from './CommandPalette';
@@ -169,14 +170,14 @@ export function AppShell({ role = 'student', children }) {
       />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-line h-14 flex items-center justify-between px-3 sm:px-6">
+      <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-line h-14 flex items-center justify-between px-2.5 sm:px-6">
         {/* Brand & Mobile Hamburger */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle navigation drawer"
-            className="lg:hidden p-2 rounded-control text-fg hover:bg-surface/60 border border-transparent hover:border-line transition-colors shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+            className="lg:hidden p-2 rounded-control text-fg hover:bg-surface/60 border border-transparent hover:border-line transition-colors shrink-0 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -186,11 +187,11 @@ export function AppShell({ role = 'student', children }) {
             onClick={() => scrollToTop(true)}
             className="flex items-baseline gap-1 group select-none shrink-0"
           >
-            <span className="font-display font-medium text-lg sm:text-xl text-fg tracking-tight">CampusLink</span>
-            <span className="font-mono text-xs text-accent-ink font-bold">.register</span>
+            <span className="font-display font-medium text-base sm:text-xl text-fg tracking-tight">CampusLink</span>
+            <span className="font-mono text-xs text-accent-ink font-bold hidden xs:inline">.register</span>
           </NavLink>
 
-          <div className="hidden sm:block h-3.5 w-px bg-line mx-2" />
+          <div className="hidden sm:block h-3.5 w-px bg-line mx-1.5" />
 
           {/* Institutional Tenant Label (condensed on smaller screens) */}
           <div className="hidden md:flex flex-col truncate">
@@ -216,7 +217,7 @@ export function AppShell({ role = 'student', children }) {
         </div>
 
         {/* Right Action Stack: Search Icon (Mobile) + ThemeToggle + Demo Role Switcher + Notifs + Profile */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
           {/* Mobile Search Icon Trigger */}
           <button
             type="button"
@@ -229,8 +230,8 @@ export function AppShell({ role = 'student', children }) {
 
           <ThemeToggle />
 
-          {/* Demo Role Switcher */}
-          <div className="bg-surface/80 p-0.5 rounded-control border border-line flex items-center font-mono text-[10.5px] uppercase tracking-wider shrink-0">
+          {/* Demo Role Switcher (Desktop & Tablet) */}
+          <div className="hidden sm:flex bg-surface/80 p-0.5 rounded-control border border-line items-center font-mono text-[10.5px] uppercase tracking-wider shrink-0">
             {['student', 'admin', 'recruiter'].map((r) => (
               <button
                 key={r}
@@ -244,10 +245,21 @@ export function AppShell({ role = 'student', children }) {
                 )}
               >
                 {r === 'student' ? 'STU' : r === 'admin' ? 'TPO' : 'REC'}
-                <span className="hidden sm:inline">{r === 'student' ? 'dent' : r === 'admin' ? ' / Admin' : 'ruiter'}</span>
+                <span className="hidden md:inline">{r === 'student' ? 'dent' : r === 'admin' ? ' / Admin' : 'ruiter'}</span>
               </button>
             ))}
           </div>
+
+          {/* Mobile Portal Role Pill (tap to open switch drawer) */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            title="Switch portal in menu"
+            className="sm:hidden px-2 py-1 rounded-control bg-accent-tint text-accent-deep border border-accent/30 font-mono text-[9.5px] font-bold uppercase select-none min-h-[32px] flex items-center gap-1 shrink-0"
+          >
+            <span>{role === 'student' ? 'STU' : role === 'admin' ? 'TPO' : 'REC'}</span>
+            <ChevronDown className="w-3 h-3 opacity-60" />
+          </button>
 
           {/* Notifications Button */}
           <div className="relative">
@@ -271,7 +283,11 @@ export function AppShell({ role = 'student', children }) {
 
           {/* User Profile Avatar & Sign Out */}
           <div className="flex items-center gap-1 sm:gap-1.5">
-            <div className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line">
+            <div
+              onClick={() => setMobileMenuOpen(true)}
+              className="w-7 h-7 rounded-full bg-sidebar text-sidebar-fg font-mono text-xs font-semibold flex items-center justify-center select-none shrink-0 border border-line cursor-pointer"
+              title={`${currentTenant.name} (${currentTenant.roleSubtitle})`}
+            >
               {currentTenant.avatar}
             </div>
             <button
@@ -284,7 +300,7 @@ export function AppShell({ role = 'student', children }) {
               }}
               title="Sign Out to Login Portal"
               aria-label="Sign Out"
-              className="p-1.5 rounded-control text-fg-soft hover:text-fg hover:bg-surface/80 border border-transparent hover:border-line transition-all cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="hidden sm:flex p-1.5 rounded-control text-fg-soft hover:text-fg hover:bg-surface/80 border border-transparent hover:border-line transition-all cursor-pointer min-h-[36px] min-w-[36px] items-center justify-center"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -529,12 +545,12 @@ export function AppShell({ role = 'student', children }) {
           )}
         </AnimatePresence>
 
-        {/* Mobile Bottom Tab Bar (Visible on mobile screens < 640px) */}
+        {/* Mobile & Tablet Bottom Tab Bar (Visible on all screens < 1024px) */}
         <nav
           aria-label="Mobile Navigation Bar"
-          className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-sidebar/95 backdrop-blur-md text-sidebar-fg border-t border-white/10 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.35)]"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-sidebar/95 backdrop-blur-md text-sidebar-fg border-t border-white/10 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.35)]"
         >
-          <div className="grid grid-cols-5 h-14 items-center px-1">
+          <div className="max-w-md md:max-w-lg mx-auto grid grid-cols-5 h-14 sm:h-16 items-center px-1 sm:px-2">
             {navItems.slice(0, 5).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.to;
@@ -544,7 +560,7 @@ export function AppShell({ role = 'student', children }) {
                   to={item.to}
                   onClick={() => scrollToTop(true)}
                   className={cn(
-                    'relative flex flex-col items-center justify-center h-full text-[10px] font-medium transition-all group select-none min-h-[44px]',
+                    'relative flex flex-col items-center justify-center h-full text-[10px] sm:text-xs font-medium transition-all group select-none min-h-[44px]',
                     isActive
                       ? 'text-sidebar-fg font-semibold'
                       : 'text-sidebar-fg/60 hover:text-sidebar-fg'
@@ -553,12 +569,12 @@ export function AppShell({ role = 'student', children }) {
                   {isActive && (
                     <motion.div
                       layoutId="mobileBottomActiveTab"
-                      className="absolute top-0 inset-x-3 h-0.5 bg-accent rounded-full"
+                      className="absolute top-0 inset-x-2 sm:inset-x-3 h-0.5 bg-accent rounded-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     />
                   )}
                   <Icon className={cn('w-4 h-4 mb-0.5 shrink-0', isActive ? 'text-accent' : 'text-sidebar-fg/60')} />
-                  <span className="truncate max-w-[62px] text-[9.5px] leading-tight">
+                  <span className="truncate max-w-[62px] sm:max-w-[76px] text-[9px] sm:text-[10px] leading-tight">
                     {item.label.split(' ')[0]}
                   </span>
                 </NavLink>

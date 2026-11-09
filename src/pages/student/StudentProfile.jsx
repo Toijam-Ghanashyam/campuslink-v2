@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Lock, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
+import { Lock, FileText, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { Stamp } from '../../components/ui/Stamp';
 import { Button } from '../../components/ui/Button';
 import { TagInput } from '../../components/ui/TagInput';
-import { Callout } from '../../components/ui/Callout';
 import { useToast } from '../../components/ui/Toast';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { useTilt } from '../../fx/useTilt';
@@ -43,7 +42,7 @@ export function StudentProfile() {
   };
 
   return (
-    <PageTransition className="space-y-8 max-w-4xl">
+    <PageTransition className="space-y-6 sm:space-y-8 max-w-4xl">
       <Masthead
         context={`02 · STUDENT RECORDS · ${currentStudent.collegeId}`}
         title="Academic Record & Skills."
@@ -60,58 +59,58 @@ export function StudentProfile() {
         ref={recordTilt.ref}
         onPointerMove={recordTilt.onPointerMove}
         onPointerLeave={recordTilt.onPointerLeave}
-        className="tilt glass-strong rounded-object border border-line p-6 shadow-object space-y-4"
+        className="tilt glass-strong rounded-object border border-line p-4 sm:p-6 shadow-object space-y-4"
       >
         <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-ink-soft stroke-[1.75]" />
-            <h3 className="font-display font-medium text-lg text-ink">
+            <Lock className="w-4 h-4 text-fg-soft stroke-[1.75]" />
+            <h3 className="font-display font-medium text-base sm:text-lg text-fg">
               Official University Record
             </h3>
           </div>
           <Stamp tone="ink">LOCKED</Stamp>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
-          <div className="p-3 bg-bone/40 rounded-xs border border-line">
-            <span className="text-ink-soft block text-[10px] uppercase tracking-wider mb-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono text-xs">
+          <div className="p-3 bg-surface/50 rounded-xs border border-line">
+            <span className="text-fg-soft block text-[9.5px] sm:text-[10px] uppercase tracking-wider mb-1 truncate">
               BPUT REG NO.
             </span>
-            <strong className="text-ink text-sm font-semibold">{currentStudent.collegeId}</strong>
+            <strong className="text-fg text-xs sm:text-sm font-semibold truncate block">{currentStudent.collegeId}</strong>
           </div>
 
-          <div className="p-3 bg-bone/40 rounded-xs border border-line">
-            <span className="text-ink-soft block text-[10px] uppercase tracking-wider mb-1">
+          <div className="p-3 bg-surface/50 rounded-xs border border-line">
+            <span className="text-fg-soft block text-[9.5px] sm:text-[10px] uppercase tracking-wider mb-1 truncate">
               DISCIPLINE
             </span>
-            <strong className="text-ink text-sm font-semibold truncate block">{currentStudent.shortBranch}</strong>
+            <strong className="text-fg text-xs sm:text-sm font-semibold truncate block">{currentStudent.shortBranch}</strong>
           </div>
 
-          <div className="p-3 bg-bone/40 rounded-xs border border-line">
-            <span className="text-ink-soft block text-[10px] uppercase tracking-wider mb-1">
-              CUMULATIVE CGPA
+          <div className="p-3 bg-surface/50 rounded-xs border border-line">
+            <span className="text-fg-soft block text-[9.5px] sm:text-[10px] uppercase tracking-wider mb-1 truncate">
+              CGPA
             </span>
-            <strong className="text-ink text-sm font-semibold font-display text-base">
+            <strong className="text-fg text-xs sm:text-sm font-semibold font-display text-base">
               {currentStudent.cgpa} / 10.0
             </strong>
           </div>
 
-          <div className="p-3 bg-bone/40 rounded-xs border border-line">
-            <span className="text-ink-soft block text-[10px] uppercase tracking-wider mb-1">
+          <div className="p-3 bg-surface/50 rounded-xs border border-line">
+            <span className="text-fg-soft block text-[9.5px] sm:text-[10px] uppercase tracking-wider mb-1 truncate">
               BACKLOGS
             </span>
-            <strong className="text-jade text-sm font-semibold">0 Active</strong>
+            <strong className="text-jade text-xs sm:text-sm font-semibold">0 Active</strong>
           </div>
         </div>
       </div>
 
       {/* Technical Skills Section */}
       <div className="space-y-3 pt-2">
-        <div className="border-b border-line pb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+        <div className="border-b border-line pb-2 flex items-center justify-between flex-wrap gap-2">
+          <span className="font-mono text-[10.5px] sm:text-[11px] uppercase tracking-wider font-semibold text-fg-soft">
             01 · TECHNICAL STACK &amp; FRAMEWORKS
           </span>
-          <span className="font-mono text-[10px] text-ink-soft">
+          <span className="font-mono text-[10px] text-fg-soft">
             PARSED FOR JNF EMBEDDINGS
           </span>
         </div>
@@ -122,15 +121,15 @@ export function StudentProfile() {
           placeholder="Type a skill and press Enter (e.g., Docker, Next.js, AWS)..."
         />
 
-        <p className="font-mono text-[10.5px] text-ink-soft">
+        <p className="font-mono text-[10px] sm:text-[10.5px] text-fg-soft">
           Press Enter or comma to append a skill tag.
         </p>
       </div>
 
       {/* Resume Section */}
       <div className="space-y-3 pt-2">
-        <div className="border-b border-line pb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-ink-soft">
+        <div className="border-b border-line pb-2 flex items-center justify-between flex-wrap gap-2">
+          <span className="font-mono text-[10.5px] sm:text-[11px] uppercase tracking-wider font-semibold text-fg-soft">
             02 · OFFICIAL RESUME PDF
           </span>
           <label className="cursor-pointer">
@@ -140,32 +139,33 @@ export function StudentProfile() {
               onChange={handleFileUpload}
               className="hidden"
             />
-            <span className="font-mono text-[11px] text-ink hover:text-ochre-deep font-semibold underline underline-offset-4">
+            <span className="font-mono text-[11px] text-fg hover:text-accent-deep dark:hover:text-accent font-semibold underline underline-offset-4">
               Upload New PDF Slip →
             </span>
           </label>
         </div>
 
-        <div className="p-4 bg-bone/40 rounded-object border border-line flex items-center justify-between font-mono text-xs">
-          <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-ochre-deep" />
-            <div>
-              <p className="font-semibold text-ink">{resumeFileName}</p>
-              <p className="text-[11px] text-ink-soft">{resumeSize} · Verified Format</p>
+        <div className="p-3.5 sm:p-4 bg-surface/50 rounded-object border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <FileText className="w-5 h-5 text-accent-deep dark:text-accent shrink-0" />
+            <div className="min-w-0">
+              <p className="font-semibold text-fg truncate">{resumeFileName}</p>
+              <p className="text-[11px] text-fg-soft">{resumeSize} · Verified Format</p>
             </div>
           </div>
-          <span className="text-jade font-semibold flex items-center gap-1">
+          <span className="text-jade font-semibold flex items-center gap-1 shrink-0 self-end sm:self-center">
             <CheckCircle2 className="w-3.5 h-3.5" /> Verified
           </span>
         </div>
       </div>
 
       {/* Action Row */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-line">
         <Button
           variant="secondary"
           onClick={() => setSkills(currentStudent.skills)}
           disabled={submitting}
+          className="w-full sm:w-auto"
         >
           Reset Changes
         </Button>
@@ -173,6 +173,7 @@ export function StudentProfile() {
           variant="primary"
           onClick={handleSubmit}
           loading={submitting}
+          className="w-full sm:w-auto"
         >
           Submit for Audit
         </Button>
@@ -180,3 +181,5 @@ export function StudentProfile() {
     </PageTransition>
   );
 }
+
+export default StudentProfile;

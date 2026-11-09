@@ -1,37 +1,142 @@
+/* src/styles/glass.css */
 .glass {
-  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  background: var(--bg-glass, rgb(var(--c-glass-base) / var(--glass-alpha)));
   border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--glass-highlight)), var(--glass-shadow);
 }
-:root[data-theme='night'] { --glass-boost: 0.04; }
-.glass-strong { background: rgb(var(--c-glass-base) / calc(var(--glass-alpha) + var(--glass-boost, 0.12))); }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass, .glass-strong { background: rgb(var(--c-surface) / 0.94); }
+
+:root[data-theme='day'] .glass {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(17, 17, 19, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 8px 30px -10px rgba(17, 17, 19, 0.08);
 }
-.backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: rgb(var(--c-bg)); }
-.backdrop i { position: absolute; width: 60vmax; height: 60vmax; border-radius: 9999px; will-change: transform; }
-.backdrop i:nth-child(1) { left: -14vmax; top: -20vmax; background: radial-gradient(circle, rgb(var(--c-blob-a) / var(--backdrop-a-alpha)), transparent 62%); animation: drift-a 40s ease-in-out infinite alternate; }
-.backdrop i:nth-child(2) { right: -16vmax; top: -22vmax; background: radial-gradient(circle, rgb(var(--c-blob-b) / var(--backdrop-b-alpha)), transparent 62%); animation: drift-b 46s ease-in-out infinite alternate; }
-.backdrop i:nth-child(3) { left: 20vw; bottom: -34vmax; background: radial-gradient(circle, rgb(var(--c-blob-c) / var(--backdrop-c-alpha)), transparent 62%); animation: drift-c 52s ease-in-out infinite alternate; }
+
+:root[data-theme='night'] {
+  --glass-boost: 0.04;
+}
+
+:root[data-theme='night'] .glass {
+  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--glass-shadow);
+}
+
+.glass-strong {
+  background: rgb(var(--c-glass-base) / calc(var(--glass-alpha) + var(--glass-boost, 0.12)));
+  border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(var(--glass-saturate));
+}
+
+:root[data-theme='day'] .glass-strong {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(17, 17, 19, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 12px 36px -12px rgba(17, 17, 19, 0.10);
+}
+
+:root[data-theme='night'] .glass-strong {
+  background: rgba(10, 10, 14, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--glass-shadow);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong {
+    background: rgb(var(--c-surface) / 0.96);
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgb(var(--c-bg));
+}
+
+.backdrop i {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+.backdrop i:nth-child(1) {
+  left: -14vmax;
+  top: -20vmax;
+  background: radial-gradient(circle, rgb(var(--c-blob-a) / var(--backdrop-a-alpha)), transparent 62%);
+  animation: drift-a 40s ease-in-out infinite alternate;
+}
+
+.backdrop i:nth-child(2) {
+  right: -16vmax;
+  top: -22vmax;
+  background: radial-gradient(circle, rgb(var(--c-blob-b) / var(--backdrop-b-alpha)), transparent 62%);
+  animation: drift-b 46s ease-in-out infinite alternate;
+}
+
+.backdrop i:nth-child(3) {
+  left: 20vw;
+  bottom: -34vmax;
+  background: radial-gradient(circle, rgb(var(--c-blob-c) / var(--backdrop-c-alpha)), transparent 62%);
+  animation: drift-c 52s ease-in-out infinite alternate;
+}
+
 @keyframes drift-a { to { transform: translate3d(6vmax, 5vmax, 0) scale(1.08); } }
 @keyframes drift-b { to { transform: translate3d(-6vmax, 4vmax, 0) scale(1.1); } }
 @keyframes drift-c { to { transform: translate3d(4vmax, -5vmax, 0) scale(1.06); } }
-@media (prefers-reduced-motion: reduce) { .backdrop i { animation: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop i { animation: none; }
+}
 
 /* Tilt & Specular Reflection */
-.tilt { position: relative; transform: perspective(900px) rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
-.tilt::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.25s; background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.35), transparent 60%); }
+.tilt {
+  position: relative;
+  transform: perspective(900px) rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.tilt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.35), transparent 60%);
+}
+
 .tilt:hover::after { opacity: 1; }
-:root[data-theme='night'] .tilt::after { background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 225 190 / 0.16), transparent 60%); }
+:root[data-theme='night'] .tilt::after {
+  background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 225 190 / 0.16), transparent 60%);
+}
 
 /* Register Marquee Ticker */
-.ticker { overflow: hidden; border-block: 1px solid rgb(var(--c-line)); }
-.ticker-track { display: flex; width: max-content; gap: 48px; animation: ticker 60s linear infinite; }
+.ticker {
+  overflow: hidden;
+  border-block: 1px solid rgb(var(--c-line));
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 48px;
+  animation: ticker 60s linear infinite;
+}
+
 .ticker:hover .ticker-track { animation-play-state: paused; }
 @keyframes ticker { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
 
 /* 3D Scene Labels */
 .three-label {
@@ -41,7 +146,7 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: rgb(var(--c-fg));
-  background: rgb(var(--c-glass-base) / var(--glass-alpha));
+  background: var(--bg-glass, rgb(var(--c-glass-base) / var(--glass-alpha)));
   padding: 3px 8px;
   border-radius: 6px;
   border: 1px solid rgb(var(--c-glass-border-base) / var(--glass-border-alpha));
@@ -92,7 +197,3 @@ tr:hover {
 :root[data-theme='night'] tr:hover {
   background-color: rgb(var(--c-fg) / 0.06);
 }
-
-
-
-

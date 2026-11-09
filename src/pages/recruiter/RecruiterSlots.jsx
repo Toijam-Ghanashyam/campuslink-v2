@@ -5,7 +5,6 @@ import {
   Clock,
   Plus,
   Check,
-  UserCheck,
   Unlock,
   CalendarCheck,
 } from 'lucide-react';
@@ -38,7 +37,7 @@ const WAITLIST_CANDIDATES = [
   { name: 'Aarav Mohanty', role: 'SDE-1', fit: 90, roll: '220101019' },
   { name: 'Debasis Panda', role: 'SDE-1', fit: 88, roll: '220101054' },
   { name: 'Subham Nayak', role: 'SDE-1', fit: 86, roll: '220101077' },
-  { name: 'ishita Mishra', role: 'SDE-1', fit: 93, roll: '220101031' },
+  { name: 'Ishita Mishra', role: 'SDE-1', fit: 93, roll: '220101031' },
 ];
 
 function InteractiveSlotCell({
@@ -53,6 +52,7 @@ function InteractiveSlotCell({
   const handlePointerMove = (e) => {
     const el = e.currentTarget;
     const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
     el.style.setProperty('--mx', `${(e.clientX - r.left).toFixed(1)}px`);
     el.style.setProperty('--my', `${(e.clientY - r.top).toFixed(1)}px`);
   };
@@ -61,7 +61,7 @@ function InteractiveSlotCell({
     <motion.button
       type="button"
       layout
-      whileHover={{ y: -3, scale: 1.015 }}
+      whileHover={{ y: -2, scale: 1.01 }}
       whileTap={{ scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 320, damping: 22 }}
       onPointerMove={handlePointerMove}
@@ -75,7 +75,7 @@ function InteractiveSlotCell({
       }}
       onClick={() => onToggleSlot(rowIdx, colIdx)}
       style={{ '--mx': '50%', '--my': '50%' }}
-      className={`group relative h-[104px] w-full rounded-control p-3.5 text-left transition-colors duration-300 overflow-hidden select-none ${
+      className={`group relative h-[100px] sm:h-[104px] w-full rounded-control p-3 sm:p-3.5 text-left transition-colors duration-300 overflow-hidden select-none min-h-[44px] ${
         booking
           ? 'border border-line bg-surface/90 hover:border-jade/60 shadow-subtle'
           : 'border border-dashed border-line/80 bg-surface/20 hover:border-accent hover:bg-surface/60'
@@ -91,59 +91,6 @@ function InteractiveSlotCell({
         }}
       />
 
-      {/* 2. Horizontal Laser Scanline on Hover */}
-      {hovered && (
-        <motion.div
-          initial={{ top: '-10%' }}
-          animate={{ top: '110%' }}
-          transition={{ duration: 1.25, repeat: Infinity, ease: 'linear' }}
-          className={`pointer-events-none absolute inset-x-0 h-[1.5px] ${
-            booking
-              ? 'bg-gradient-to-r from-transparent via-jade/60 to-transparent'
-              : 'bg-gradient-to-r from-transparent via-accent/70 to-transparent'
-          }`}
-        />
-      )}
-
-      {/* 3. Snapping HUD Corner Targeting Brackets */}
-      <span
-        className={`pointer-events-none absolute top-1.5 left-1.5 h-2.5 w-2.5 border-t-2 border-l-2 transition-all duration-200 ${
-          hovered
-            ? booking
-              ? 'opacity-100 translate-x-0 translate-y-0 border-jade'
-              : 'opacity-100 translate-x-0 translate-y-0 border-accent'
-            : 'opacity-0 -translate-x-1 -translate-y-1 border-fg-soft'
-        }`}
-      />
-      <span
-        className={`pointer-events-none absolute top-1.5 right-1.5 h-2.5 w-2.5 border-t-2 border-r-2 transition-all duration-200 ${
-          hovered
-            ? booking
-              ? 'opacity-100 translate-x-0 translate-y-0 border-jade'
-              : 'opacity-100 translate-x-0 translate-y-0 border-accent'
-            : 'opacity-0 translate-x-1 -translate-y-1 border-fg-soft'
-        }`}
-      />
-      <span
-        className={`pointer-events-none absolute bottom-1.5 left-1.5 h-2.5 w-2.5 border-b-2 border-l-2 transition-all duration-200 ${
-          hovered
-            ? booking
-              ? 'opacity-100 translate-x-0 translate-y-0 border-jade'
-              : 'opacity-100 translate-x-0 translate-y-0 border-accent'
-            : 'opacity-0 -translate-x-1 translate-y-1 border-fg-soft'
-        }`}
-      />
-      <span
-        className={`pointer-events-none absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 transition-all duration-200 ${
-          hovered
-            ? booking
-              ? 'opacity-100 translate-x-0 translate-y-0 border-jade'
-              : 'opacity-100 translate-x-0 translate-y-0 border-accent'
-            : 'opacity-0 translate-x-1 translate-y-1 border-fg-soft'
-        }`}
-      />
-
-      {/* 4. Slot Content: Locked Candidate vs Available Slot */}
       <AnimatePresence mode="wait">
         {booking ? (
           <motion.div
@@ -153,30 +100,30 @@ function InteractiveSlotCell({
             exit={{ opacity: 0, scale: 0.95 }}
             className="relative z-10 flex h-full flex-col justify-between"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
+            <div className="flex items-start justify-between gap-1.5">
+              <div className="min-w-0 flex-1">
                 <p className="font-mono text-xs font-bold text-fg truncate group-hover:text-jade transition-colors">
                   {booking.name}
                 </p>
-                <p className="font-mono text-[10px] text-fg-soft mt-0.5">
+                <p className="font-mono text-[10px] text-fg-soft mt-0.5 truncate">
                   {booking.role}
                 </p>
               </div>
 
-              {/* AI Fit Pill that pops in on hover */}
-              <span className="shrink-0 rounded bg-jade/15 border border-jade/35 px-1.5 py-0.5 font-mono text-[9px] font-bold text-jade opacity-75 group-hover:opacity-100 transition-opacity">
-                {booking.fit}% FIT
+              {/* AI Fit Pill */}
+              <span className="shrink-0 rounded bg-jade/15 border border-jade/35 px-1.5 py-0.5 font-mono text-[9px] font-bold text-jade">
+                {booking.fit}%
               </span>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-1">
               <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-jade">
                 <Check className="h-3 w-3 stroke-[2.5]" />
                 <span>Locked</span>
                 <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-jade animate-pulse" />
               </span>
 
-              <span className="font-mono text-[9px] uppercase tracking-wider text-fg-soft opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex items-center gap-1">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-fg-soft opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex items-center gap-1">
                 <Unlock className="h-2.5 w-2.5" />
                 Release
               </span>
@@ -190,17 +137,12 @@ function InteractiveSlotCell({
             exit={{ opacity: 0 }}
             className="relative z-10 flex h-full flex-col items-center justify-center text-center"
           >
-            {/* Rotating + Reticle Ring */}
-            <div className="relative flex h-7 w-7 items-center justify-center rounded-full border border-transparent group-hover:border-accent/50 group-hover:bg-accent/10 transition-all duration-300">
-              <Plus className="h-4 w-4 text-fg-soft transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 group-hover:text-accent" />
+            <div className="relative flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full border border-transparent group-hover:border-accent/50 group-hover:bg-accent/10 transition-all duration-300">
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-fg-soft transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 group-hover:text-accent" />
             </div>
 
-            <span className="mt-1 font-mono text-[11px] text-fg-soft transition-colors duration-200 group-hover:text-fg font-medium">
+            <span className="mt-1 font-mono text-[10.5px] sm:text-[11px] text-fg-soft transition-colors duration-200 group-hover:text-fg font-medium">
               Available
-            </span>
-
-            <span className="font-mono text-[9px] uppercase tracking-widest text-accent-ink font-semibold opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
-              + Assign Slot
             </span>
           </motion.div>
         )}
@@ -210,7 +152,7 @@ function InteractiveSlotCell({
 }
 
 export function RecruiterSlots() {
-  const toast = useToast?.();
+  const { toast } = useToast();
   const [slots, setSlots] = useState(INITIAL_SLOTS);
   const [waitlistIdx, setWaitlistIdx] = useState(0);
   const [activeCell, setActiveCell] = useState({ row: -1, col: -1 });
@@ -224,19 +166,13 @@ export function RecruiterSlots() {
         delete next[key];
         return next;
       });
-      toast?.push?.({
-        title: `Slot Released (${DAYS[colIdx].split(' ')[0]})`,
-        description: `${removed.name} returned to unscheduled shortlist pool.`,
-      });
+      toast(`Slot released: ${removed.name} returned to pool.`, 'ochre');
     } else {
       const nextCand =
         WAITLIST_CANDIDATES[waitlistIdx % WAITLIST_CANDIDATES.length];
       setWaitlistIdx((n) => n + 1);
       setSlots((prev) => ({ ...prev, [key]: nextCand }));
-      toast?.push?.({
-        title: `Interview Slot Locked`,
-        description: `${nextCand.name} (${nextCand.fit}% Fit) scheduled for ${TIME_ROWS[rowIdx]}.`,
-      });
+      toast(`Interview locked: ${nextCand.name} (${nextCand.fit}% Fit) scheduled.`, 'jade');
     }
   };
 
@@ -246,35 +182,33 @@ export function RecruiterSlots() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Status Telemetry Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
-        <div className="flex items-center gap-3">
-          <CalendarCheck className="h-4 w-4 text-accent" />
-          <span className="font-mono text-xs uppercase tracking-widest text-fg-soft">
-            CONFLICT-FREE PANEL MATRIX ·{' '}
-            <strong className="text-fg">{lockedCount} LOCKED</strong> /{' '}
-            {totalSlots - lockedCount} AVAILABLE
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
+        <div className="flex items-center gap-2.5">
+          <CalendarCheck className="h-4 w-4 text-accent shrink-0" />
+          <span className="font-mono text-[11px] sm:text-xs uppercase tracking-widest text-fg-soft">
+            PANEL MATRIX · <strong className="text-fg">{lockedCount} LOCKED</strong> / {totalSlots - lockedCount} AVAILABLE
           </span>
         </div>
-        <div className="flex items-center gap-2 font-mono text-[11px] text-fg-soft">
-          <Clock className="h-3.5 w-3.5 text-accent" />
-          <span>Hover any slot to inspect · Click to lock or release</span>
+        <div className="flex items-center gap-2 font-mono text-[10.5px] sm:text-[11px] text-fg-soft">
+          <Clock className="h-3.5 w-3.5 text-accent shrink-0" />
+          <span>Click any slot to lock candidate or release</span>
         </div>
       </div>
 
       {/* Main Interview Slots Matrix Container */}
-      <div className="rounded-2xl border border-line bg-surface/40 p-5 lg:p-7 space-y-6 overflow-x-auto">
-        <div className="min-w-[780px] space-y-6">
-          {/* 5 Day Column Headers (Highlight when cursor is in that column) */}
-          <div className="grid grid-cols-5 gap-4">
+      <div className="rounded-xl sm:rounded-2xl border border-line bg-surface/40 p-3 sm:p-5 lg:p-7 space-y-5 sm:space-y-6 -mx-4 sm:mx-0 overflow-x-auto no-scrollbar">
+        <div className="min-w-[680px] sm:min-w-[760px] space-y-5 sm:space-y-6">
+          {/* 5 Day Column Headers */}
+          <div className="grid grid-cols-5 gap-3 sm:gap-4">
             {DAYS.map((day, colIdx) => {
               const isColHovered = activeCell.col === colIdx;
               return (
                 <div
                   key={day}
-                  className={`rounded-control border py-2.5 px-3 text-center font-mono text-xs tracking-wider transition-all duration-200 ${
+                  className={`rounded-control border py-2 px-2.5 sm:py-2.5 sm:px-3 text-center font-mono text-[10.5px] sm:text-xs tracking-wider transition-all duration-200 truncate ${
                     isColHovered
                       ? 'border-accent bg-accent/15 text-fg font-bold shadow-[0_0_15px_rgb(var(--c-accent)/0.2)]'
-                      : 'border-line/70 bg-bg/60 text-fg-soft'
+                      : 'border-line/70 bg-surface/60 text-fg-soft'
                   }`}
                 >
                   {day}
@@ -287,7 +221,7 @@ export function RecruiterSlots() {
           {TIME_ROWS.map((timeLabel, rowIdx) => {
             const isRowHovered = activeCell.row === rowIdx;
             return (
-              <div key={timeLabel} className="space-y-2.5">
+              <div key={timeLabel} className="space-y-2 sm:space-y-2.5">
                 <div
                   className={`flex items-center gap-2 font-mono text-xs transition-colors duration-200 ${
                     isRowHovered ? 'text-accent font-semibold' : 'text-fg-soft'
@@ -300,13 +234,13 @@ export function RecruiterSlots() {
                   />
                   <span>{timeLabel}</span>
                   {isRowHovered && (
-                    <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-accent-ink">
+                    <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-accent-ink font-semibold">
                       ACTIVE WINDOW
                     </span>
                   )}
                 </div>
 
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-5 gap-3 sm:gap-4">
                   {DAYS.map((_, colIdx) => {
                     const key = `${rowIdx}-${colIdx}`;
                     return (

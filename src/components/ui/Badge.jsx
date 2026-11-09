@@ -48,13 +48,16 @@ export function Badge({
   const dotColors = {
     jade: 'bg-jade',
     brick: 'bg-brick',
-    ochre: 'bg-ochre',
-    ink: 'bg-ink-soft',
+    ochre: 'bg-accent',
+    accent: 'bg-accent',
+    ink: 'bg-fg-soft',
   };
 
   return (
-    <Tag dot={dot} dotColor={dotColors[tone] || 'bg-ochre'} className={className}>
+    <Tag dot={dot} dotColor={dotColors[tone] || 'bg-accent'} className={className}>
       {children}
     </Tag>
   );
 }
+
+export default Badge;

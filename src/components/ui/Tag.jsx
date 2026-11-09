@@ -4,13 +4,13 @@ import { cn } from '../../lib/utils';
 export function Tag({
   children,
   dot = false,
-  dotColor = 'bg-ochre',
+  dotColor = 'bg-accent',
   className,
 }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-mono text-xs text-ink/90 select-none tracking-tight',
+        'inline-flex items-center gap-1.5 font-mono text-xs text-fg/90 select-none tracking-tight',
         className
       )}
     >
@@ -22,3 +22,4 @@ export function Tag({
   );
 }
 
+export default Tag;

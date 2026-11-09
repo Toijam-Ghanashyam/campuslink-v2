@@ -9,7 +9,7 @@ export function Drawer({
   onClose,
   title,
   subtitle,
-  width = 'w-full sm:w-[440px] md:w-[520px] max-w-full',
+  width = 'w-full max-w-full sm:max-w-md md:max-w-lg',
   children,
   footer,
 }) {
@@ -44,7 +44,7 @@ export function Drawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={onClose}
-            className="fixed top-14 inset-x-0 bottom-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm cursor-pointer pointer-events-auto"
+            className="fixed top-14 inset-x-0 bottom-0 bg-black/50 backdrop-blur-xs cursor-pointer pointer-events-auto"
           />
 
           {/* Drawer Surface */}
@@ -59,8 +59,8 @@ export function Drawer({
             )}
           >
             {/* Header with generous top space from navbar */}
-            <div className="flex items-center justify-between px-4 pt-5 pb-4 sm:px-6 sm:pt-7 sm:pb-5 border-b border-line bg-surface/95 backdrop-blur-sm shrink-0">
-              <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 border-b border-line bg-surface/95 backdrop-blur-sm shrink-0">
+              <div className="min-w-0 flex-1 pr-3">
                 <h3 className="font-display font-semibold text-lg sm:text-xl text-fg truncate">
                   {title}
                 </h3>
@@ -71,21 +71,21 @@ export function Drawer({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-fg-soft hover:text-fg hover:bg-bg transition-colors shrink-0 ml-3 min-h-[36px] min-w-[36px]"
+                className="w-8 h-8 rounded-control border border-line bg-surface hover:bg-surface/80 flex items-center justify-center text-fg-soft hover:text-fg transition cursor-pointer shrink-0"
+                aria-label="Close drawer"
               >
-                <X className="w-5 h-5 stroke-[1.75]" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 text-sm text-fg">
               {children}
             </div>
 
-            {/* Footer */}
+            {/* Optional Footer */}
             {footer && (
-              <div className="p-4 sm:p-6 border-t border-line bg-bg/40 shrink-0 flex items-center justify-end gap-3 pb-safe">
+              <div className="p-4 sm:p-6 border-t border-line bg-surface/95 backdrop-blur-sm shrink-0">
                 {footer}
               </div>
             )}
@@ -96,3 +96,5 @@ export function Drawer({
     document.body
   );
 }
+
+export default Drawer;

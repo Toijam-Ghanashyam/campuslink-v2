@@ -10,7 +10,7 @@ import {
 } from 'framer-motion';
 import { ReactLenis } from 'lenis/react';
 import 'lenis/dist/lenis.css';
-import { ArrowRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronUp, ChevronDown, Menu, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Stamp } from '../../components/ui/Stamp';
 import { Mark } from '../../components/ui/Mark';
@@ -474,6 +474,7 @@ export function LandingPage({ onEnter } = {}) {
   const pipeRef = useRef(null);
   const pipeInView = useInView(pipeRef);
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Guarantee that landing page starts from the very top on mount/reopen
   React.useEffect(() => {
@@ -604,7 +605,7 @@ export function LandingPage({ onEnter } = {}) {
 
         {/* Navigation Bar */}
         <header
-          className={`sticky top-0 z-50 backdrop-blur-md border-b px-4 sm:px-6 lg:px-12 h-14 sm:h-16 flex items-center justify-between ${
+          className={`sticky top-0 z-50 backdrop-blur-md border-b px-3 sm:px-6 lg:px-12 h-14 sm:h-16 flex items-center justify-between ${
             isNight
               ? 'bg-black/80 border-white/[0.09]'
               : 'bg-bg/90 border-line'
@@ -625,10 +626,10 @@ export function LandingPage({ onEnter } = {}) {
               </div>
             )}
             <div className="flex items-baseline gap-1 sm:gap-1.5">
-              <span className="font-display font-medium text-xl sm:text-2xl text-fg tracking-tight">
+              <span className="font-display font-medium text-lg sm:text-2xl text-fg tracking-tight">
                 CampusLink
               </span>
-              <span className="font-mono text-[11px] sm:text-xs text-accent-ink font-bold">.register</span>
+              <span className="font-mono text-[11px] sm:text-xs text-accent-ink font-bold hidden xs:inline">.register</span>
             </div>
           </div>
 
@@ -638,13 +639,24 @@ export function LandingPage({ onEnter } = {}) {
             <a href="#architecture" className="hover:text-fg transition-colors">Architecture</a>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <ThemeToggle />
+
+            {/* Mobile Navigation Drawer Trigger */}
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              aria-label="Toggle mobile navigation menu"
+              className="md:hidden w-8 h-8 rounded-control border border-line bg-surface/50 hover:bg-surface flex items-center justify-center text-fg transition-colors min-h-[36px] min-w-[36px]"
+            >
+              {mobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
             {isNight ? (
               <button
                 type="button"
                 onClick={handleGetStarted}
-                className="rounded-full border border-white/25 bg-black/80 px-3.5 py-1.5 sm:px-5 sm:py-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
+                className="hidden sm:flex rounded-full border border-white/25 bg-black/80 px-3.5 py-1.5 sm:px-5 sm:py-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all items-center gap-1.5 sm:gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
               >
                 <span>GET STARTED</span>
                 <span className="text-white/60">»</span>
@@ -655,13 +667,67 @@ export function LandingPage({ onEnter } = {}) {
                 onClick={handleGetStarted}
                 icon={ArrowRight}
                 size="sm"
-                className="text-xs sm:text-sm"
+                className="hidden sm:inline-flex text-xs sm:text-sm"
               >
                 Launch Demo
               </Button>
             )}
           </div>
         </header>
+
+        {/* Mobile Navigation Dropdown Menu */}
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="md:hidden sticky top-14 z-40 bg-surface/95 backdrop-blur-md border-b border-line px-4 py-4 space-y-4 shadow-xl overflow-hidden"
+            >
+              <nav className="flex flex-col space-y-1.5 font-mono text-xs uppercase tracking-wider text-fg-soft">
+                <a
+                  href="#pipeline"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="py-2.5 px-3 rounded-control hover:bg-fg/5 hover:text-fg transition-colors flex items-center justify-between min-h-[40px]"
+                >
+                  <span>01 · Pipeline Architecture</span>
+                  <span>→</span>
+                </a>
+                <a
+                  href="#desks"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="py-2.5 px-3 rounded-control hover:bg-fg/5 hover:text-fg transition-colors flex items-center justify-between min-h-[40px]"
+                >
+                  <span>02 · Three Role Desks</span>
+                  <span>→</span>
+                </a>
+                <a
+                  href="#architecture"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="py-2.5 px-3 rounded-control hover:bg-fg/5 hover:text-fg transition-colors flex items-center justify-between min-h-[40px]"
+                >
+                  <span>03 · Enterprise Verification</span>
+                  <span>→</span>
+                </a>
+              </nav>
+
+              <div className="pt-3 border-t border-line">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    handleGetStarted();
+                  }}
+                  icon={ArrowRight}
+                  className="w-full justify-center text-xs"
+                >
+                  Launch System Demo
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* SCENE 1 WRAPPER: Full-Bleed 3D Vortex Funnel in Dark Mode (Matching Screenshot 1) */}
         <section
