@@ -10,6 +10,7 @@ import {
   EyeOff,
   ChevronDown,
 } from 'lucide-react';
+import { ThemeToggle } from '../../components/ui/ThemeToggle.jsx';
 import { useTheme } from '../../theme/ThemeProvider.jsx';
 
 // ============================================================================
@@ -405,6 +406,10 @@ export function LoginPage({ onBackToLanding, onEnterPortal }) {
         </button>
       </div>
 
+      <div className="fixed top-3 sm:top-4 right-3 sm:right-4 z-30 flex items-center gap-2">
+        <ThemeToggle />
+      </div>
+
       {/* ======================================================================
           STEP 1: 2x2 PORTAL SELECTION GRID (Fits 100% on screen, no scroll)
          ====================================================================== */}
@@ -694,7 +699,7 @@ export function LoginPage({ onBackToLanding, onEnterPortal }) {
                             key={c}
                             value={c}
                             className={
-                              isNight ? 'bg-[#0B0B0D] text-white' : 'bg-white text-black'
+                              isNight ? 'bg-[#0B0B0D] text-white' : 'bg-white text-[#0A0A0C]'
                             }
                           >
                             {c}

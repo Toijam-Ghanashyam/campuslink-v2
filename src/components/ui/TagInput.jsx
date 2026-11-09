@@ -32,8 +32,8 @@ export function TagInput({
   return (
     <div
       className={cn(
-        'min-h-[46px] p-2 bg-paper rounded-xl border border-line flex flex-wrap items-center gap-2 focus-within:ring-2 focus-within:ring-ochre focus-within:border-transparent transition-all',
-        disabled && 'opacity-60 pointer-events-none bg-bone/30',
+        'min-h-[46px] p-2 bg-[var(--surface)] text-[var(--fg)] rounded-xl border border-[var(--border)] flex flex-wrap items-center gap-2 focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:border-transparent transition-all',
+        disabled && 'opacity-60 pointer-events-none bg-[var(--bg-subtle)]',
         className
       )}
     >
@@ -46,14 +46,14 @@ export function TagInput({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.15 }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bone text-ink text-xs font-medium border border-line select-none"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-subtle)] text-[var(--fg)] text-xs font-medium border border-[var(--border)] select-none"
           >
             <span>{tag}</span>
             {!disabled && (
               <button
                 type="button"
                 onClick={() => removeTag(idx)}
-                className="w-3.5 h-3.5 rounded-full hover:bg-ink-soft/20 inline-flex items-center justify-center text-ink-soft hover:text-ink transition-colors"
+                className="w-3.5 h-3.5 rounded-full hover:bg-[var(--fg)]/15 inline-flex items-center justify-center text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
               >
                 <X className="w-2.5 h-2.5 stroke-[2.5]" />
               </button>
@@ -69,7 +69,7 @@ export function TagInput({
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? placeholder : '+ Add...'}
-          className="flex-1 min-w-[120px] bg-transparent text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none px-1 py-1"
+          className="flex-1 min-w-[120px] bg-transparent text-sm text-[var(--fg)] placeholder:text-[var(--fg-muted)]/70 focus:outline-none px-1 py-1"
         />
       )}
     </div>

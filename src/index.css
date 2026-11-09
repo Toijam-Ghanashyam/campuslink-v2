@@ -23,6 +23,16 @@
   height: 6px;
 }
 
+/* Theme-safe native form controls for Windows Chrome/Edge */
+select, option {
+  background-color: var(--surface) !important;
+  color: var(--fg) !important;
+}
+
+input, select, textarea {
+  color-scheme: light dark;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }

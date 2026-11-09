@@ -58,13 +58,13 @@ export function StudentDrives() {
         lede="Review active recruitment notices approved by BPUT Central Placement Cell. Submitting an application computes an explainable skill embedding match."
         action={
           <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-fg-soft" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter company or role..."
-              className="w-full bg-paper pl-9 pr-3 py-1.5 rounded-control border border-line font-sans text-xs text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-1 focus:ring-ink"
+              className="w-full bg-[var(--surface)] text-[var(--fg)] pl-9 pr-3 py-1.5 rounded-control border border-line font-sans text-xs placeholder:text-fg-soft/60 focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         }

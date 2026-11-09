@@ -44,7 +44,7 @@ export function AdminOffers() {
       <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 border-y border-line no-scrollbar">
         <table className="w-full min-w-[720px] text-left text-sm border-collapse">
           <thead>
-            <tr className="border-b border-line bg-bone/60 font-mono text-[10.5px] uppercase tracking-wider text-ink-soft">
+            <tr className="border-b border-line bg-surface-subtle/60 font-mono text-[10.5px] uppercase tracking-wider text-fg-soft">
               <th className="py-3 px-4">Candidate &amp; Roll No.</th>
               <th className="py-3 px-4">Recruiter Partner</th>
               <th className="py-3 px-4">Verified CTC</th>
@@ -61,17 +61,17 @@ export function AdminOffers() {
               const docPercentage = Math.round((verifiedDocs / totalDocs) * 100);
 
               return (
-                <tr key={offer.id} className="hover:bg-bone/40 transition-colors font-sans text-xs">
+                <tr key={offer.id} className="hover:bg-surface-subtle/40 transition-colors font-sans text-xs">
                   <td className="py-3.5 px-4">
-                    <p className="font-display font-medium text-base text-ink">{offer.studentName}</p>
-                    <p className="font-mono text-ink-soft text-[11px]">{offer.rollNo} · {offer.branch}</p>
+                    <p className="font-display font-medium text-base text-fg">{offer.studentName}</p>
+                    <p className="font-mono text-fg-soft text-[11px]">{offer.rollNo} · {offer.branch}</p>
                   </td>
 
-                  <td className="py-3.5 px-4 font-semibold text-ink">
+                  <td className="py-3.5 px-4 font-semibold text-fg">
                     {offer.company}
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono font-bold text-ink">
+                  <td className="py-3.5 px-4 font-mono font-bold text-fg">
                     {offer.ctc}
                   </td>
 
@@ -92,8 +92,8 @@ export function AdminOffers() {
                   <td className="py-3.5 px-4">
                     <div className="space-y-1 max-w-[120px] font-mono text-[11px]">
                       <div className="flex justify-between">
-                        <span className="font-semibold text-ink">{verifiedDocs}/{totalDocs} verified</span>
-                        <span className="text-ink-soft">{docPercentage}%</span>
+                        <span className="font-semibold text-fg">{verifiedDocs}/{totalDocs} verified</span>
+                        <span className="text-fg-soft">{docPercentage}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-line rounded-full overflow-hidden">
                         <div
@@ -104,7 +104,7 @@ export function AdminOffers() {
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-ink-soft text-[11px]">
+                  <td className="py-3.5 px-4 font-mono text-fg-soft text-[11px]">
                     {offer.joiningDate}
                   </td>
 
