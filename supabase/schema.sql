@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.drive_applications (
   drive_id UUID NOT NULL REFERENCES public.placement_drives(id) ON DELETE CASCADE,
   student_id UUID NOT NULL REFERENCES public.student_profiles(id) ON DELETE CASCADE,
   stage TEXT NOT NULL DEFAULT 'APPLIED' 
-    CHECK (stage IN ('APPLIED', 'ASSESSMENT', 'INTERVIEW', 'OFFERED', 'REJECTED')),
+    CHECK (stage IN ('APPLIED', 'OA_CLEARED', 'GD_CLEARED', 'INTERVIEW_R1', 'INTERVIEW_R2', 'HR_ROUND', 'OFFERED', 'REJECTED')),
   offer_status TEXT NOT NULL DEFAULT 'PENDING' 
     CHECK (offer_status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'AUTO_REVOKED')),
   offer_ctc NUMERIC(10, 2),
@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS public.drive_applications (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT unique_student_drive_application UNIQUE (drive_id, student_id)
 );
+
+-- Migration support: Update stage check constraint if table already exists
+ALTER TABLE public.drive_applications DROP CONSTRAINT IF EXISTS drive_applications_stage_check;
+ALTER TABLE public.drive_applications ADD CONSTRAINT drive_applications_stage_check 
+  CHECK (stage IN ('APPLIED', 'OA_CLEARED', 'GD_CLEARED', 'INTERVIEW_R1', 'INTERVIEW_R2', 'HR_ROUND', 'OFFERED', 'REJECTED'));
 
 -- 5. Automatic Profile Creation Trigger for Students
 CREATE OR REPLACE FUNCTION public.handle_new_user()
