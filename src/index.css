@@ -175,6 +175,13 @@ h1, h2, h3, .font-display {
 [data-vortex-mask] > *:nth-child(4) { transition-delay: 0.44s; }
 [data-reveal-late] { transition-delay: 0.56s; }
 
+html.intro-hold {
+  overflow: hidden !important;
+}
+html.intro-hold body {
+  background-color: #000000 !important;
+}
+
 html.intro-hold [data-vortex-mask] > * {
   opacity: 0;
   transform: translateY(30px) scale(0.985);

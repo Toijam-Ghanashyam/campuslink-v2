@@ -1,7 +1,20 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="day">
   <head>
-    <script>try{document.documentElement.dataset.theme=localStorage.getItem('cl-theme')||'day'}catch(e){document.documentElement.dataset.theme='day'}</script>
+    <script>
+      try {
+        var theme = localStorage.getItem('cl-theme') || 'day';
+        document.documentElement.dataset.theme = theme;
+        var p = window.location.pathname;
+        if ((p === '/' || p === '' || p.endsWith('/index.html')) && !/[?&]nointro\b/.test(window.location.search)) {
+          if (!window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.documentElement.classList.add('intro-hold');
+          }
+        }
+      } catch (e) {
+        document.documentElement.dataset.theme = 'day';
+      }
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%2314161C'/><circle cx='16' cy='16' r='5' fill='%23E8A33D'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

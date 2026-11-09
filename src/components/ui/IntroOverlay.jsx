@@ -1,5 +1,5 @@
 // src/components/ui/IntroOverlay.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * Clean Pitch-Black Loading Intro with Cursor-Only Ripples & Smooth Fade-Out
@@ -76,7 +76,7 @@ export function ShatterIntro({ onBreak, onDone }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!active) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
@@ -98,6 +98,9 @@ export function ShatterIntro({ onBreak, onDone }) {
       canvas.height = Math.round(H * dpr);
       canvas.style.width = `${W}px`;
       canvas.style.height = `${H}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, W, H);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -162,6 +165,7 @@ export function ShatterIntro({ onBreak, onDone }) {
       if (finished) return;
       finished = true;
       cancelAnimationFrame(raf);
+      if (canvas) canvas.style.backgroundColor = 'transparent';
       html.classList.remove('intro-hold');
       html.style.overflow = prevOverflow;
       setActive(false);
@@ -179,6 +183,7 @@ export function ShatterIntro({ onBreak, onDone }) {
       if (!unlocked && t >= T_LOAD_DONE) {
         unlocked = true;
         canvas.style.pointerEvents = 'none';
+        canvas.style.backgroundColor = 'transparent';
         html.classList.remove('intro-hold');
         html.style.overflow = prevOverflow;
         onBreak?.();
@@ -313,26 +318,20 @@ export function ShatterIntro({ onBreak, onDone }) {
       raf = requestAnimationFrame(frame);
     };
 
-    const fontsReady = (async () => {
-      try {
-        await Promise.race([
-          Promise.all([
-            document.fonts.load(wordFont),
-            document.fonts.load(regFont),
-            document.fonts.load(capFont),
-          ]),
-          new Promise((r) => setTimeout(r, 500)),
-        ]);
-      } catch {
-        /* fallback */
-      }
-    })();
+    // Start animation loop immediately — zero delay, zero blank frames
+    t0 = performance.now();
+    raf = requestAnimationFrame(frame);
 
-    fontsReady.then(() => {
-      if (finished) return;
-      t0 = performance.now();
-      raf = requestAnimationFrame(frame);
-    });
+    // Warm up web fonts asynchronously in background without stalling animation
+    try {
+      if (document.fonts?.load) {
+        document.fonts.load(wordFont).catch(() => {});
+        document.fonts.load(regFont).catch(() => {});
+        document.fonts.load(capFont).catch(() => {});
+      }
+    } catch {
+      /* ignore */
+    }
 
     const onPointerDown = (e) => {
       if (e.clientX && e.clientY) {
@@ -366,8 +365,8 @@ export function ShatterIntro({ onBreak, onDone }) {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="fixed inset-0 z-[300]"
-      style={{ background: 'transparent' }}
+      className="fixed inset-0 z-[300] bg-black"
+      style={{ backgroundColor: '#000000' }}
     />
   );
 }
