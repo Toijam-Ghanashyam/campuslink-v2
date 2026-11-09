@@ -91,7 +91,7 @@ export function JudgeGuide() {
   const completedCount = items.filter((i) => i.done).length;
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 select-none">
+    <div className="fixed bottom-20 left-4 sm:bottom-5 sm:left-5 z-40 select-none">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -99,7 +99,7 @@ export function JudgeGuide() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="w-80 sm:w-96 bg-surface rounded-object border border-line shadow-object mb-2.5 overflow-hidden"
+            className="w-[calc(100vw-2rem)] sm:w-96 max-h-[75vh] bg-surface rounded-object border border-line shadow-2xl mb-2.5 overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-3.5 border-b border-line bg-surface flex items-center justify-between">

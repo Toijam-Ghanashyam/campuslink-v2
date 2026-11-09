@@ -57,7 +57,7 @@ export function StudentDrives() {
         title="Authorized Placement Drives."
         lede="Review active recruitment notices approved by BPUT Central Placement Cell. Submitting an application computes an explainable skill embedding match."
         action={
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
             <input
               type="text"

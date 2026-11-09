@@ -19,16 +19,20 @@ export function Masthead({
               {context}
             </span>
           )}
-          <h1 className="font-display font-normal text-3xl sm:text-4xl text-ink tracking-tight leading-[1.08]">
+          <h1 className="font-display font-normal text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.12]">
             {title}
           </h1>
           {lede && (
-            <p className="font-serif italic text-base sm:text-lg text-ink-soft/90 mt-1 max-w-3xl leading-relaxed">
+            <p className="font-serif italic text-sm sm:text-base lg:text-lg text-ink-soft/90 mt-1 max-w-3xl leading-relaxed">
               {lede}
             </p>
           )}
         </div>
-        {action && <div className="shrink-0 flex items-center gap-3">{action}</div>}
+        {action && (
+          <div className="shrink-0 flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+            {action}
+          </div>
+        )}
       </div>
       <Rule strong={strong} className="my-0" />
     </div>

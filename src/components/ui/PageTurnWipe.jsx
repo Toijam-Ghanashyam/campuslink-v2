@@ -1,5 +1,5 @@
 // src/components/ui/PageTurnWipe.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '../../theme/ThemeProvider.jsx';
 
@@ -73,29 +73,25 @@ export function PageTurnWipe({ triggerKey }) {
   themeRef.current = theme;
 
   const canvasRef = useRef(null);
-  const prevKeyRef = useRef(triggerKey);
+  const prevKeyRef = useRef(null);
   const [activeRun, setActiveRun] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (triggerKey !== undefined && prevKeyRef.current !== triggerKey) {
       const prevKey = prevKeyRef.current;
       prevKeyRef.current = triggerKey;
 
-      // Never show the neon-blue silk transition when returning to landing page or going to login page
-      if (triggerKey === 'landing' || triggerKey === '' || triggerKey === 'login') {
+      // Never show the neon-blue silk transition when loading or returning to the landing page
+      if (triggerKey === 'landing' || triggerKey === '') {
         return;
       }
 
-      // Also do not play if coming from landing to login or vice versa
-      if (prevKey === 'landing' && triggerKey === 'login') {
-        return;
-      }
-
+      // Play the neon-blue silk wipe when opening the login page or transitioning to dashboards
       setActiveRun((n) => n + 1);
     }
   }, [triggerKey]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (activeRun === 0) return undefined;
     const prefersReduced =
       typeof window !== 'undefined' &&
@@ -119,6 +115,11 @@ export function PageTurnWipe({ triggerKey }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const isNight = themeRef.current === 'night';
+
+    // Synchronously paint solid opaque cover right now in useLayoutEffect!
+    // This executes BEFORE the browser can paint the new route DOM, eliminating any blink of content.
+    ctx.fillStyle = isNight ? '#000000' : '#F6F5F0';
+    ctx.fillRect(0, 0, W, H);
 
     // Full end-to-end window spline (from off-screen left -0.06W to off-screen right 1.06W)
     const mainPts = [
@@ -225,47 +226,49 @@ export function PageTurnWipe({ triggerKey }) {
 
       ctx.clearRect(0, 0, W, H);
 
-      // 1. Left-to-Right End-to-End Window Wipe Curtain
-      const enterAlpha = smooth(0, 0.12, p);
-      const openSweepX =
-        easeInOutCubic(clamp((p - 0.34) / 0.66, 0, 1)) * (W * 1.35);
-      const curtainFade = 1 - smooth(0.82, 1.0, p);
-
-      const bgGrad = ctx.createLinearGradient(
-        openSweepX - W * 0.35,
-        0,
-        openSweepX + 20,
-        0
-      );
-      if (isNight) {
-        bgGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        bgGrad.addColorStop(
-          0.55,
-          `rgba(0, 4, 14, ${(0.84 * enterAlpha * curtainFade).toFixed(3)})`
-        );
-        bgGrad.addColorStop(
-          1,
-          `rgba(0, 2, 8, ${(0.96 * enterAlpha * curtainFade).toFixed(3)})`
-        );
-      } else {
-        bgGrad.addColorStop(0, 'rgba(239, 238, 233, 0)');
-        bgGrad.addColorStop(
-          0.55,
-          `rgba(239, 238, 233, ${(0.84 * enterAlpha * curtainFade).toFixed(3)})`
-        );
-        bgGrad.addColorStop(
-          1,
-          `rgba(239, 238, 233, ${(0.96 * enterAlpha * curtainFade).toFixed(3)})`
-        );
-      }
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, W, H);
-
+      // 1. Synchronized Wave Kinematics
       const headU = easeInOutCubic(clamp(p / 0.78, 0, 1));
-      const tailU = easeInOutCubic(clamp((p - 0.38) / 0.62, 0, 1));
-      const scatterPhase = smooth(0.45, 1.0, p);
-      const globalFadeOut = 1 - smooth(0.76, 1.0, p);
+      const tailU = easeInOutCubic(clamp((p - 0.32) / 0.68, 0, 1));
+      const scatterPhase = smooth(0.40, 1.0, p);
+      const globalFadeOut = 1 - smooth(0.80, 1.0, p);
       const driftX = scatterPhase * 36;
+
+      const hIdx = Math.min(SAMPLES, Math.floor(headU * SAMPLES));
+      const hPt = spine[hIdx];
+      const hx = hPt.x + driftX * headU;
+
+      // 2. 100% Solid Curtain Ahead of the Wave (Zero Blurry Under-Content Bleed)
+      // When p = 0, hx starts at -W * 0.06 (curtain covers 100% of the screen).
+      // As the laser sweeps right (hx: 0 -> W), the curtain opens cleanly behind it.
+      // Ahead of the laser (right of endX): 100% solid opaque cover (no see-through, no blur).
+      // Behind the laser (left of startX): canvas is clear (incoming page crystal clear).
+      const feather = 100;
+      const revealX = hx;
+
+      if (revealX < W) {
+        const startX = Math.max(0, revealX - feather);
+        const endX = Math.max(startX + 1, Math.min(W, revealX + 24));
+
+        // Draw the soft gradient transition seam right under the traveling laser star
+        const curtainGrad = ctx.createLinearGradient(startX, 0, endX, 0);
+        if (isNight) {
+          curtainGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+          curtainGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.82)');
+          curtainGrad.addColorStop(1.0, '#000000');
+        } else {
+          curtainGrad.addColorStop(0, 'rgba(246, 245, 240, 0)');
+          curtainGrad.addColorStop(0.40, 'rgba(246, 245, 240, 0.82)');
+          curtainGrad.addColorStop(1.0, '#F6F5F0');
+        }
+        ctx.fillStyle = curtainGrad;
+        ctx.fillRect(startX, 0, endX - startX, H);
+
+        // Fill all remaining screen area to the right with 100% SOLID OPAQUE cover
+        if (endX < W) {
+          ctx.fillStyle = isNight ? '#000000' : '#F6F5F0';
+          ctx.fillRect(endX, 0, W - endX, H);
+        }
+      }
 
       ctx.save();
       if (isNight) {
@@ -275,7 +278,7 @@ export function PageTurnWipe({ triggerKey }) {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 2. Soft Ambient Neon-Blue Core Spine Under-Glow
+      // 3. Soft Ambient Neon-Blue Core Spine Under-Glow
       if (headU > tailU + 0.02) {
         const gStart = Math.floor(tailU * SAMPLES);
         const gEnd = Math.min(SAMPLES, Math.ceil(headU * SAMPLES));
@@ -289,13 +292,13 @@ export function PageTurnWipe({ triggerKey }) {
           else ctx.lineTo(x, y);
         }
         ctx.strokeStyle = isNight
-          ? `rgba(0, 140, 255, ${(0.11 * enterAlpha * globalFadeOut).toFixed(3)})`
-          : `rgba(0, 110, 255, ${(0.08 * enterAlpha * globalFadeOut).toFixed(3)})`;
+          ? `rgba(0, 140, 255, ${(0.14 * globalFadeOut).toFixed(3)})`
+          : `rgba(0, 110, 255, ${(0.10 * globalFadeOut).toFixed(3)})`;
         ctx.lineWidth = 26;
         ctx.stroke();
       }
 
-      // 3. Render All 72 Interwoven White + Neon-Blue Silk Filaments
+      // 4. Render All 72 Interwoven White + Neon-Blue Silk Filaments
       for (let s = 0; s < NUM_STRANDS; s++) {
         const st = strands[s];
         const sHead = clamp(headU - st.lag, 0, 1);
@@ -329,7 +332,7 @@ export function PageTurnWipe({ triggerKey }) {
           else ctx.lineTo(x, y);
         }
 
-        const a = st.alpha * enterAlpha * globalFadeOut;
+        const a = st.alpha * globalFadeOut;
         if (a > 0.008) {
           ctx.strokeStyle = `rgba(${st.rgb}, ${a.toFixed(3)})`;
           ctx.lineWidth = st.lw;

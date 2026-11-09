@@ -146,13 +146,14 @@ export function Packets({ count = 8, height = 2.2, color }) {
 }
 
 export function SceneCanvas({ visible, children, camera }) {
-  const [dpr, setDpr] = useState(1.5);
+  const [dpr, setDpr] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 1.5 : 2));
   return (
     <Canvas
       frameloop={visible ? 'always' : 'never'}
       dpr={[1, dpr]}
       camera={camera}
       gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+      className="pointer-events-none"
     >
       <PerformanceMonitor onDecline={() => setDpr(1)} />
       {children}

@@ -2,18 +2,18 @@
 // SINGLE SOURCE OF TRUTH for both themes. Edit hex values here only.
 export const tokens = {
   day: {
-    // "Ink & Highlighter": true-ink black on warm paper, with one highlighter-yellow accent. No pastel AI blobs.
-    bg: '#EFEEE9', surface: '#FBFBF8', fg: '#0A0A0B', fgSoft: '#5A5A56', line: '#D6D5CE',
-    accent: '#FFD23F', accentTint: '#FFF1B8', accentDeep: '#5A4300', accentInk: '#6B4E00',
-    jade: '#0C6B47', jadeTint: '#DDF1E7', brick: '#B3261E', brickTint: '#F7E1DE',
-    lagoon: '#1F1F21', lagoonLight: '#9A9A94',
-    sidebar: '#0A0A0B', sidebarFg: '#F4F4F0', btn: '#0A0A0B', btnFg: '#F8F8F4', btnHover: '#FFD23F', btnHoverFg: '#0A0A0B',
-    darkSection: '#0A0A0B', darkSectionFg: '#F4F4F0',
-    glassBase: '#FFFFFF', glassAlpha: '0.78', glassBorderBase: '#0A0A0B', glassBorderAlpha: '0.10',
-    blobA: '#FFFFFF', blobB: '#FFD23F', blobC: '#E4E2DA',
-    markAlpha: '0.7',
-    threeA: '#0A0A0B', threeB: '#5A5A56', threeDust: '#0A0A0B', threeEdge: '#0A0A0B', threeAdditive: '0',
-    checkBackdrops: ['#EFEEE9', '#FFFFFF', '#FFF1B8'],
+    // "Editorial Vermilion & Ink": Warm stone paper (#F6F5F0), crisp white surfaces (#FFFFFF), carbon ink (#111113), tactile vermilion accent (#EA580C)
+    bg: '#F6F5F0', surface: '#FFFFFF', fg: '#111113', fgSoft: '#52525B', line: '#E2DFD7',
+    accent: '#EA580C', accentTint: '#FFEDD5', accentDeep: '#7C2D12', accentInk: '#9A3412',
+    jade: '#0D6E4B', jadeTint: '#DCFCE7', brick: '#B91C1C', brickTint: '#FEE2E2',
+    lagoon: '#0F766E', lagoonLight: '#14B8A6',
+    sidebar: '#111113', sidebarFg: '#F4F4F0', btn: '#111113', btnFg: '#FAF9F5', btnHover: '#EA580C', btnHoverFg: '#111113',
+    darkSection: '#111113', darkSectionFg: '#F4F4F0',
+    glassBase: '#FFFFFF', glassAlpha: '0.84', glassBorderBase: '#111113', glassBorderAlpha: '0.10',
+    blobA: '#FFFFFF', blobB: '#EA580C', blobC: '#E2DFD7',
+    markAlpha: '0.25',
+    threeA: '#111113', threeB: '#EA580C', threeDust: '#111113', threeEdge: '#111113', threeAdditive: '0',
+    checkBackdrops: ['#F6F5F0', '#FFFFFF', '#FFEDD5'],
   },
   night: {
     bg: '#000000', surface: '#0A0A0E', fg: '#FFFFFF', fgSoft: '#A1A1AA', line: '#26262E',

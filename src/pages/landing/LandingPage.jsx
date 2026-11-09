@@ -604,7 +604,7 @@ export function LandingPage({ onEnter } = {}) {
 
         {/* Navigation Bar */}
         <header
-          className={`sticky top-0 z-50 backdrop-blur-md border-b px-6 lg:px-12 h-16 flex items-center justify-between ${
+          className={`sticky top-0 z-50 backdrop-blur-md border-b px-4 sm:px-6 lg:px-12 h-14 sm:h-16 flex items-center justify-between ${
             isNight
               ? 'bg-black/80 border-white/[0.09]'
               : 'bg-bg/90 border-line'
@@ -617,18 +617,18 @@ export function LandingPage({ onEnter } = {}) {
                 lenisRef.current.lenis.scrollTo(0);
               }
             }}
-            className="flex items-center gap-2.5 select-none cursor-pointer"
+            className="flex items-center gap-2 sm:gap-2.5 select-none cursor-pointer"
           >
             {isNight && (
-              <div className="w-6 h-6 rounded bg-white text-black font-bold flex items-center justify-center font-mono text-[11px] tracking-tight">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-white text-black font-bold flex items-center justify-center font-mono text-[10px] sm:text-[11px] tracking-tight">
                 CL
               </div>
             )}
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-display font-medium text-2xl text-fg tracking-tight">
+            <div className="flex items-baseline gap-1 sm:gap-1.5">
+              <span className="font-display font-medium text-xl sm:text-2xl text-fg tracking-tight">
                 CampusLink
               </span>
-              <span className="font-mono text-xs text-accent-ink font-bold">.register</span>
+              <span className="font-mono text-[11px] sm:text-xs text-accent-ink font-bold">.register</span>
             </div>
           </div>
 
@@ -638,13 +638,13 @@ export function LandingPage({ onEnter } = {}) {
             <a href="#architecture" className="hover:text-fg transition-colors">Architecture</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
             {isNight ? (
               <button
                 type="button"
                 onClick={handleGetStarted}
-                className="rounded-full border border-white/25 bg-black/80 px-5 py-2 font-mono text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
+                className="rounded-full border border-white/25 bg-black/80 px-3.5 py-1.5 sm:px-5 sm:py-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
               >
                 <span>GET STARTED</span>
                 <span className="text-white/60">»</span>
@@ -654,8 +654,10 @@ export function LandingPage({ onEnter } = {}) {
                 variant="primary"
                 onClick={handleGetStarted}
                 icon={ArrowRight}
+                size="sm"
+                className="text-xs sm:text-sm"
               >
-                Launch System Demo
+                Launch Demo
               </Button>
             )}
           </div>
@@ -683,11 +685,11 @@ export function LandingPage({ onEnter } = {}) {
           {/* Centered Hero Content Hierarchy (Matching Screenshot 1) */}
           <div
             data-vortex-mask
-            className="pt-20 pb-20 px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10 text-center"
+            className="pt-12 sm:pt-20 pb-12 sm:pb-20 px-4 sm:px-6 lg:px-12 max-w-[1240px] mx-auto relative z-10 text-center"
           >
             {/* Centered Eyebrow */}
             <span
-              className={`font-mono text-xs uppercase tracking-[0.2em] font-semibold inline-block mb-4 ${
+              className={`font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] font-semibold inline-block mb-3 sm:mb-4 ${
                 isNight ? 'text-zinc-400' : 'text-accent-deep'
               }`}
             >
@@ -696,7 +698,7 @@ export function LandingPage({ onEnter } = {}) {
 
             {/* Centered Main Headline */}
             <h1
-              className={`font-display font-normal text-4xl sm:text-6xl lg:text-7xl tracking-tight leading-[1.04] max-w-4xl mx-auto ${
+              className={`font-display font-normal text-3xl sm:text-5xl lg:text-7xl tracking-tight leading-[1.05] max-w-4xl mx-auto ${
                 isNight
                   ? 'bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent drop-shadow-[0_2px_24px_rgba(0,0,0,0.85)]'
                   : 'text-fg'
@@ -715,12 +717,12 @@ export function LandingPage({ onEnter } = {}) {
             </h1>
 
             {/* Centered Subtitle */}
-            <p className="font-sans text-base sm:text-lg text-fg-soft leading-relaxed max-w-2xl mx-auto mt-6">
+            <p className="font-sans text-sm sm:text-base lg:text-lg text-fg-soft leading-relaxed max-w-2xl mx-auto mt-4 sm:mt-6">
               CampusLink scores students, matches them to corporate recruiters, schedules placement drives without venue clashes, and explains why—in one unified system instead of forty WhatsApp groups.
             </p>
 
             {/* Centered Dual Pill CTA Buttons (Matching Screenshot 1) */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-6 sm:pt-8 w-full max-w-xs sm:max-w-none mx-auto">
               {isNight ? (
                 <button
                   type="button"
@@ -728,7 +730,7 @@ export function LandingPage({ onEnter } = {}) {
                     const el = document.getElementById('desks');
                     el?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-white hover:border-white/50 hover:bg-black/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.06)] flex items-center gap-2"
+                  className="rounded-full border border-white/25 bg-black/70 backdrop-blur-md px-6 sm:px-7 py-3 sm:py-3.5 font-mono text-xs uppercase tracking-widest text-white hover:border-white/50 hover:bg-black/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2"
                 >
                   <span>Open the Demo Desks</span>
                   <span className="text-zinc-400">»</span>
@@ -750,7 +752,7 @@ export function LandingPage({ onEnter } = {}) {
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="rounded-full bg-white text-black px-7 py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)]"
+                  className="rounded-full bg-white text-black px-6 sm:px-7 py-3 sm:py-3.5 font-mono text-xs font-semibold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.22)] flex items-center justify-center"
                 >
                   Launch System Demo
                 </button>
@@ -761,7 +763,7 @@ export function LandingPage({ onEnter } = {}) {
                     const el = document.getElementById('pipeline');
                     el?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors"
+                  className="font-mono text-xs uppercase tracking-wider font-semibold text-fg-soft hover:text-fg px-4 py-3 transition-colors text-center"
                 >
                   See the Pipeline ↓
                 </button>

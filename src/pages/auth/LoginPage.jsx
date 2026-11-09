@@ -1210,8 +1210,22 @@ const ROLE_BOXES = [
       + Interactive Butterfly Control Bar (Mode, Size, Edge Offset, Sync, Hide)
    ═══════════════════════════════════════════════════════════════════════════ */
 export function LoginPage({ onEnterPortal, onBackToLanding }) {
+  const [searchParams] = useSearchParams();
+  const roleParam = searchParams.get('role');
+
   // null = show the 4 slowly floating boxes first | 'student' | 'admin' | 'recruiter'
-  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(() => {
+    if (roleParam === 'student' || roleParam === 'admin' || roleParam === 'recruiter') {
+      return roleParam;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (roleParam === 'student' || roleParam === 'admin' || roleParam === 'recruiter') {
+      setSelectedRole(roleParam);
+    }
+  }, [roleParam]);
 
   // Interactive Butterfly Controls State
   const [bfMode, setBfMode] = useState('sides');       // 'sides' | 'corners' | 'center'
@@ -1282,6 +1296,13 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
   // Clicking one of the 4 boxes
   const handleBoxClick = roleId => {
     if (roleId === 'demo') {
+      try {
+        sessionStorage.setItem('campuslink_auth', '1');
+        sessionStorage.setItem('campuslink_role', 'student');
+        sessionStorage.setItem('campuslink_user_name', 'Zahid');
+      } catch (err) {
+        /* ignore */
+      }
       if (typeof onEnterPortal === 'function') {
         onEnterPortal('student');
       }
@@ -1295,10 +1316,25 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
   // Clicking Login inside the card — directly enters the page
   const handleFormSubmit = e => {
     e.preventDefault();
-    if (typeof onEnterPortal === 'function') {
-      onEnterPortal(selectedRole);
+    const effectiveRole = selectedRole || 'student';
+    try {
+      sessionStorage.setItem('campuslink_auth', '1');
+      sessionStorage.setItem('campuslink_role', effectiveRole);
+      if (effectiveRole === 'student') {
+        sessionStorage.setItem('campuslink_user_name', 'Zahid');
+      } else if (effectiveRole === 'admin') {
+        sessionStorage.setItem('campuslink_user_name', adminName || 'Dr. Ananya Verma');
+      } else if (effectiveRole === 'recruiter') {
+        const comp = companyMode === 'dropdown' ? selectedCompany : manualCompany;
+        sessionStorage.setItem('campuslink_user_name', comp ? `${comp} Recruiter` : 'Rohit Khemka');
+      }
+    } catch (err) {
+      /* ignore */
     }
-    navigate(getPortalRoute(selectedRole));
+    if (typeof onEnterPortal === 'function') {
+      onEnterPortal(effectiveRole);
+    }
+    navigate(getPortalRoute(effectiveRole));
   };
 
   const handleBackToLanding = () => {
@@ -1337,18 +1373,18 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
       <button
         type="button"
         onClick={handleBackToLanding}
-        className="fixed top-5 left-5 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 hover:border-orange-500/40 text-xs text-zinc-400 hover:text-white transition cursor-pointer"
+        className="fixed top-5 left-5 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 hover:border-accent/40 text-xs text-zinc-400 hover:text-white transition cursor-pointer"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to CampusLink</span>
       </button>
 
       {/* Center Content Area */}
-      <main className="relative z-10 w-full max-w-[440px] flex flex-col items-center justify-center">
+      <main className="relative z-10 w-full max-w-[440px] px-4 sm:px-0 flex flex-col items-center justify-center my-auto">
         {selectedRole === null ? (
           /* ─── STEP 1: 4 SLOWLY FLOATING GLASS BOXES ─── */
           <div className="w-full animate-slow-float">
-            <div className="text-center mb-6">
+            <div className="text-center mb-5 sm:mb-6">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
                 Sign In
               </h1>
@@ -1357,7 +1393,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
               {ROLE_BOXES.map(box => {
                 const Icon = box.icon;
                 return (
@@ -1366,15 +1402,15 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                     type="button"
                     onClick={() => handleBoxClick(box.id)}
                     style={{ animationDelay: box.delay }}
-                    className="animate-slow-float group relative flex flex-col items-center justify-center p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-orange-500/40 hover:border-orange-400 shadow-[0_0_24px_rgba(255,90,31,0.18)] hover:shadow-[0_0_32px_rgba(255,90,31,0.38)] transition-all duration-300 cursor-pointer text-center"
+                    className="animate-slow-float group relative flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-accent/40 hover:border-accent shadow-[0_0_24px_rgba(234,88,12,0.18)] hover:shadow-[0_0_32px_rgba(234,88,12,0.38)] transition-all duration-300 cursor-pointer text-center"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center mb-3 group-hover:scale-105 group-hover:bg-orange-500/15 group-hover:border-orange-500/30 transition-all">
-                      <Icon className="w-5 h-5 text-white group-hover:text-orange-400 transition-colors" />
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center mb-2.5 sm:mb-3 group-hover:scale-105 group-hover:bg-accent/15 group-hover:border-accent/30 transition-all">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white group-hover:text-accent transition-colors" />
                     </div>
-                    <span className="text-sm font-medium text-white tracking-tight">
+                    <span className="text-xs sm:text-sm font-medium text-white tracking-tight">
                       {box.label}
                     </span>
-                    <span className="text-[11px] text-zinc-400 mt-1">
+                    <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 sm:mt-1">
                       {box.sub}
                     </span>
                   </button>
@@ -1383,8 +1419,8 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
             </div>
           </div>
         ) : (
-          /* ─── STEP 2: CLEAN BLACK & WHITE + DARK ORANGE NEON BORDER GLASS CARD ─── */
-          <div className="w-full animate-slow-float rounded-3xl bg-black/50 backdrop-blur-2xl border border-orange-500/45 shadow-[0_0_35px_rgba(255,90,31,0.22)] p-6 sm:p-8">
+          /* ─── STEP 2: CLEAN BLACK & WHITE + ACCENT BORDER GLASS CARD ─── */
+          <div className="w-full animate-slow-float rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-2xl border border-accent/45 shadow-[0_0_35px_rgba(234,88,12,0.22)] p-5 sm:p-8">
             {/* Top Row: Back to 4 Boxes + Role Switcher Pills */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -1431,7 +1467,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
               <button
                 type="button"
                 onClick={handleFillDemo}
-                className="text-[11px] text-zinc-400 hover:text-orange-400 underline underline-offset-4 transition cursor-pointer shrink-0 ml-2"
+                className="text-[11px] text-zinc-400 hover:text-accent underline underline-offset-4 transition cursor-pointer shrink-0 ml-2"
               >
                 Fill demo
               </button>
@@ -1452,7 +1488,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                       value={studentRoll}
                       onChange={e => setStudentRoll(e.target.value)}
                       placeholder="e.g. 21CS3042"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition"
                     />
                   </div>
 
@@ -1467,7 +1503,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                         value={studentPass}
                         onChange={e => setStudentPass(e.target.value)}
                         placeholder="Enter password"
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition"
                       />
                       <button
                         type="button"
@@ -1494,7 +1530,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                       value={adminName}
                       onChange={e => setAdminName(e.target.value)}
                       placeholder="Enter your name"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition"
                     />
                   </div>
 
@@ -1509,7 +1545,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                         value={adminKey}
                         onChange={e => setAdminKey(e.target.value)}
                         placeholder="Enter special key"
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition font-mono"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition font-mono"
                       />
                       <button
                         type="button"
@@ -1536,7 +1572,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                         onClick={() =>
                           setCompanyMode(companyMode === 'dropdown' ? 'manual' : 'dropdown')
                         }
-                        className="text-[11px] text-zinc-400 hover:text-orange-400 underline underline-offset-2 transition cursor-pointer"
+                        className="text-[11px] text-zinc-400 hover:text-accent underline underline-offset-2 transition cursor-pointer"
                       >
                         {companyMode === 'dropdown' ? 'Enter manually' : 'Choose from list'}
                       </button>
@@ -1553,7 +1589,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                               setSelectedCompany(e.target.value);
                             }
                           }}
-                          className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-black/60 border border-white/15 focus:border-orange-400 text-sm text-white outline-none transition cursor-pointer"
+                          className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-black/60 border border-white/15 focus:border-accent text-sm text-white outline-none transition cursor-pointer"
                         >
                           {PARTNER_COMPANIES.map(comp => (
                             <option key={comp} value={comp} className="bg-zinc-950 text-white">
@@ -1574,7 +1610,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                         onChange={e => setManualCompany(e.target.value)}
                         placeholder="Type company name..."
                         autoFocus
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition"
                       />
                     )}
                   </div>
@@ -1590,7 +1626,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                         value={recruiterPass}
                         onChange={e => setRecruiterPass(e.target.value)}
                         placeholder="Enter password"
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-orange-400 text-sm text-white placeholder-zinc-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/15 focus:border-accent text-sm text-white placeholder-zinc-500 outline-none transition"
                       />
                       <button
                         type="button"
@@ -1618,7 +1654,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
 
       {/* ─── INTERACTIVE BUTTERFLY CONTROL BAR (BOTTOM FLOATING PILL) ─── */}
       {showControls ? (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3.5 py-2 rounded-2xl bg-zinc-950/85 border border-white/15 backdrop-blur-md text-xs text-zinc-200 shadow-2xl max-w-[95vw]">
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 hidden sm:flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3.5 py-2 rounded-2xl bg-zinc-950/85 border border-white/15 backdrop-blur-md text-xs text-zinc-200 shadow-2xl max-w-[95vw]">
           {/* Layout Mode Toggle: 4 Sides vs 4 Corners vs 1 Center */}
           <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
             <button
@@ -1666,7 +1702,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
               step="0.01"
               value={bfScale}
               onChange={e => setBfScale(parseFloat(e.target.value))}
-              className="w-20 accent-orange-500 cursor-pointer"
+              className="w-20 accent-accent cursor-pointer"
             />
             <span className="text-white font-mono w-8 text-right">
               {Math.round(bfScale * 100)}%
@@ -1684,7 +1720,7 @@ export function LoginPage({ onEnterPortal, onBackToLanding }) {
                 step="0.01"
                 value={bfEdgePull}
                 onChange={e => setBfEdgePull(parseFloat(e.target.value))}
-                className="w-20 accent-orange-500 cursor-pointer"
+                className="w-20 accent-accent cursor-pointer"
               />
             </label>
           )}

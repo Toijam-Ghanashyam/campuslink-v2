@@ -38,7 +38,7 @@ export function NotificationPopover({ open, onClose, role }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.96 }}
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute right-0 top-12 w-80 sm:w-96 glass-strong rounded-object border border-line shadow-2xl z-50 overflow-hidden"
+          className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 max-h-[75vh] glass-strong rounded-object border border-line shadow-2xl z-50 overflow-hidden flex flex-col"
         >
           {/* Header */}
           <div className="p-4 border-b border-line flex items-center justify-between bg-surface">

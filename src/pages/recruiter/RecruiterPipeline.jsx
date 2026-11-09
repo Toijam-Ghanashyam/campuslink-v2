@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, FileText, ArrowRight, X } from 'lucide-react';
@@ -16,27 +16,49 @@ import { cn } from '../../lib/utils';
 
 function SlotPickerPopover({ candidate, availableSlots, onBookSlot, onClose, anchorRef }) {
   const popoverRef = useRef(null);
-  const [pos, setPos] = useState({ top: 0, left: 0, openUpward: false });
+  const [pos, setPos] = useState({ top: 0, left: 0, openUpward: false, maxHeight: 320 });
+
+  const updatePosition = () => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const popoverWidth = Math.min(296, window.innerWidth - 24);
+    const measuredHeight = popoverRef.current ? popoverRef.current.offsetHeight : 260;
+
+    const bottomNavHeight = window.innerWidth < 640 ? 76 : 16;
+    const availableBottom = window.innerHeight - bottomNavHeight;
+    const spaceBelow = Math.max(0, availableBottom - rect.bottom - 8);
+    const spaceAbove = Math.max(0, rect.top - 12);
+
+    // Prefer opening upward if space below is tighter than popover height or space below is very small
+    const openUpward =
+      (spaceBelow < measuredHeight && spaceAbove > spaceBelow) ||
+      (spaceBelow < 160 && spaceAbove >= 160);
+
+    let top;
+    let maxHeight;
+    if (openUpward) {
+      maxHeight = Math.min(spaceAbove, 340);
+      const renderHeight = Math.min(measuredHeight, maxHeight);
+      top = Math.max(12, rect.top - renderHeight - 8);
+    } else {
+      maxHeight = Math.min(spaceBelow, 340);
+      top = rect.bottom + 8;
+      const renderHeight = Math.min(measuredHeight, maxHeight);
+      if (top + renderHeight > availableBottom) {
+        top = Math.max(12, availableBottom - renderHeight - 8);
+      }
+    }
+
+    const left = Math.max(12, Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 12));
+
+    setPos({ top, left, width: popoverWidth, openUpward, maxHeight: Math.max(140, maxHeight) });
+  };
+
+  useLayoutEffect(() => {
+    updatePosition();
+  }, []);
 
   useEffect(() => {
-    const updatePosition = () => {
-      if (!anchorRef.current) return;
-      const rect = anchorRef.current.getBoundingClientRect();
-      const popoverWidth = 288;
-      const popoverHeight = 230;
-
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const openUpward = spaceBelow < popoverHeight && rect.top > popoverHeight;
-
-      const top = openUpward
-        ? Math.max(12, rect.top - popoverHeight - 6)
-        : Math.min(window.innerHeight - popoverHeight - 12, rect.bottom + 6);
-
-      const left = Math.max(12, Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 16));
-
-      setPos({ top, left, openUpward });
-    };
-
     updatePosition();
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
@@ -78,10 +100,11 @@ function SlotPickerPopover({ candidate, availableSlots, onBookSlot, onClose, anc
         position: 'fixed',
         top: pos.top,
         left: pos.left,
-        width: 288,
+        width: pos.width || 296,
+        maxHeight: pos.maxHeight,
         zIndex: 99999,
       }}
-      className="bg-surface/95 backdrop-blur-xl rounded-object border border-line shadow-2xl p-3 text-left space-y-2 font-mono text-xs"
+      className="bg-surface/95 backdrop-blur-xl rounded-object border border-line shadow-2xl p-3 text-left space-y-2 font-mono text-xs overflow-y-auto overscroll-contain"
     >
       <div className="border-b border-line pb-1.5 flex items-center justify-between">
         <span className="text-[10px] uppercase font-semibold text-fg-soft block">
@@ -202,8 +225,8 @@ export function RecruiterPipeline() {
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
       {/* Ruled Candidate Register Table */}
-      <div className="overflow-x-auto border-y border-line">
-        <table className="w-full text-left text-sm border-collapse">
+      <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 border-y border-line no-scrollbar">
+        <table className="w-full min-w-[680px] text-left text-sm border-collapse">
           <thead>
             <tr className="border-b border-line bg-bone/60 font-mono text-[10.5px] uppercase tracking-wider text-ink-soft">
               <th className="py-3 px-4">Candidate &amp; Roll No.</th>

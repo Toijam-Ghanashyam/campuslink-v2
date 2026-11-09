@@ -41,8 +41,8 @@ export function AdminOffers() {
       />
 
       {/* Ruled Offers Register */}
-      <div className="overflow-x-auto border-y border-line">
-        <table className="w-full text-left text-sm border-collapse">
+      <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 border-y border-line no-scrollbar">
+        <table className="w-full min-w-[720px] text-left text-sm border-collapse">
           <thead>
             <tr className="border-b border-line bg-bone/60 font-mono text-[10.5px] uppercase tracking-wider text-ink-soft">
               <th className="py-3 px-4">Candidate &amp; Roll No.</th>

@@ -102,7 +102,7 @@ export function ShatterIntro({ onBreak, onDone }) {
     resize();
     window.addEventListener('resize', resize);
 
-    const fs = clamp(W * 0.065, 38, 88);
+    const fs = clamp(W * 0.065, 24, 76);
     const markSize = fs * 0.56;
     const wordFont = `600 ${fs}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
     const regFont = `700 ${fs * 0.26}px "JetBrains Mono", ui-monospace, monospace`;
@@ -255,8 +255,9 @@ export function ShatterIntro({ onBreak, onDone }) {
       ctx.font = wordFont;
       ctx.fillText('CampusLink', x0 + markSize + gap, baseY);
 
-      // ".register" in exact Landing Page accent color (#F59E0B)
-      ctx.fillStyle = '#F59E0B';
+      // ".register" in theme accent color (#EA580C in day, #F59E0B in night)
+      const isDayTheme = document.documentElement.dataset.theme === 'day';
+      ctx.fillStyle = isDayTheme ? '#EA580C' : '#F59E0B';
       ctx.font = regFont;
       ctx.fillText('.register', x0 + markSize + gap + wordW + fs * 0.12, baseY);
 

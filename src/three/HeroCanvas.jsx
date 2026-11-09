@@ -147,7 +147,7 @@ export default function HeroCanvas({ visible = true }) {
         : { width: window.innerWidth, height: window.innerHeight };
       W = Math.max(320, Math.round(rect.width));
       H = Math.max(320, Math.round(rect.height));
-      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+      dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 768 ? 1.5 : 2);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.width = `${W}px`;
@@ -489,7 +489,7 @@ export default function HeroCanvas({ visible = true }) {
       className="pointer-events-none absolute inset-0 overflow-hidden select-none"
       style={{ background: theme === 'night' ? '#000' : tokens.day.bg }}
     >
-      <canvas ref={canvasRef} className="block h-full w-full" />
+      <canvas ref={canvasRef} className="block h-full w-full pointer-events-none" />
       <div
         className={`pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t ${
           theme === 'night'

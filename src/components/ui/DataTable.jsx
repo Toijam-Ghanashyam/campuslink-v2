@@ -13,8 +13,8 @@ export function DataTable({
   className,
 }) {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-xl border border-line bg-paper shadow-subtle', className)}>
-      <table className="w-full text-left border-collapse text-sm">
+    <div className={cn('w-full overflow-x-auto no-scrollbar rounded-xl border border-line bg-paper shadow-subtle', className)}>
+      <table className="w-full min-w-[620px] text-left border-collapse text-sm">
         <thead>
           <tr className="border-b border-line bg-bone/60">
             {columns.map((col, idx) => (
@@ -22,7 +22,7 @@ export function DataTable({
                 key={idx}
                 style={{ width: col.width }}
                 className={cn(
-                  'py-3.5 px-4 text-[11px] uppercase tracking-wider font-semibold text-ink-soft select-none whitespace-nowrap',
+                  'py-3 px-3.5 sm:py-3.5 sm:px-4 text-[10.5px] sm:text-[11px] uppercase tracking-wider font-semibold text-ink-soft select-none whitespace-nowrap',
                   col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
                   col.className
                 )}
@@ -37,7 +37,7 @@ export function DataTable({
             Array.from({ length: 5 }).map((_, rIdx) => (
               <tr key={rIdx} className="animate-pulse">
                 {columns.map((col, cIdx) => (
-                  <td key={cIdx} className="py-4 px-4">
+                  <td key={cIdx} className="py-3 px-3.5 sm:py-4 sm:px-4">
                     <Skeleton className="h-4 w-full max-w-[140px]" />
                   </td>
                 ))}
@@ -72,7 +72,7 @@ export function DataTable({
                     <td
                       key={cIdx}
                       className={cn(
-                        'py-3.5 px-4 text-ink align-middle',
+                        'py-3 px-3.5 sm:py-3.5 sm:px-4 text-ink align-middle',
                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
                         col.className
                       )}

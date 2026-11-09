@@ -55,7 +55,7 @@ export function CommandPalette({ open, onClose, currentRole }) {
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-24 px-3 sm:px-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -72,23 +72,23 @@ export function CommandPalette({ open, onClose, currentRole }) {
             className="relative w-full max-w-xl glass-strong rounded-object border border-line shadow-2xl overflow-hidden z-10"
           >
             {/* Input Bar */}
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-line">
-              <Search className="w-5 h-5 text-fg-soft stroke-[1.75]" />
+            <div className="flex items-center gap-3 px-3.5 sm:px-4 py-3 sm:py-3.5 border-b border-line">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fg-soft stroke-[1.75] shrink-0" />
               <input
                 autoFocus
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search commands, portals, drives, actions... (Esc to exit)"
-                className="flex-1 bg-transparent text-sm text-fg placeholder:text-fg-soft/60 focus:outline-none"
+                placeholder="Search commands, portals, drives... (Esc to exit)"
+                className="flex-1 bg-transparent text-sm text-fg placeholder:text-fg-soft/60 focus:outline-none min-h-[36px]"
               />
-              <span className="text-[11px] font-medium text-fg-soft bg-bg px-2 py-0.5 rounded border border-line select-none">
+              <span className="hidden sm:inline-flex text-[11px] font-medium text-fg-soft bg-bg px-2 py-0.5 rounded border border-line select-none">
                 ESC
               </span>
             </div>
 
             {/* Results */}
-            <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+            <div className="max-h-72 sm:max-h-80 overflow-y-auto p-2 space-y-1">
               {filtered.length === 0 ? (
                 <div className="p-8 text-center text-xs text-fg-soft">
                   No matching commands found for "{query}".
@@ -101,10 +101,10 @@ export function CommandPalette({ open, onClose, currentRole }) {
                       key={idx}
                       type="button"
                       onClick={() => handleSelect(item.path)}
-                      className="w-full flex items-center justify-between p-2.5 rounded-control text-left hover:bg-bg/80 group transition-colors"
+                      className="w-full flex items-center justify-between p-2.5 rounded-control text-left hover:bg-bg/80 group transition-colors min-h-[44px]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-7 h-7 rounded-control bg-bg flex items-center justify-center text-fg group-hover:bg-accent-tint group-hover:text-accent-deep transition-colors">
+                        <div className="w-7 h-7 rounded-control bg-bg flex items-center justify-center text-fg group-hover:bg-accent-tint group-hover:text-accent-deep transition-colors shrink-0">
                           <Icon className="w-3.5 h-3.5" />
                         </div>
                         <div className="truncate">
@@ -112,7 +112,7 @@ export function CommandPalette({ open, onClose, currentRole }) {
                           <p className="text-[11px] text-fg-soft capitalize">{item.category}</p>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-fg-soft group-hover:text-accent-ink opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-fg-soft group-hover:text-accent-ink opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all shrink-0 ml-2" />
                     </button>
                   );
                 })
@@ -121,8 +121,8 @@ export function CommandPalette({ open, onClose, currentRole }) {
 
             {/* Footer */}
             <div className="px-4 py-2.5 bg-bg/40 border-t border-line text-[11px] text-fg-soft flex items-center justify-between">
-              <span>Navigate with arrow keys</span>
-              <span>CampusLink AI Global Command</span>
+              <span className="hidden sm:inline">Navigate with arrow keys</span>
+              <span className="text-[10px] sm:text-[11px] truncate">CampusLink AI Global Command</span>
             </div>
           </motion.div>
         </div>
