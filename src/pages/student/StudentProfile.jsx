@@ -16,7 +16,7 @@ export function StudentProfile() {
 
   const [skills, setSkills] = useState(currentStudent.skills || ['React', 'Node.js', 'Python', 'PostgreSQL', 'Tailwind CSS']);
   const [submitting, setSubmitting] = useState(false);
-  const [resumeFileName, setResumeFileName] = useState('ananya_sharma_transcript_v2.pdf');
+  const [resumeFileName, setResumeFileName] = useState('zahid_khan_transcript_v2.pdf');
   const [resumeSize, setResumeSize] = useState('242 KB');
 
   const handleFileUpload = (e) => {

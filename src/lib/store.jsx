@@ -11,6 +11,26 @@ import { initialAnalytics } from '../data/analytics';
 
 const StoreContext = createContext(null);
 
+export const INITIAL_PANEL_SLOTS = {
+  '0-0': { id: 'slot-1', studentId: 's-2', name: 'Rohan Senapati', role: 'SDE-1', fit: 94, roll: '220101002', date: '2026-11-02', time: '10:00 - 11:00 AM' },
+  '0-1': { id: 'slot-2', studentId: 's-1', name: 'Zahid Khan', role: 'SDE-1', fit: 91, roll: '21CS3042', date: '2026-11-02', time: '11:30 - 12:30 PM' },
+  '0-3': { id: 'slot-3', studentId: 's-3', name: 'Priyanka Tripathy', role: 'SDE-1', fit: 89, roll: '220101089', date: '2026-11-02', time: '03:30 - 04:30 PM' },
+  '1-1': { id: 'slot-4', studentId: 's-10', name: 'Ritika Samal', role: 'SDE-1', fit: 87, roll: '220101123', date: '2026-11-03', time: '11:30 - 12:30 PM' },
+  '2-4': { id: 'slot-5', studentId: 's-5', name: 'Sneha Patra', role: 'SDE-1', fit: 92, roll: '220101056', date: '2026-11-04', time: '03:30 - 04:30 PM' },
+};
+
+const getActiveRecruiterCompany = () => {
+  try {
+    const directCompany = sessionStorage.getItem('campuslink_recruiter_company');
+    if (directCompany) return `${directCompany} India`;
+    const storedName = sessionStorage.getItem('campuslink_user_name');
+    if (storedName && storedName.includes('Recruiter')) {
+      return `${storedName.replace(' Recruiter', '').trim()} India`;
+    }
+  } catch {}
+  return 'Atlassian India';
+};
+
 export function StoreProvider({ children }) {
   const [students, setStudents] = useState(initialStudents);
   const [drives, setDrives] = useState(initialDrives);
@@ -21,6 +41,7 @@ export function StoreProvider({ children }) {
   const [offers, setOffers] = useState(initialOffers);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [analytics, setAnalytics] = useState(initialAnalytics);
+  const [panelSlots, setPanelSlots] = useState(INITIAL_PANEL_SLOTS);
   const [recruiterScheduledCount, setRecruiterScheduledCount] = useState(12);
 
   const [hasToggledTheme, setHasToggledTheme] = useState(() => {
@@ -57,13 +78,23 @@ export function StoreProvider({ children }) {
     }
   };
 
-  // Student specific active profile (Ananya Sharma)
+  // Student specific active profile (Zahid Khan - 21CS3042)
   const currentStudent = students.find((s) => s.id === 's-1') || students[0];
 
   // Up-coming interviews for current student
   const [studentInterviews, setStudentInterviews] = useState([
     {
       id: 'int-1',
+      company: 'Atlassian India',
+      role: 'Associate Software Engineer (SDE-1)',
+      date: '2026-11-02',
+      time: '11:30 - 12:30 PM',
+      mode: 'Virtual (Corporate Panel)',
+      panel: 'Panel 1 - Technical & System Architecture',
+      status: 'Confirmed',
+    },
+    {
+      id: 'int-2',
       company: 'TCS Digital',
       role: 'Prime Software Developer',
       date: '2026-11-08',
@@ -73,7 +104,7 @@ export function StoreProvider({ children }) {
       status: 'Confirmed',
     },
     {
-      id: 'int-2',
+      id: 'int-3',
       company: 'Cognizant Technology',
       role: 'GenC Next / Elevate Developer',
       date: '2026-11-14',
@@ -280,10 +311,11 @@ export function StoreProvider({ children }) {
     });
   };
 
-  // 7. Recruiter schedules interview slot
-  const scheduleInterviewSlot = (candidateId, slotTime, slotDate = '2026-11-05') => {
+  // 7. Recruiter schedules interview slot from Candidate Pipeline
+  const scheduleInterviewSlot = (candidateId, slotTime, slotDate = '2026-11-05', customCompany) => {
     const candidate = pipeline.find((p) => p.id === candidateId || p.studentId === candidateId);
     const candidateName = candidate ? candidate.name : 'Candidate';
+    const company = customCompany || getActiveRecruiterCompany();
 
     setPipeline((prev) =>
       prev.map((p) =>
@@ -295,17 +327,108 @@ export function StoreProvider({ children }) {
 
     setRecruiterScheduledCount((prev) => prev + 1);
 
-    // If scheduled for current student (Ananya Sharma)
-    if (candidate && candidate.studentId === currentStudent.id) {
+    // If scheduled for current student (Zahid Khan / s-1)
+    if (candidate && (candidate.studentId === currentStudent.id || candidate.id === currentStudent.id)) {
       setStudentInterviews((prev) => [
         {
           id: `int-${Date.now()}`,
-          company: 'Microsoft India',
+          company: company,
           role: 'Software Development Engineer (SDE)',
           date: slotDate,
           time: slotTime,
-          mode: 'Virtual (Microsoft Teams)',
+          mode: 'Virtual (Corporate Panel)',
           panel: 'Panel 1 - Core Systems & Cloud',
+          status: 'Confirmed',
+        },
+        ...prev,
+      ]);
+    }
+
+    // Mirror to an available cell in panelSlots so Interview Slots Grid updates in real-time
+    setPanelSlots((prev) => {
+      const allKeys = [];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 5; c++) {
+          allKeys.push(`${r}-${c}`);
+        }
+      }
+      const freeKey = allKeys.find((k) => !prev[k]);
+      if (freeKey) {
+        return {
+          ...prev,
+          [freeKey]: {
+            id: `slot-${Date.now()}`,
+            studentId: candidate?.studentId || candidateId,
+            name: candidateName,
+            role: 'SDE-1',
+            fit: candidate?.aiMatch || 90,
+            roll: candidate?.rollNo || '21CS3042',
+            date: slotDate,
+            time: slotTime,
+          },
+        };
+      }
+      return prev;
+    });
+
+    addNotification('student', {
+      title: 'Interview Slot Booked',
+      message: `${company} has scheduled your technical interview for ${slotDate} at ${slotTime}.`,
+      category: 'Shortlisting',
+    });
+
+    addNotification('recruiter', {
+      title: 'Slot Confirmed with Candidate',
+      message: `Interview locked for ${candidateName} on ${slotDate} at ${slotTime}.`,
+      category: 'Drives',
+    });
+
+    addNotification('admin', {
+      title: 'Corporate Slot Locked',
+      message: `${company} scheduled technical interview with ${candidateName} (${slotDate} ${slotTime}).`,
+      category: 'Drives',
+    });
+  };
+
+  // 8. Recruiter locks a cell in Interview Slots Matrix (RecruiterSlots.jsx)
+  const bookPanelSlot = (slotKey, candidate, dayLabel, timeLabel) => {
+    const company = getActiveRecruiterCompany();
+    const candidateName = candidate?.name || 'Candidate';
+    const candidateId = candidate?.studentId || candidate?.id;
+
+    setPanelSlots((prev) => ({
+      ...prev,
+      [slotKey]: {
+        ...candidate,
+        date: dayLabel,
+        time: timeLabel,
+      },
+    }));
+
+    setRecruiterScheduledCount((prev) => prev + 1);
+
+    // If candidate exists in pipeline, update status
+    if (candidateId) {
+      setPipeline((prev) =>
+        prev.map((p) =>
+          p.studentId === candidateId || p.id === candidateId
+            ? { ...p, interviewSlot: `${dayLabel} ${timeLabel}`, pipelineStatus: 'Shortlisted for R2' }
+            : p
+        )
+      );
+    }
+
+    // If scheduled for current student (Zahid Khan / s-1), add directly to their timeline
+    if (candidateId === currentStudent.id || candidateName === currentStudent.name) {
+      setStudentInterviews((prev) => [
+        {
+          id: `int-${Date.now()}`,
+          company: company,
+          role: candidate?.role || 'Software Development Engineer (SDE-1)',
+          date: dayLabel,
+          time: timeLabel,
+          mode: 'Virtual (Corporate Panel)',
+          panel: 'Panel 1 - Technical Assessment',
           status: 'Confirmed',
         },
         ...prev,
@@ -314,13 +437,47 @@ export function StoreProvider({ children }) {
 
     addNotification('student', {
       title: 'Interview Slot Booked',
-      message: `Microsoft India has scheduled your technical interview for ${slotDate} at ${slotTime}.`,
+      message: `${company} has scheduled your technical interview for ${dayLabel} (${timeLabel}).`,
       category: 'Shortlisting',
     });
 
     addNotification('recruiter', {
       title: 'Slot Confirmed with Candidate',
-      message: `Interview locked for ${candidateName} on ${slotDate} at ${slotTime}.`,
+      message: `Interview locked for ${candidateName} on ${dayLabel} (${timeLabel}).`,
+      category: 'Drives',
+    });
+
+    addNotification('admin', {
+      title: 'Corporate Slot Locked',
+      message: `${company} scheduled interview with ${candidateName} on ${dayLabel}.`,
+      category: 'Drives',
+    });
+  };
+
+  // 9. Recruiter releases a cell in Interview Slots Matrix
+  const releasePanelSlot = (slotKey) => {
+    const existing = panelSlots[slotKey];
+    if (!existing) return;
+    const company = getActiveRecruiterCompany();
+
+    setPanelSlots((prev) => {
+      const next = { ...prev };
+      delete next[slotKey];
+      return next;
+    });
+
+    setRecruiterScheduledCount((prev) => Math.max(0, prev - 1));
+
+    // If candidate was current student, remove from their timeline
+    if (existing.studentId === currentStudent.id || existing.name === currentStudent.name) {
+      setStudentInterviews((prev) =>
+        prev.filter((int) => !(int.date === existing.date && int.time === existing.time))
+      );
+    }
+
+    addNotification('recruiter', {
+      title: 'Slot Released',
+      message: `Interview slot on ${existing.date || 'calendar'} released for ${existing.name}.`,
       category: 'Drives',
     });
   };
@@ -380,6 +537,7 @@ export function StoreProvider({ children }) {
         offers,
         notifications,
         analytics,
+        panelSlots,
         recruiterScheduledCount,
         studentInterviews,
         hasToggledTheme,
@@ -393,6 +551,8 @@ export function StoreProvider({ children }) {
         resolveDriveConflict,
         assignMentor,
         scheduleInterviewSlot,
+        bookPanelSlot,
+        releasePanelSlot,
         sendOfferReminder,
         markNotificationRead,
         markAllNotificationsRead,

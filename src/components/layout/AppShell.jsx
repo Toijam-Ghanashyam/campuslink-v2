@@ -73,6 +73,7 @@ export function AppShell({ role = 'student', children }) {
   const navItems = roleNavItems[role] || roleNavItems.student;
 
   const storedName = typeof window !== 'undefined' ? sessionStorage.getItem('campuslink_user_name') : null;
+  const storedCompany = typeof window !== 'undefined' ? sessionStorage.getItem('campuslink_recruiter_company') : null;
 
   const tenantDetails = {
     student: {
@@ -93,8 +94,8 @@ export function AppShell({ role = 'student', children }) {
     },
     recruiter: {
       tag: 'CORPORATE RECRUITER',
-      title: 'Atlassian India',
-      avatar: 'RK',
+      title: storedCompany ? `${storedCompany} India` : 'Atlassian India',
+      avatar: storedCompany ? storedCompany.slice(0, 2).toUpperCase() : 'AT',
       name: storedName || 'Rohit Khemka',
       roleSubtitle: 'Lead Talent Partner',
       avatarBg: 'bg-[#0369A1]',
@@ -188,7 +189,6 @@ export function AppShell({ role = 'student', children }) {
             className="flex items-baseline gap-1 group select-none shrink-0"
           >
             <span className="font-display font-medium text-base sm:text-xl text-fg tracking-tight">CampusLink</span>
-            <span className="font-mono text-xs text-accent-ink font-bold hidden xs:inline">.register</span>
           </NavLink>
 
           <div className="hidden sm:block h-3.5 w-px bg-line mx-1.5" />

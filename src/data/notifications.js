@@ -45,7 +45,7 @@ export const initialNotifications = {
     {
       id: 'notif-a-2',
       title: '6 Verification Requests Pending',
-      message: 'Ananya Sharma, Debasish Sahu and 4 others uploaded semester transcripts for audit.',
+      message: 'Zahid Khan, Debasish Sahu and 4 others uploaded semester transcripts for audit.',
       category: 'Deadlines',
       time: '2 hours ago',
       read: false,

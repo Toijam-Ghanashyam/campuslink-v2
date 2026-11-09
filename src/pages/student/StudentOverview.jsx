@@ -39,8 +39,8 @@ export function StudentOverview() {
   const navigate = useNavigate();
   const store = useStore() || {};
   const student = store.currentStudent || store.students?.[0] || {
-    name: 'Ananya Sharma',
-    roll: '220101045',
+    name: 'Zahid Khan',
+    roll: '21CS3042',
     branch: 'CSE',
     cgpa: 8.8,
     readiness: 72,

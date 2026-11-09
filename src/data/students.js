@@ -1,9 +1,9 @@
 export const initialStudents = [
   {
     id: 's-1',
-    name: 'Ananya Sharma',
-    rollNo: '220101045',
-    collegeId: '220101045',
+    name: 'Zahid Khan',
+    rollNo: '21CS3042',
+    collegeId: '21CS3042',
     branch: 'Computer Science & Engineering',
     shortBranch: 'CSE',
     cgpa: 8.80,
@@ -15,9 +15,9 @@ export const initialStudents = [
     resumeScore: 88,
     verified: false,
     verificationStatus: 'Pending Verification',
-    email: 'ananya.sharma@bput.ac.in',
+    email: 'zahid.khan@bput.ac.in',
     phone: '+91 98765 43210',
-    avatar: 'AS',
+    avatar: 'ZA',
   },
   {
     id: 's-2',

@@ -9,6 +9,7 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
+import { useStore } from '../../lib/store';
 
 const DAYS = [
   'MONDAY (NOV 02)',
@@ -25,19 +26,12 @@ const TIME_ROWS = [
   '03:30 - 04:30 PM',
 ];
 
-const INITIAL_SLOTS = {
-  '0-0': { name: 'Rohan Senapati', role: 'SDE-1', fit: 94, roll: '220101012' },
-  '0-1': { name: 'Ananya Sharma', role: 'SDE-1', fit: 91, roll: '220101045' },
-  '0-3': { name: 'Priyanka Tripathy', role: 'SDE-1', fit: 89, roll: '220101088' },
-  '1-1': { name: 'Ritika Samal', role: 'SDE-1', fit: 87, roll: '220101063' },
-  '2-4': { name: 'Sneha Patra', role: 'SDE-1', fit: 92, roll: '220101029' },
-};
-
 const WAITLIST_CANDIDATES = [
-  { name: 'Aarav Mohanty', role: 'SDE-1', fit: 90, roll: '220101019' },
-  { name: 'Debasis Panda', role: 'SDE-1', fit: 88, roll: '220101054' },
-  { name: 'Subham Nayak', role: 'SDE-1', fit: 86, roll: '220101077' },
-  { name: 'Ishita Mishra', role: 'SDE-1', fit: 93, roll: '220101031' },
+  { studentId: 's-1', name: 'Zahid Khan', role: 'SDE-1', fit: 91, roll: '21CS3042' },
+  { studentId: 's-4', name: 'Aarav Mohanty', role: 'SDE-1', fit: 90, roll: '220101019' },
+  { studentId: 's-6', name: 'Debasis Panda', role: 'SDE-1', fit: 88, roll: '220101054' },
+  { studentId: 's-7', name: 'Subham Nayak', role: 'SDE-1', fit: 86, roll: '220101077' },
+  { studentId: 's-8', name: 'Ishita Mishra', role: 'SDE-1', fit: 93, roll: '220101031' },
 ];
 
 function InteractiveSlotCell({
@@ -153,30 +147,29 @@ function InteractiveSlotCell({
 
 export function RecruiterSlots() {
   const { toast } = useToast();
-  const [slots, setSlots] = useState(INITIAL_SLOTS);
+  const { panelSlots = {}, bookPanelSlot, releasePanelSlot } = useStore();
   const [waitlistIdx, setWaitlistIdx] = useState(0);
   const [activeCell, setActiveCell] = useState({ row: -1, col: -1 });
 
   const handleToggleSlot = (rowIdx, colIdx) => {
     const key = `${rowIdx}-${colIdx}`;
-    if (slots[key]) {
-      const removed = slots[key];
-      setSlots((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
+    const dayLabel = DAYS[colIdx];
+    const timeLabel = TIME_ROWS[rowIdx];
+
+    if (panelSlots[key]) {
+      const removed = panelSlots[key];
+      releasePanelSlot(key);
       toast(`Slot released: ${removed.name} returned to pool.`, 'ochre');
     } else {
       const nextCand =
         WAITLIST_CANDIDATES[waitlistIdx % WAITLIST_CANDIDATES.length];
       setWaitlistIdx((n) => n + 1);
-      setSlots((prev) => ({ ...prev, [key]: nextCand }));
+      bookPanelSlot(key, nextCand, dayLabel, timeLabel);
       toast(`Interview locked: ${nextCand.name} (${nextCand.fit}% Fit) scheduled.`, 'jade');
     }
   };
 
-  const lockedCount = Object.keys(slots).length;
+  const lockedCount = Object.keys(panelSlots).length;
   const totalSlots = DAYS.length * TIME_ROWS.length;
 
   return (
@@ -248,7 +241,7 @@ export function RecruiterSlots() {
                         key={key}
                         rowIdx={rowIdx}
                         colIdx={colIdx}
-                        booking={slots[key]}
+                        booking={panelSlots[key]}
                         onToggleSlot={handleToggleSlot}
                         onHoverChange={(r, c) =>
                           setActiveCell({ row: r, col: c })

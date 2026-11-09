@@ -615,7 +615,6 @@ export function LandingPage({ onEnter } = {}) {
               <span className="font-display font-medium text-lg sm:text-2xl text-fg tracking-tight">
                 CampusLink
               </span>
-              <span className="font-mono text-[11px] sm:text-xs text-accent-ink font-bold hidden xs:inline">.register</span>
             </div>
           </div>
 
@@ -1234,7 +1233,7 @@ export function LandingPage({ onEnter } = {}) {
         >
           <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span>CAMPUSLINK REGISTER</span> · <span>BPUT HACKATHON 2026</span>
+              <span>CAMPUSLINK</span> · <span>BPUT HACKATHON 2026</span>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">

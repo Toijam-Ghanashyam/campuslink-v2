@@ -336,6 +336,7 @@ export function LoginPage({ onBackToLanding, onEnterPortal }) {
       } else if (effectiveRole === 'recruiter') {
         const comp = companyMode === 'dropdown' ? selectedCompany : manualCompany;
         sessionStorage.setItem('campuslink_user_name', comp ? `${comp} Recruiter` : 'Rohit Khemka');
+        sessionStorage.setItem('campuslink_recruiter_company', comp || 'Atlassian');
       }
     } catch (err) {
       /* ignore */
