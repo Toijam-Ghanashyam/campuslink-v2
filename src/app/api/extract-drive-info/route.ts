@@ -4,6 +4,8 @@ import { GoogleGenAI } from '@google/genai';
 import { sanitizeResumeText } from '@/lib/sanitizer';
 import { PDFParse } from 'pdf-parse';
 import { PlacementTier } from '@/types/pep';
+import path from 'path';
+import { pathToFileURL } from 'url';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -59,6 +61,53 @@ function regexFallbackExtract(
   };
 }
 
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  try {
+    try {
+      const workerPath = path.resolve(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
+      PDFParse.setWorker(pathToFileURL(workerPath).href);
+    } catch (workerErr) {
+      console.warn('[PDFParse] Could not set explicit worker URL:', workerErr);
+    }
+
+    const parser = new PDFParse({ data: new Uint8Array(buffer) });
+    const pdfData = await parser.getText();
+    await parser.destroy();
+    if (pdfData?.text && pdfData.text.trim().length > 0) {
+      return pdfData.text;
+    }
+  } catch (err: any) {
+    console.warn('[PDFParse] Primary worker parsing failed, using stream text recovery:', err.message);
+  }
+
+  // Fallback 1: Extract PDF text streams (Tj and TJ operators)
+  const rawString = buffer.toString('latin1');
+  const textBlocks: string[] = [];
+  const textRegex = /\(([^)]+)\)\s*Tj|\[([^\]]+)\]\s*TJ/g;
+  let match;
+  while ((match = textRegex.exec(rawString)) !== null) {
+    const rawMatch = match[1] || match[2] || '';
+    const cleaned = rawMatch.replace(/\\([()\\])/g, '$1').trim();
+    if (cleaned.length > 0) textBlocks.push(cleaned);
+  }
+
+  if (textBlocks.length > 5) {
+    return textBlocks.join(' ');
+  }
+
+  // Fallback 2: General printable ASCII stream extraction
+  const asciiClean = rawString
+    .replace(/[^\x20-\x7E\t\n\r]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (asciiClean.length > 50) {
+    return asciiClean;
+  }
+
+  return '';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -88,10 +137,7 @@ export async function POST(req: NextRequest) {
     if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      const pdfData = await parser.getText();
-      await parser.destroy();
-      rawText = pdfData.text || '';
+      rawText = await extractPdfText(buffer);
     } else {
       rawText = await file.text();
     }
@@ -227,4 +273,3 @@ Respond ONLY with a valid JSON object matching this exact schema:
     );
   }
 }
-

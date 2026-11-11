@@ -3,8 +3,47 @@ import { createClient } from '@/lib/supabase/server';
 import { GoogleGenAI } from '@google/genai';
 import { sanitizeResumeText } from '@/lib/sanitizer';
 import { PDFParse } from 'pdf-parse';
+import path from 'path';
+import { pathToFileURL } from 'url';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  try {
+    try {
+      const workerPath = path.resolve(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
+      PDFParse.setWorker(pathToFileURL(workerPath).href);
+    } catch (workerErr) {
+      console.warn('[PDFParse] Could not set explicit worker URL:', workerErr);
+    }
+
+    const parser = new PDFParse({ data: new Uint8Array(buffer) });
+    const pdfData = await parser.getText();
+    await parser.destroy();
+    if (pdfData?.text && pdfData.text.trim().length > 0) {
+      return pdfData.text;
+    }
+  } catch (err: any) {
+    console.warn('[PDFParse] Worker parsing failed, using stream text recovery:', err.message);
+  }
+
+  // Fallback stream text extraction
+  const rawString = buffer.toString('latin1');
+  const textBlocks: string[] = [];
+  const textRegex = /\(([^)]+)\)\s*Tj|\[([^\]]+)\]\s*TJ/g;
+  let match;
+  while ((match = textRegex.exec(rawString)) !== null) {
+    const rawMatch = match[1] || match[2] || '';
+    const cleaned = rawMatch.replace(/\\([()\\])/g, '$1').trim();
+    if (cleaned.length > 0) textBlocks.push(cleaned);
+  }
+
+  if (textBlocks.length > 5) {
+    return textBlocks.join(' ');
+  }
+
+  return rawString.replace(/[^\x20-\x7E\t\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,10 +68,8 @@ export async function POST(req: NextRequest) {
     // 2. Extract PDF text
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const pdfData = await parser.getText();
-    await parser.destroy();
-    const sanitizedText = sanitizeResumeText(pdfData.text);
+    const pdfRawText = await extractPdfText(buffer);
+    const sanitizedText = sanitizeResumeText(pdfRawText);
 
     if (sanitizedText.length < 50) {
       return NextResponse.json({ error: 'Resume text could not be extracted.' }, { status: 400 });
