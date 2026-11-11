@@ -38,6 +38,11 @@ export async function applyToPlacementDrive(driveId: string) {
     return { success: false, error: 'Placement drive not found.' };
   }
 
+  // Ensure drive is approved by TPO Admin
+  if (drive.approval_status && drive.approval_status !== 'APPROVED') {
+    return { success: false, error: 'This placement drive is pending Placement Cell approval and cannot accept applications.' };
+  }
+
   // 4. Check if already applied
   const { data: existingApp } = await supabase
     .from('drive_applications')

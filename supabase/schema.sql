@@ -96,6 +96,10 @@ CREATE TABLE IF NOT EXISTS public.placement_drives (
   cgpa_cutoff NUMERIC(4, 2) NOT NULL DEFAULT 6.00,
   status TEXT NOT NULL DEFAULT 'SCHEDULED' 
     CHECK (status IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+  approval_status TEXT NOT NULL DEFAULT 'APPROVED'
+    CHECK (approval_status IN ('PENDING', 'APPROVED', 'REJECTED')),
+  rejection_reason TEXT,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   description TEXT,
   drive_date TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days'),
   deadline TIMESTAMPTZ,
@@ -198,10 +202,18 @@ CREATE POLICY "Students and Admins can update student profiles"
 
 -- Placement Drives Policies
 DROP POLICY IF EXISTS "Authenticated users can read placement drives" ON public.placement_drives;
-CREATE POLICY "Authenticated users can read placement drives"
+DROP POLICY IF EXISTS "Placement drives select policy" ON public.placement_drives;
+CREATE POLICY "Placement drives select policy"
   ON public.placement_drives FOR SELECT
   TO authenticated
-  USING (true);
+  USING (
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'TPO_ADMIN'
+    OR (
+      (auth.jwt() -> 'user_metadata' ->> 'role') = 'RECRUITER' 
+      AND (created_by = auth.uid() OR created_by IS NULL OR approval_status = 'APPROVED')
+    )
+    OR approval_status = 'APPROVED'
+  );
 
 DROP POLICY IF EXISTS "Admins and Recruiters can insert placement drives" ON public.placement_drives;
 CREATE POLICY "Admins and Recruiters can insert placement drives"

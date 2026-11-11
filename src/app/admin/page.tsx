@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { toggleStudentLock, updateStudentAcademicRecord, createPlacementDrive } from '@/app/actions/admin';
+import { toggleStudentLock, updateStudentAcademicRecord, createPlacementDrive, approvePlacementDrive, rejectPlacementDrive } from '@/app/actions/admin';
+import DriveCalendar from '@/components/DriveCalendar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +27,7 @@ export default function AdminPortalPage() {
   const [drives, setDrives] = useState<any[]>([]);
   const [roadmaps, setRoadmaps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'students' | 'drives' | 'curriculum'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'drives' | 'curriculum' | 'calendar'>('students');
 
   // Edit Student Modal
   const [editingStudent, setEditingStudent] = useState<any>(null);
@@ -44,6 +46,7 @@ export default function AdminPortalPage() {
     max_ctc: 12,
     cgpa_cutoff: 7.0,
     status: 'SCHEDULED',
+    drive_date: '',
     description: '',
   });
   const [publishingDrive, setPublishingDrive] = useState(false);
@@ -166,7 +169,10 @@ export default function AdminPortalPage() {
   const handleCreateDrive = async (e: React.FormEvent) => {
     e.preventDefault();
     setPublishingDrive(true);
-    const res = await createPlacementDrive(newDrive);
+    const res = await createPlacementDrive({
+      ...newDrive,
+      drive_date: newDrive.drive_date ? new Date(newDrive.drive_date).toISOString() : undefined,
+    });
     setPublishingDrive(false);
     if (res.success) {
       setShowDriveModal(false);
@@ -178,6 +184,7 @@ export default function AdminPortalPage() {
         max_ctc: 12,
         cgpa_cutoff: 7.0,
         status: 'SCHEDULED',
+        drive_date: '',
         description: '',
       });
       loadData();
@@ -214,7 +221,12 @@ export default function AdminPortalPage() {
               Academic Record Verification, PEP Policy Enforcement &amp; Placement Drives
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/calendar">
+              <Button variant="outline" className="border-indigo-600/50 text-indigo-400 hover:bg-indigo-950/40 text-xs">
+                📅 Full Screen Calendar
+              </Button>
+            </Link>
             <Button
               onClick={() => setShowDriveModal(true)}
               className="bg-indigo-600 hover:bg-indigo-500 text-xs"
@@ -291,6 +303,14 @@ export default function AdminPortalPage() {
             className={activeTab === 'drives' ? 'bg-indigo-600 hover:bg-indigo-500' : 'text-slate-400'}
           >
             Placement Drives ({drives.length})
+          </Button>
+          <Button
+            variant={activeTab === 'calendar' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('calendar')}
+            className={activeTab === 'calendar' ? 'bg-indigo-600 hover:bg-indigo-500' : 'text-slate-400'}
+          >
+            📅 Scheduling Calendar ({drives.length})
           </Button>
           <Button
             variant={activeTab === 'curriculum' ? 'default' : 'ghost'}
@@ -412,11 +432,36 @@ export default function AdminPortalPage() {
                     ₹{drive.min_ctc} - ₹{drive.max_ctc} LPA
                   </div>
                   <p className="text-xs text-slate-400">{drive.description || 'No description provided.'}</p>
-                  <div className="text-xs text-slate-500">Status: {drive.status}</div>
+                  <div className="flex justify-between items-center text-xs text-slate-400 pt-1 border-t border-slate-800">
+                    <span>Status: {drive.status}</span>
+                    <span className={`font-semibold ${drive.approval_status === 'APPROVED' ? 'text-emerald-400' : drive.approval_status === 'REJECTED' ? 'text-slate-400' : 'text-rose-400'}`}>
+                      {drive.approval_status || 'APPROVED'}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Scheduling Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <DriveCalendar
+            drives={drives}
+            userRole="TPO_ADMIN"
+            isLoading={loading}
+            onApprove={async (id) => {
+              const res = await approvePlacementDrive(id);
+              if (res.success) await loadData();
+              return res;
+            }}
+            onReject={async (id, reason) => {
+              const res = await rejectPlacementDrive(id, reason);
+              if (res.success) await loadData();
+              return res;
+            }}
+            onRefresh={loadData}
+          />
         )}
 
         {/* Market Skill Deficits & Curriculum Alignment Tab */}
@@ -694,6 +739,16 @@ export default function AdminPortalPage() {
                   className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase text-slate-400">Drive Date</label>
+              <Input
+                type="date"
+                value={newDrive.drive_date}
+                onChange={(e) => setNewDrive({ ...newDrive, drive_date: e.target.value })}
+                className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+              />
             </div>
 
             <div>

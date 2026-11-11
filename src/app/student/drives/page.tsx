@@ -51,6 +51,7 @@ export default function StudentDrivesPage() {
     const { data: driveList } = await supabase
       .from('placement_drives')
       .select('*')
+      .eq('approval_status', 'APPROVED')
       .order('drive_date', { ascending: true });
 
     setDrives(driveList || []);
@@ -138,6 +139,11 @@ export default function StudentDrivesPage() {
             <p className="text-sm text-slate-400">Institutional Policy & Eligibility Engine (PEP) + AI Screening</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/student/calendar">
+              <Button variant="outline" size="sm" className="border-emerald-600/40 text-emerald-400 hover:bg-emerald-950/40 text-xs">
+                📅 Drive Calendar
+              </Button>
+            </Link>
             <Link href="/student/live-status">
               <Button variant="outline" size="sm" className="border-indigo-600/40 text-indigo-400 hover:bg-indigo-950/40 text-xs">
                 Live Dispatch

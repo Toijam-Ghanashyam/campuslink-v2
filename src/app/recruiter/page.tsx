@@ -25,6 +25,7 @@ export default function RecruiterDashboardPage() {
     max_ctc: 12,
     cgpa_cutoff: 7.0,
     status: 'SCHEDULED',
+    drive_date: '',
     description: '',
   });
 
@@ -44,6 +45,8 @@ export default function RecruiterDashboardPage() {
         max_ctc,
         cgpa_cutoff,
         status,
+        approval_status,
+        rejection_reason,
         drive_date,
         drive_applications ( count )
       `)
@@ -59,7 +62,10 @@ export default function RecruiterDashboardPage() {
   const handleCreateDrive = async (e: React.FormEvent) => {
     e.preventDefault();
     setPublishing(true);
-    const res = await createPlacementDrive(newDrive);
+    const res = await createPlacementDrive({
+      ...newDrive,
+      drive_date: newDrive.drive_date ? new Date(newDrive.drive_date).toISOString() : undefined,
+    });
     setPublishing(false);
     if (res.success) {
       setShowDriveModal(false);
@@ -71,9 +77,11 @@ export default function RecruiterDashboardPage() {
         max_ctc: 12,
         cgpa_cutoff: 7.0,
         status: 'SCHEDULED',
+        drive_date: '',
         description: '',
       });
       loadDrives();
+      alert('Placement drive proposal submitted to the TPO Placement Cell! It will appear in RED as PENDING until approved.');
     } else {
       alert(`Error publishing drive: ${res.error}`);
     }
@@ -101,7 +109,12 @@ export default function RecruiterDashboardPage() {
               Manage Placement Campaigns, Review Applicants &amp; Command Drive-Day Panels
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/recruiter/calendar">
+              <Button variant="outline" className="border-indigo-600/50 text-indigo-400 hover:bg-indigo-950/40 text-xs">
+                📅 Drive Calendar
+              </Button>
+            </Link>
             <Link href="/recruiter/war-room">
               <Button className="bg-emerald-600 hover:bg-emerald-500 text-xs">
                 Launch Drive-Day War Room
@@ -160,6 +173,23 @@ export default function RecruiterDashboardPage() {
                           {applicantCount} Applicants
                         </Badge>
                       </div>
+
+                      <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800">
+                        <span className="text-slate-500">Approval:</span>
+                        {drive.approval_status === 'APPROVED' ? (
+                          <span className="text-emerald-400 font-semibold flex items-center gap-1">● Approved</span>
+                        ) : drive.approval_status === 'REJECTED' ? (
+                          <span className="text-slate-400 font-semibold flex items-center gap-1">✕ Rejected</span>
+                        ) : (
+                          <span className="text-rose-400 font-semibold flex items-center gap-1">◷ Pending Clearance</span>
+                        )}
+                      </div>
+
+                      {drive.approval_status === 'REJECTED' && drive.rejection_reason && (
+                        <p className="text-[11px] text-rose-300 bg-rose-950/30 border border-rose-900/40 p-1.5 rounded">
+                          Reason: {drive.rejection_reason}
+                        </p>
+                      )}
 
                       <div className="flex gap-2 pt-2">
                         <Link href="/recruiter/war-room" className="w-full">
@@ -261,6 +291,16 @@ export default function RecruiterDashboardPage() {
                   className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase text-slate-400">Proposed Drive Date</label>
+              <Input
+                type="date"
+                value={newDrive.drive_date}
+                onChange={(e) => setNewDrive({ ...newDrive, drive_date: e.target.value })}
+                className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+              />
             </div>
 
             <div>

@@ -150,6 +150,11 @@ export default function StudentDashboardPage() {
                 Browse Drives
               </Button>
             </Link>
+            <Link href="/student/calendar">
+              <Button variant="outline" className="border-emerald-600/40 text-emerald-400 hover:bg-emerald-950/40 text-xs">
+                📅 Drive Calendar
+              </Button>
+            </Link>
             <Link href="/student/live-status">
               <Button variant="outline" className="border-indigo-600/40 text-indigo-400 hover:bg-indigo-950/40 text-xs">
                 Live Dispatch Board
