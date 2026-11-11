@@ -167,6 +167,25 @@ export default function CandidateLiveStatusPage() {
                     </Button>
                   </div>
                 )}
+
+                {app.stage === 'REJECTED' && (
+                  <div className="rounded-lg border border-rose-900/60 bg-rose-950/20 p-4 space-y-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <span className="text-xs uppercase font-bold tracking-wider text-rose-400">Application Status</span>
+                        <p className="text-sm font-semibold text-slate-200">Not Selected for this Drive</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Turn this rejection into an actionable learning roadmap with difficulty-calibrated timelines and tutorials.
+                        </p>
+                      </div>
+                      <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(app.placement_drives?.company_name || 'Drive')}&role=${encodeURIComponent(app.placement_drives?.role_title || 'Engineering')}`}>
+                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white shrink-0 shadow-md shadow-indigo-600/30">
+                          🚀 Generate Skill Roadmap
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

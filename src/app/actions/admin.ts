@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { PlacementTier, PlacementStatus } from '@/types/pep';
 
@@ -8,11 +8,11 @@ import { PlacementTier, PlacementStatus } from '@/types/pep';
  * Toggles academic verification lock for a student profile
  */
 export async function toggleStudentLock(studentId: string, isLocked: boolean) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase
     .from('student_profiles')
-    .update({ is_locked: isLocked, updated_at: new Date().toISOString() })
+    .update({ is_locked: isLocked })
     .eq('id', studentId);
 
   if (error) {
@@ -32,7 +32,7 @@ export async function updateStudentAcademicRecord(
   backlogs: number,
   status: PlacementStatus
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase
     .from('student_profiles')
@@ -40,7 +40,6 @@ export async function updateStudentAcademicRecord(
       verified_cgpa: cgpa,
       active_backlogs: backlogs,
       placement_status: status,
-      updated_at: new Date().toISOString(),
     })
     .eq('id', studentId);
 
@@ -66,7 +65,7 @@ export async function createPlacementDrive(data: {
   drive_date?: string;
   description?: string;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase.from('placement_drives').insert({
     company_name: data.company_name,
@@ -89,4 +88,3 @@ export async function createPlacementDrive(data: {
   revalidatePath('/student/drives');
   return { success: true, message: 'Placement drive published successfully!' };
 }
-

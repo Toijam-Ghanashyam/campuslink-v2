@@ -315,6 +315,16 @@ export default function StudentDashboardPage() {
                             >
                               {acceptingId === app.id ? 'Processing...' : 'Accept Offer'}
                             </Button>
+                          ) : app.stage === 'REJECTED' ? (
+                            <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(drive?.company_name || 'Drive')}&role=${encodeURIComponent(drive?.role_title || 'Engineering')}`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-indigo-600/50 text-indigo-400 hover:bg-indigo-950/40 text-xs gap-1"
+                              >
+                                <span>🚀</span> Roadmap
+                              </Button>
+                            </Link>
                           ) : (
                             <span className="text-xs text-slate-500">—</span>
                           )}

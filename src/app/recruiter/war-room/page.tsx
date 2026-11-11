@@ -53,16 +53,11 @@ export default function RecruiterWarRoom() {
         offer_ctc,
         offer_status,
         student_profiles (
-          full_name,
+          id,
           roll_number,
           branch,
           verified_cgpa,
-          placement_status,
-          users (
-            first_name,
-            last_name,
-            email
-          )
+          placement_status
         )
       `)
       .eq('drive_id', driveId)
@@ -184,7 +179,7 @@ export default function RecruiterWarRoom() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-100 text-base">
-                          {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : student?.full_name || 'Candidate'}
+                          {(student as any)?.full_name || (student?.roll_number ? `Roll: ${student.roll_number}` : 'Candidate')}
                         </span>
                         <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs">
                           {student?.roll_number}

@@ -6,10 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { registerNewUser, ensureStudentProfile } from '@/app/actions/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<'STUDENT' | 'RECRUITER' | 'TPO_ADMIN'>('STUDENT');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,29 +25,67 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
 
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role,
-            first_name: email.split('@')[0],
-            last_name: 'User',
-          },
-        },
-      });
-      if (error) setErrorMsg(error.message);
-      else alert('Account created! You can now log in.');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setErrorMsg(error.message);
+    try {
+      if (isSignUp) {
+        // Register through secure server action: bypasses Supabase email confirm lock & initializes student profile
+        const res = await registerNewUser({
+          email,
+          password,
+          role,
+          firstName: firstName || email.split('@')[0],
+          lastName: lastName || 'User',
+        });
+
+        if (!res.success) {
+          setErrorMsg(res.error || 'Failed to create account');
+          setLoading(false);
+          return;
+        }
+
+        // Immediately sign in the new user
+        const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInErr) {
+          setErrorMsg(signInErr.message);
+          setLoading(false);
+          return;
+        }
+
+        const destination = role === 'STUDENT' ? '/student' : role === 'RECRUITER' ? '/recruiter' : '/admin';
+        window.location.href = destination;
+        return;
       } else {
-        router.push(role === 'STUDENT' ? '/student' : role === 'RECRUITER' ? '/recruiter' : '/admin');
+        const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          setErrorMsg(error.message);
+          setLoading(false);
+          return;
+        }
+
+        // Sync selected role to user_metadata so switching roles in the UI takes effect immediately
+        if (authData?.user) {
+          const currentMetaRole = (authData.user.user_metadata?.role as string | undefined)?.toUpperCase();
+          if (role && role !== currentMetaRole) {
+            await supabase.auth.updateUser({
+              data: { role },
+            });
+          }
+          if (role === 'STUDENT') {
+            await ensureStudentProfile(authData.user.id, email);
+          }
+        }
+
+        const destination = role === 'STUDENT' ? '/student' : role === 'RECRUITER' ? '/recruiter' : '/admin';
+        window.location.href = destination;
+        return;
       }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'An unexpected error occurred during authentication');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -57,6 +98,31 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
+            {isSignUp && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-400">First Name</label>
+                  <Input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+                    placeholder="Aditya"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-400">Last Name</label>
+                  <Input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+                    placeholder="Patel"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-semibold uppercase text-slate-400">Email Address</label>
               <Input
@@ -77,11 +143,12 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+                placeholder="••••••••"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Role</label>
+              <label className="text-xs font-semibold uppercase text-slate-400">Account Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as any)}
@@ -93,16 +160,23 @@ export default function LoginPage() {
               </select>
             </div>
 
-            {errorMsg && <p className="text-xs text-rose-500">{errorMsg}</p>}
+            {errorMsg && (
+              <div className="p-2.5 rounded bg-rose-950/40 border border-rose-800/60 text-xs text-rose-300">
+                {errorMsg}
+              </div>
+            )}
 
-            <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500">
-              {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold">
+              {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
           </form>
 
           <div className="mt-4 text-center">
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setErrorMsg('');
+              }}
               className="text-xs text-slate-400 hover:text-slate-200 underline"
             >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
@@ -113,4 +187,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
