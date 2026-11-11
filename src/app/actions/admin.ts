@@ -63,9 +63,23 @@ export async function createPlacementDrive(data: {
   cgpa_cutoff: number;
   status: string;
   drive_date?: string;
+  deadline?: string;
   description?: string;
 }) {
   const supabase = createAdminClient();
+
+  const safeParseDate = (dateStr?: string, defaultDaysAhead: number = 7) => {
+    if (dateStr) {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString();
+      }
+    }
+    return new Date(Date.now() + defaultDaysAhead * 86400000).toISOString();
+  };
+
+  const parsedDriveDate = safeParseDate(data.drive_date, 7);
+  const parsedDeadline = safeParseDate(data.deadline, 5);
 
   const { error } = await supabase.from('placement_drives').insert({
     company_name: data.company_name,
@@ -75,7 +89,8 @@ export async function createPlacementDrive(data: {
     max_ctc: data.max_ctc,
     cgpa_cutoff: data.cgpa_cutoff,
     status: data.status || 'SCHEDULED',
-    drive_date: data.drive_date || new Date(Date.now() + 7 * 86400000).toISOString(),
+    drive_date: parsedDriveDate,
+    deadline: parsedDeadline,
     description: data.description || '',
   });
 
