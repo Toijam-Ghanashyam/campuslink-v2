@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getCollegeById } from '@/lib/colleges';
 import { rankDrivesForStudent, RankedPlacementDrive } from '@/lib/compatibility-matcher';
+import { evaluatePortfolioSuitabilityForDrive } from '@/lib/portfolio-matcher';
 import {
   Table,
   TableBody,
@@ -443,8 +444,12 @@ export default function StudentDashboardPage() {
                 <p>College: <span className="text-indigo-300 font-medium">{getCollegeById(student.tenant_id).code}</span></p>
                 <p>
                   Projects:{' '}
-                  <span className={studentProjects.length > 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                    {studentProjects.length > 0 ? `${studentProjects.length} Verified` : '⚠️ 0 Projects'}
+                  <span className={studentProjects.length >= 2 ? 'text-emerald-400 font-semibold' : studentProjects.length === 1 ? 'text-amber-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                    {studentProjects.length >= 2
+                      ? `${studentProjects.length} Verified`
+                      : studentProjects.length === 1
+                      ? '1 Project (Add More)'
+                      : '⚠️ 0 Projects'}
                   </span>
                 </p>
               </CardContent>
@@ -648,6 +653,12 @@ export default function StudentDashboardPage() {
                     }
                   };
 
+                  const portfolioEval = evaluatePortfolioSuitabilityForDrive(
+                    studentProjects,
+                    drive,
+                    compat
+                  );
+
                   return (
                     <div
                       key={drive.id}
@@ -716,14 +727,23 @@ export default function StudentDashboardPage() {
                       </div>
 
                       <div className="space-y-1.5 pt-2">
-                        {studentProjects.length === 0 && (
+                        {portfolioEval.needsRecommendation && (
                           <Link href={`/student/drives?driveId=${drive.id}&openRecs=true`} className="block">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full text-[11px] h-7 border-amber-600/50 text-amber-300 hover:bg-amber-950/40 font-medium flex items-center justify-center gap-1"
+                              className={`w-full text-[11px] h-7 font-medium flex items-center justify-center gap-1 ${
+                                portfolioEval.level === 'UNSUITABLE_FOR_ROLE'
+                                  ? 'border-purple-600/50 text-purple-300 hover:bg-purple-950/40 bg-purple-950/10'
+                                  : 'border-amber-600/50 text-amber-300 hover:bg-amber-950/40 bg-amber-950/10'
+                              }`}
                             >
-                              <span>💡</span> Recommended Projects &rarr;
+                              <span>{portfolioEval.level === 'UNSUITABLE_FOR_ROLE' ? '⚡' : '💡'}</span>{' '}
+                              {portfolioEval.level === 'UNSUITABLE_FOR_ROLE'
+                                ? 'Bridge Role Project Gap →'
+                                : portfolioEval.level === 'INSUFFICIENT_PROJECTS'
+                                ? 'Add Projects for Role (1 Found) →'
+                                : 'Recommended Projects →'}
                             </Button>
                           </Link>
                         )}

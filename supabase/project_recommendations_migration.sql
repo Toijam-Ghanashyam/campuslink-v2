@@ -52,3 +52,4 @@ CREATE POLICY "Authenticated users can update project recommendations"
 
 -- 4. Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
+

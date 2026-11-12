@@ -129,14 +129,33 @@ CRITICAL DIRECTIVES:
 5. ATS-READY RESUME BULLETS:
    Provide exactly 2 metric-driven ATS resume bullet points starting with strong action verbs (e.g. "Architected...", "Engineered...", "Optimized...").`;
 
+  const projectsSummary =
+    existingProjects.length > 0
+      ? existingProjects
+          .map(
+            (p, idx) =>
+              `Project ${idx + 1}: "${p.title}" (Stack: ${
+                p.techStack && p.techStack.length > 0 ? p.techStack.join(', ') : 'Not specified'
+              })`
+          )
+          .join('\n  ')
+      : 'NONE (Candidate has 0 resume projects!)';
+
   const userPrompt = `Candidate Profile & Target Placement Drive:
 - Target Company: ${companyName}
 - Target Role: ${roleTitle}
 ${jobDescription ? `- Job Description Context: ${jobDescription.slice(0, 500)}` : ''}
 - Verified Existing Skills (Matched): ${matchedSkills.length > 0 ? matchedSkills.join(', ') : 'Foundational CS & Programming'}
 - Missing JD Requirements (Skill Gap): ${missingSkills.length > 0 ? missingSkills.join(', ') : 'High-Availability Architecture & Scalability'}
-- Current Resume Projects Count: ${existingProjects.length}
-${existingProjects.length > 0 ? `- Current Projects Summary: ${existingProjects.map((p) => p.title).join(', ')}` : '- Current Projects Summary: NONE (Student has 0 resume projects!)'}
+- Current Candidate Projects (${existingProjects.length}):
+  ${projectsSummary}
+- Portfolio Suitability Context: ${
+    existingProjects.length === 0
+      ? 'Candidate has 0 projects on resume; needs hands-on production blueprints.'
+      : existingProjects.length === 1
+      ? 'Candidate has only 1 project; lacks project depth (needs 2-3 projects for top tech tiers).'
+      : 'Candidate has projects, but they do NOT adequately cover the tech stack or domain for this specific role. Generate 3 bespoke projects that bridge this exact role gap.'
+  }
 
 Generate exactly 3 bespoke, production-grade project blueprints tailored to ${companyName} following the specified schema.`;
 
@@ -254,3 +273,4 @@ export function getDeterministicFallbackProjects(
     cached: false,
   };
 }
+

@@ -14,7 +14,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { RecommendedProjectBlueprint } from '@/types/projects';
+import { RecommendedProjectBlueprint, PortfolioSuitabilityResult } from '@/types/projects';
+import { evaluatePortfolioSuitabilityForDrive } from '@/lib/portfolio-matcher';
 
 type SortFilter = 'BEST_SUITED' | 'HIGH_MATCH' | 'TIER_1' | 'HIGHEST_CTC' | 'DATE';
 
@@ -49,12 +50,14 @@ export default function StudentDrivesPage() {
   // Portfolio Readiness Check Modal State
   const [showPortfolioCheckModal, setShowPortfolioCheckModal] = useState(false);
   const [portfolioCheckDrive, setPortfolioCheckDrive] = useState<any>(null);
+  const [portfolioCheckSuitability, setPortfolioCheckSuitability] = useState<PortfolioSuitabilityResult | null>(null);
   const [loadingPortfolioRecs, setLoadingPortfolioRecs] = useState(false);
   const [portfolioRecs, setPortfolioRecs] = useState<{
     matchedSkills: string[];
     missingSkills: string[];
     projects: RecommendedProjectBlueprint[];
     reasoning?: string;
+    suitability?: PortfolioSuitabilityResult;
   } | null>(null);
   const [copiedBulletId, setCopiedBulletId] = useState<string | null>(null);
 
@@ -284,8 +287,13 @@ export default function StudentDrivesPage() {
     }
   };
 
-  const fetchProjectRecsForDrive = async (drive: any) => {
+  const fetchProjectRecsForDrive = async (drive: any, explicitEval?: PortfolioSuitabilityResult) => {
+    const evalResult =
+      explicitEval ||
+      evaluatePortfolioSuitabilityForDrive(studentProjects, drive, drive.compatibility);
+
     setPortfolioCheckDrive(drive);
+    setPortfolioCheckSuitability(evalResult);
     setShowPortfolioCheckModal(true);
     setLoadingPortfolioRecs(true);
     setPortfolioRecs(null);
@@ -305,7 +313,11 @@ export default function StudentDrivesPage() {
         missingSkills: json.missingSkills || [],
         projects: json.projects || [],
         reasoning: json.reasoning || '',
+        suitability: json.portfolioSuitability || evalResult,
       });
+      if (json.portfolioSuitability) {
+        setPortfolioCheckSuitability(json.portfolioSuitability);
+      }
     } catch (err: any) {
       console.error('Error fetching project recs:', err);
     } finally {
@@ -344,9 +356,17 @@ export default function StudentDrivesPage() {
       return;
     }
 
-    // Intercept: if student is verified BUT has 0 projects, open Portfolio Readiness Check!
-    if (student?.is_locked && (!studentProjects || studentProjects.length === 0)) {
-      fetchProjectRecsForDrive(drive);
+    // Evaluate portfolio suitability:
+    // Intercepts if student does not have much projects (< 2)
+    // OR does not have projects that are suitable for this specific job/role!
+    const portfolioEval = evaluatePortfolioSuitabilityForDrive(
+      studentProjects,
+      drive,
+      drive.compatibility
+    );
+
+    if (student?.is_locked && portfolioEval.needsRecommendation) {
+      fetchProjectRecsForDrive(drive, portfolioEval);
       return;
     }
 
@@ -669,6 +689,11 @@ export default function StudentDrivesPage() {
             {displayedDrives.map((drive) => {
               const application = myApplications[drive.id];
               const compat = drive.compatibility;
+              const portfolioSuitability = evaluatePortfolioSuitabilityForDrive(
+                studentProjects,
+                drive,
+                compat
+              );
 
               // Color helper for compatibility score badge
               const getBadgeColor = (rating: string) => {
@@ -736,9 +761,24 @@ export default function StudentDrivesPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {studentProjects.length === 0 && (
+                        {portfolioSuitability.level === 'EMPTY' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-950/80 border border-rose-600/60 px-2 py-0.5 text-[10px] font-bold text-rose-300">
+                            {portfolioSuitability.badgeText}
+                          </span>
+                        )}
+                        {portfolioSuitability.level === 'INSUFFICIENT_PROJECTS' && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/80 border border-amber-600/60 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-                            ⚠️ 0 Projects on Resume
+                            {portfolioSuitability.badgeText}
+                          </span>
+                        )}
+                        {portfolioSuitability.level === 'UNSUITABLE_FOR_ROLE' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-950/80 border border-purple-500/60 px-2 py-0.5 text-[10px] font-bold text-purple-300">
+                            {portfolioSuitability.badgeText}
+                          </span>
+                        )}
+                        {portfolioSuitability.level === 'SUITABLE' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/60 border border-emerald-600/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                            {portfolioSuitability.badgeText}
                           </span>
                         )}
                         <Badge
@@ -867,16 +907,23 @@ export default function StudentDrivesPage() {
                             </Button>
                           </Link>
                         )}
-                        {studentProjects.length === 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => fetchProjectRecsForDrive(drive)}
-                            className="w-full text-[11px] h-7 border-amber-600/50 text-amber-300 hover:bg-amber-950/40 font-medium flex items-center justify-center gap-1"
-                          >
-                            <span>💡</span> Get Project Ideas &rarr;
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fetchProjectRecsForDrive(drive, portfolioSuitability)}
+                          className={`w-full text-[11px] h-7 font-medium flex items-center justify-center gap-1 ${
+                            portfolioSuitability.needsRecommendation
+                              ? 'border-amber-600/60 text-amber-300 hover:bg-amber-950/40 bg-amber-950/10'
+                              : 'border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <span>💡</span>{' '}
+                          {portfolioSuitability.level === 'UNSUITABLE_FOR_ROLE'
+                            ? 'Bridge Role Project Gap →'
+                            : portfolioSuitability.needsRecommendation
+                            ? 'Get Recommended Projects →'
+                            : 'Explore Project Ideas →'}
+                        </Button>
                       </div>
 
                       {application ? (
@@ -1016,10 +1063,10 @@ export default function StudentDrivesPage() {
       <Dialog open={showPortfolioCheckModal} onOpenChange={setShowPortfolioCheckModal}>
         <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between gap-2 pr-6">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 text-lg">
-                  💡
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pr-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-lg">
+                  {portfolioCheckSuitability?.level === 'UNSUITABLE_FOR_ROLE' ? '⚡' : '💡'}
                 </span>
                 <div>
                   <DialogTitle className="text-lg font-bold text-white">
@@ -1030,10 +1077,40 @@ export default function StudentDrivesPage() {
                   </p>
                 </div>
               </div>
-              <Badge className="bg-amber-950 text-amber-300 border border-amber-700/60 text-[10px] shrink-0">
-                ⚠️ 0 Projects Detected on Resume
-              </Badge>
+              {portfolioCheckSuitability && (
+                <Badge
+                  className={`text-[10px] shrink-0 font-bold self-start sm:self-center ${
+                    portfolioCheckSuitability.level === 'EMPTY'
+                      ? 'bg-rose-950 text-rose-300 border border-rose-700/60'
+                      : portfolioCheckSuitability.level === 'INSUFFICIENT_PROJECTS'
+                      ? 'bg-amber-950 text-amber-300 border border-amber-700/60'
+                      : portfolioCheckSuitability.level === 'UNSUITABLE_FOR_ROLE'
+                      ? 'bg-purple-950 text-purple-300 border border-purple-600/60'
+                      : 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
+                  }`}
+                >
+                  {portfolioCheckSuitability.badgeText}
+                </Badge>
+              )}
             </div>
+
+            {/* Dynamic Reason Explanation */}
+            {portfolioCheckSuitability && (
+              <div
+                className={`mt-3 rounded-lg p-3 text-xs border ${
+                  portfolioCheckSuitability.level === 'UNSUITABLE_FOR_ROLE'
+                    ? 'bg-purple-950/30 border-purple-800/50 text-purple-200'
+                    : portfolioCheckSuitability.level === 'INSUFFICIENT_PROJECTS'
+                    ? 'bg-amber-950/30 border-amber-800/50 text-amber-200'
+                    : 'bg-rose-950/30 border-rose-800/50 text-rose-200'
+                }`}
+              >
+                <p className="font-semibold flex items-center gap-1.5 leading-relaxed">
+                  <span>ℹ️</span> {portfolioCheckSuitability.reason}
+                </p>
+              </div>
+            )}
+
             <DialogDescription className="text-slate-400 text-xs mt-2 leading-relaxed">
               Recruiters at <strong className="text-white">{portfolioCheckDrive?.company_name}</strong> evaluate candidate hands-on depth based on technical projects. Below are 3 bespoke, production-grade project blueprints generated by our Open-Weight LLM engine (Qwen / GPT-OSS) that leverage your existing skills to bridge your missing JD requirements.
             </DialogDescription>

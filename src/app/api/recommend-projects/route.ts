@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { calculateJobCompatibility } from '@/lib/compatibility-matcher';
 import { generateTailoredProjects } from '@/lib/project-recommender';
+import { evaluatePortfolioSuitabilityForDrive } from '@/lib/portfolio-matcher';
 import { StudentProject } from '@/types/projects';
 
 // In-memory fallback cache in case Supabase drive_project_recommendations table is pending migration
@@ -92,7 +93,14 @@ export async function POST(req: NextRequest) {
     const matchedSkills = compatibility.matchedSkills;
     const missingSkills = compatibility.missingSkills;
 
-    // 5. Generate cache hash based on driveId + sorted missing skills
+    // 5. Evaluate portfolio suitability for this specific drive
+    const portfolioSuitability = evaluatePortfolioSuitabilityForDrive(
+      existingProjects,
+      drive,
+      compatibility
+    );
+
+    // 6. Generate cache hash based on driveId + sorted missing skills
     const sortedMissing = [...missingSkills].sort().map((s) => s.toLowerCase()).join('|');
     const skillGapHash = crypto
       .createHash('sha256')
@@ -121,7 +129,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
           success: true,
+          portfolioSuitability,
           hasProjects: existingProjects.length > 0,
+          existingProjects,
           matchedSkills,
           missingSkills,
           projects,
@@ -138,7 +148,9 @@ export async function POST(req: NextRequest) {
       const cachedPayload = IN_MEMORY_RECS_CACHE.get(memoryKey);
       return NextResponse.json({
         success: true,
+        portfolioSuitability,
         hasProjects: existingProjects.length > 0,
+        existingProjects,
         matchedSkills,
         missingSkills,
         projects: cachedPayload.recommendedProjects || [],
@@ -147,7 +159,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 6. Generate tailored project blueprints using Groq Open-Weight LLMs
+    // 7. Generate tailored project blueprints using Groq Open-Weight LLMs
     const aiResult = await generateTailoredProjects({
       companyName: drive.company_name,
       roleTitle: drive.role_title,
@@ -176,7 +188,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      portfolioSuitability,
       hasProjects: existingProjects.length > 0,
+      existingProjects,
       matchedSkills,
       missingSkills,
       projects: aiResult.recommendedProjects,
@@ -191,3 +205,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

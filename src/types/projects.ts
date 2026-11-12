@@ -27,6 +27,23 @@ export interface ProjectRecommendationResult {
   cached?: boolean;
 }
 
+export type PortfolioSuitabilityLevel =
+  | 'EMPTY'
+  | 'INSUFFICIENT_PROJECTS'
+  | 'UNSUITABLE_FOR_ROLE'
+  | 'SUITABLE';
+
+export interface PortfolioSuitabilityResult {
+  level: PortfolioSuitabilityLevel;
+  badgeText: string;
+  badgeColor: 'amber' | 'rose' | 'purple' | 'emerald';
+  reason: string;
+  needsRecommendation: boolean;
+  totalProjects: number;
+  demonstratedSkills: string[];
+  missingRoleSkills: string[];
+}
+
 export interface GenerateProjectsInput {
   companyName: string;
   roleTitle: string;
@@ -35,3 +52,4 @@ export interface GenerateProjectsInput {
   missingSkills: string[];
   existingProjects?: StudentProject[];
 }
+
