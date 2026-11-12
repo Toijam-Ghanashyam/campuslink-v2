@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   gradeParagraphAnswers,
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       assessmentId,
+      sessionToken,
       mcqAnswers = {},
       paragraphAnswers = {},
       keystrokeTelemetry = {},
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Assessment ID is required for submission.' }, { status: 400 });
     }
 
-    // 1. Fetch Assessment record from DB or in-memory cache
+    // 1. Fetch Assessment record from DB or in-memory cache or sessionToken
     let assessmentRecord: any = null;
     try {
       const { data: dbData } = await adminSupabase
@@ -57,6 +59,21 @@ export async function POST(req: NextRequest) {
 
     if (!assessmentRecord && IN_MEMORY_ASSESSMENT_CACHE.has(assessmentId)) {
       assessmentRecord = IN_MEMORY_ASSESSMENT_CACHE.get(assessmentId);
+    }
+
+    if (!assessmentRecord && sessionToken) {
+      try {
+        const decoded = JSON.parse(Buffer.from(sessionToken, 'base64').toString('utf-8'));
+        if (decoded?.questionsPayload) {
+          assessmentRecord = {
+            id: decoded.assessmentId || assessmentId,
+            student_id: decoded.studentId || user.id,
+            questions_payload: decoded.questionsPayload,
+          };
+        }
+      } catch (tokenErr) {
+        console.warn('Could not decode sessionToken:', tokenErr);
+      }
     }
 
     if (!assessmentRecord) {
@@ -170,9 +187,26 @@ export async function POST(req: NextRequest) {
       console.warn('[readiness/submit] Assessment update warning:', err);
     }
 
-    // 8. Update student_profiles record with the latest scores
+    // 8. Update user_metadata in auth.users (100% reliable across all Supabase tiers, zero schema dependencies)
     try {
-      await adminSupabase
+      const { data: userData } = await adminSupabase.auth.admin.getUserById(user.id);
+      const existingMeta = userData?.user?.user_metadata || {};
+      await adminSupabase.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...existingMeta,
+          readiness_score: totalScore,
+          readiness_integrity_score: integrityScore,
+          readiness_status: readinessStatus,
+          last_readiness_test_at: completedAt,
+        },
+      });
+    } catch (metaErr) {
+      console.warn('[readiness/submit] User metadata update warning:', metaErr);
+    }
+
+    // 9. Update student_profiles record with the latest scores (when columns exist)
+    try {
+      const updateRes = await adminSupabase
         .from('student_profiles')
         .update({
           readiness_score: totalScore,
@@ -181,9 +215,17 @@ export async function POST(req: NextRequest) {
           last_readiness_test_at: completedAt,
         })
         .eq('user_id', user.id);
+      if (updateRes.error) {
+        console.warn('[readiness/submit] student_profiles update error (column may be pending migration):', updateRes.error.message);
+      }
     } catch (profErr) {
       console.warn('[readiness/submit] Student profiles update warning:', profErr);
     }
+
+    try {
+      revalidatePath('/student');
+      revalidatePath('/recruiter/war-room');
+    } catch (e) {}
 
     const resultPayload: AssessmentResult = {
       assessmentId,

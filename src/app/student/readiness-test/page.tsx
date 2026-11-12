@@ -26,6 +26,7 @@ export default function ReadinessTestPage() {
 
   // Assessment Data
   const [assessmentId, setAssessmentId] = useState<string>('');
+  const [sessionToken, setSessionToken] = useState<string>('');
   const [skillsTested, setSkillsTested] = useState<string[]>([]);
   const [studentName, setStudentName] = useState<string>('');
   const [mcqs, setMcqs] = useState<MCQQuestion[]>([]);
@@ -81,6 +82,7 @@ export default function ReadinessTestPage() {
       }
 
       setAssessmentId(data.assessmentId);
+      if (data.sessionToken) setSessionToken(data.sessionToken);
       setSkillsTested(data.skillsTested || []);
       setStudentName(data.studentName || 'Student');
       setMcqs(data.mcqs || []);
@@ -118,6 +120,7 @@ export default function ReadinessTestPage() {
 
         const payload = {
           assessmentId,
+          sessionToken,
           mcqAnswers,
           paragraphAnswers,
           keystrokeTelemetry,
@@ -136,6 +139,21 @@ export default function ReadinessTestPage() {
         if (!res.ok || data.error) {
           throw new Error(data.error || 'Error submitting assessment');
         }
+
+        // Persist latest readiness result to localStorage for immediate client-side availability
+        try {
+          if (data.result) {
+            localStorage.setItem(
+              'campuslink_latest_readiness',
+              JSON.stringify({
+                score: data.result.totalScore,
+                integrity: data.result.integrityScore,
+                status: data.result.readinessStatus,
+                updatedAt: data.result.completedAt,
+              })
+            );
+          }
+        } catch (e) {}
 
         setResult(data.result);
         setPhase('COMPLETED');
@@ -776,7 +794,9 @@ export default function ReadinessTestPage() {
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-6">
             <Button
-              onClick={() => router.push('/student')}
+              onClick={() => {
+                window.location.href = '/student';
+              }}
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 text-xs"
             >
               Return to Student Dashboard

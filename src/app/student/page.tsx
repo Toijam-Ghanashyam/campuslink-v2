@@ -73,7 +73,44 @@ export default function StudentDashboardPage() {
       }
     }
 
-    setStudent(profile);
+    // 2. Resolve Readiness & Integrity Scores from profile, user_metadata, or local client cache
+    const userMeta = user.user_metadata || {};
+    let localReadiness: any = null;
+    try {
+      const raw = localStorage.getItem('campuslink_latest_readiness');
+      if (raw) localReadiness = JSON.parse(raw);
+    } catch (e) {}
+
+    const resolvedReadinessScore =
+      profile?.readiness_score !== undefined && profile?.readiness_score !== null && profile?.readiness_score > 0
+        ? profile.readiness_score
+        : userMeta.readiness_score !== undefined && userMeta.readiness_score !== null && userMeta.readiness_score > 0
+        ? userMeta.readiness_score
+        : localReadiness?.score > 0
+        ? localReadiness.score
+        : 0;
+
+    const resolvedIntegrityScore =
+      profile?.readiness_integrity_score ?? userMeta.readiness_integrity_score ?? localReadiness?.integrity ?? 100;
+
+    const resolvedReadinessStatus =
+      profile?.readiness_status && profile?.readiness_status !== 'NOT_TESTED'
+        ? profile.readiness_status
+        : userMeta.readiness_status && userMeta.readiness_status !== 'NOT_TESTED'
+        ? userMeta.readiness_status
+        : localReadiness?.status || 'NOT_TESTED';
+
+    const mergedProfile = profile
+      ? {
+          ...profile,
+          readiness_score: resolvedReadinessScore,
+          readiness_integrity_score: resolvedIntegrityScore,
+          readiness_status: resolvedReadinessStatus,
+          last_readiness_test_at: profile.last_readiness_test_at || userMeta.last_readiness_test_at || localReadiness?.updatedAt || null,
+        }
+      : null;
+
+    setStudent(mergedProfile);
 
     if (profile) {
       setFixFullName(profile.full_name || user.user_metadata?.full_name || '');

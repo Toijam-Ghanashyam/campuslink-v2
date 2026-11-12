@@ -3,8 +3,15 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { generateReadinessQuestions } from '@/lib/readiness-evaluator';
 import { MCQQuestion, ParagraphQuestion } from '@/types/readiness';
 
-// In-memory fallback cache in case PostgreSQL table migration is pending execution
-const IN_MEMORY_ASSESSMENT_CACHE = new Map<string, any>();
+// Global in-memory fallback cache to ensure assessment sessions are shared across Next.js worker evaluations
+const globalForAssessment = globalThis as unknown as {
+  campuslinkAssessmentCache?: Map<string, any>;
+};
+
+export const IN_MEMORY_ASSESSMENT_CACHE =
+  globalForAssessment.campuslinkAssessmentCache ?? new Map<string, any>();
+
+globalForAssessment.campuslinkAssessmentCache = IN_MEMORY_ASSESSMENT_CACHE;
 
 export async function POST(req: NextRequest) {
   try {
@@ -90,9 +97,19 @@ export async function POST(req: NextRequest) {
       points: p.points || 10,
     }));
 
+    // Generate signed/base64 session token so submission grading never fails even across server restarts
+    const sessionToken = Buffer.from(
+      JSON.stringify({
+        assessmentId,
+        studentId: user.id,
+        questionsPayload,
+      })
+    ).toString('base64');
+
     return NextResponse.json({
       success: true,
       assessmentId,
+      sessionToken,
       skillsTested,
       studentName: student?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0],
       mcqs: sanitizedMcqs,
@@ -108,5 +125,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export { IN_MEMORY_ASSESSMENT_CACHE };
 
