@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { applyToPlacementDrive, updateStudentSkills } from '@/app/actions/placement';
+import { applyToPlacementDrive, updateStudentSkills, updateStudentProjects } from '@/app/actions/placement';
 import {
   rankDrivesForStudent,
   RankedPlacementDrive,
@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { RecommendedProjectBlueprint } from '@/types/projects';
 
 type SortFilter = 'BEST_SUITED' | 'HIGH_MATCH' | 'TIER_1' | 'HIGHEST_CTC' | 'DATE';
 
@@ -31,6 +32,7 @@ export default function StudentDrivesPage() {
   const [rawDrives, setRawDrives] = useState<any[]>([]);
   const [student, setStudent] = useState<any>(null);
   const [studentSkills, setStudentSkills] = useState<string[]>([]);
+  const [studentProjects, setStudentProjects] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +45,18 @@ export default function StudentDrivesPage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [evalResult, setEvalResult] = useState<any>(null);
+
+  // Portfolio Readiness Check Modal State
+  const [showPortfolioCheckModal, setShowPortfolioCheckModal] = useState(false);
+  const [portfolioCheckDrive, setPortfolioCheckDrive] = useState<any>(null);
+  const [loadingPortfolioRecs, setLoadingPortfolioRecs] = useState(false);
+  const [portfolioRecs, setPortfolioRecs] = useState<{
+    matchedSkills: string[];
+    missingSkills: string[];
+    projects: RecommendedProjectBlueprint[];
+    reasoning?: string;
+  } | null>(null);
+  const [copiedBulletId, setCopiedBulletId] = useState<string | null>(null);
 
   // Resume Skills Re-Scan Modal State
   const [showRescanModal, setShowRescanModal] = useState(false);
@@ -59,6 +73,7 @@ export default function StudentDrivesPage() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     let currentSkills: string[] = [];
+    let currentProjects: any[] = [];
 
     if (user) {
       const { data: profile } = await supabase
@@ -76,6 +91,15 @@ export default function StudentDrivesPage() {
       }
 
       setStudentSkills(currentSkills);
+
+      // Extract projects from profile.projects or user_metadata.projects
+      if (profile && Array.isArray(profile.projects) && profile.projects.length > 0) {
+        currentProjects = profile.projects;
+      } else if (user.user_metadata?.projects && Array.isArray(user.user_metadata.projects)) {
+        currentProjects = user.user_metadata.projects;
+      }
+
+      setStudentProjects(currentProjects);
 
       if (profile) {
         const { data: apps } = await supabase
@@ -113,6 +137,23 @@ export default function StudentDrivesPage() {
       student?.active_backlogs ?? 0
     );
   }, [rawDrives, studentSkills, student]);
+
+  // Auto-open project recommendations if arriving from ?driveId=...&openRecs=true
+  useEffect(() => {
+    if (typeof window === 'undefined' || rankedDrives.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const driveId = params.get('driveId');
+    const openRecs = params.get('openRecs');
+    if (driveId && openRecs === 'true') {
+      const targetDrive = rankedDrives.find((d) => d.id === driveId);
+      if (targetDrive) {
+        fetchProjectRecsForDrive(targetDrive);
+        // Clean URL parameter without reload
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [rankedDrives]);
 
   // Apply User Filtering / Sorting on top of ranked drives
   const displayedDrives = useMemo(() => {
@@ -218,18 +259,74 @@ export default function StudentDrivesPage() {
       }
 
       const extractedSkills: string[] = json.data?.skills || [];
-      if (extractedSkills.length === 0) {
-        setScanNotice('Resume parsed, but no technical skills were detected. You can add them manually.');
+      const extractedProjects: any[] = json.data?.projects || [];
+
+      if (extractedSkills.length === 0 && extractedProjects.length === 0) {
+        setScanNotice('Resume parsed, but no technical skills or projects were detected. You can add them manually.');
       } else {
         const merged = normalizeSkills([...studentSkills, ...extractedSkills]);
         setStudentSkills(merged);
         await updateStudentSkills(merged);
-        setScanNotice(`✨ Successfully extracted and verified ${extractedSkills.length} skills! All placement drives re-ranked.`);
+
+        if (extractedProjects.length > 0) {
+          setStudentProjects(extractedProjects);
+          await updateStudentProjects(extractedProjects);
+        }
+
+        setScanNotice(
+          `✨ Successfully extracted ${extractedSkills.length} skills and ${extractedProjects.length} projects! All placement drives re-ranked.`
+        );
       }
     } catch (err: any) {
       alert(`Resume scan error: ${err.message}`);
     } finally {
       setScanning(false);
+    }
+  };
+
+  const fetchProjectRecsForDrive = async (drive: any) => {
+    setPortfolioCheckDrive(drive);
+    setShowPortfolioCheckModal(true);
+    setLoadingPortfolioRecs(true);
+    setPortfolioRecs(null);
+
+    try {
+      const res = await fetch('/api/recommend-projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driveId: drive.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Failed to fetch recommendations');
+      }
+      setPortfolioRecs({
+        matchedSkills: json.matchedSkills || [],
+        missingSkills: json.missingSkills || [],
+        projects: json.projects || [],
+        reasoning: json.reasoning || '',
+      });
+    } catch (err: any) {
+      console.error('Error fetching project recs:', err);
+    } finally {
+      setLoadingPortfolioRecs(false);
+    }
+  };
+
+  const handleCopyBullets = (projectTitle: string, bullets: string[]) => {
+    const text = bullets.map((b) => `• ${b}`).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedBulletId(projectTitle);
+    setTimeout(() => setCopiedBulletId(null), 2500);
+  };
+
+  const handleProceedToApplyAnyway = () => {
+    const target = portfolioCheckDrive;
+    setShowPortfolioCheckModal(false);
+    if (target) {
+      setSelectedDrive(target);
+      setResumeFile(null);
+      setEvalResult(null);
     }
   };
 
@@ -246,6 +343,13 @@ export default function StudentDrivesPage() {
       }
       return;
     }
+
+    // Intercept: if student is verified BUT has 0 projects, open Portfolio Readiness Check!
+    if (student?.is_locked && (!studentProjects || studentProjects.length === 0)) {
+      fetchProjectRecsForDrive(drive);
+      return;
+    }
+
     setSelectedDrive(drive);
     setResumeFile(null);
     setEvalResult(null);
@@ -631,18 +735,25 @@ export default function StudentDrivesPage() {
                         )}
                       </div>
 
-                      <Badge
-                        variant={
-                          drive.tier === 'TIER_1'
-                            ? 'destructive'
-                            : drive.tier === 'TIER_2'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        className="text-[10px]"
-                      >
-                        {drive.tier}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {studentProjects.length === 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/80 border border-amber-600/60 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                            ⚠️ 0 Projects on Resume
+                          </span>
+                        )}
+                        <Badge
+                          variant={
+                            drive.tier === 'TIER_1'
+                              ? 'destructive'
+                              : drive.tier === 'TIER_2'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                          className="text-[10px]"
+                        >
+                          {drive.tier}
+                        </Badge>
+                      </div>
                     </div>
 
                     {/* Company Name & Role Title */}
@@ -743,18 +854,30 @@ export default function StudentDrivesPage() {
 
                     {/* Bottom Action Area */}
                     <div className="space-y-2 pt-2">
-                      {/* One-click Remediation CTA if missing skills exist */}
-                      {compat.missingSkills.length > 0 && (
-                        <Link href={compat.remediationPath || '/student/remediation'}>
+                      {/* One-click Remediation & AI Project Recommendation CTAs */}
+                      <div className="space-y-1.5 mb-1.5">
+                        {compat.missingSkills.length > 0 && (
+                          <Link href={compat.remediationPath || '/student/remediation'}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-[11px] h-7 border-indigo-700/50 text-indigo-300 hover:bg-indigo-950/50"
+                            >
+                              ⚡ Prepare Missing Skills in Monaco &rarr;
+                            </Button>
+                          </Link>
+                        )}
+                        {studentProjects.length === 0 && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full text-[11px] h-7 border-indigo-700/50 text-indigo-300 hover:bg-indigo-950/50 mb-1.5"
+                            onClick={() => fetchProjectRecsForDrive(drive)}
+                            className="w-full text-[11px] h-7 border-amber-600/50 text-amber-300 hover:bg-amber-950/40 font-medium flex items-center justify-center gap-1"
                           >
-                            ⚡ Prepare Missing Skills in Monaco &rarr;
+                            <span>💡</span> Get Project Ideas &rarr;
                           </Button>
-                        </Link>
-                      )}
+                        )}
+                      </div>
 
                       {application ? (
                         <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-1">
@@ -884,6 +1007,206 @@ export default function StudentDrivesPage() {
               >
                 Close
               </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL: PORTFOLIO READINESS CHECK (AI PROJECT RECOMMENDATIONS) */}
+      <Dialog open={showPortfolioCheckModal} onOpenChange={setShowPortfolioCheckModal}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-2 pr-6">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 text-lg">
+                  💡
+                </span>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-white">
+                    Portfolio Readiness Check — {portfolioCheckDrive?.company_name}
+                  </DialogTitle>
+                  <p className="text-xs text-amber-300/90 font-medium mt-0.5">
+                    Role: {portfolioCheckDrive?.role_title} ({portfolioCheckDrive?.tier})
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-amber-950 text-amber-300 border border-amber-700/60 text-[10px] shrink-0">
+                ⚠️ 0 Projects Detected on Resume
+              </Badge>
+            </div>
+            <DialogDescription className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Recruiters at <strong className="text-white">{portfolioCheckDrive?.company_name}</strong> evaluate candidate hands-on depth based on technical projects. Below are 3 bespoke, production-grade project blueprints generated by our Open-Weight LLM engine (Qwen / GPT-OSS) that leverage your existing skills to bridge your missing JD requirements.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingPortfolioRecs ? (
+            <div className="py-14 text-center space-y-3">
+              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+              <p className="text-sm font-semibold text-indigo-300 animate-pulse">
+                Consulting Groq Open-Weight Engine (Qwen 27B / GPT-OSS 20B)...
+              </p>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Synthesizing high-impact project blueprints tailored to {portfolioCheckDrive?.company_name}&apos;s domain requirements and your skill profile.
+              </p>
+            </div>
+          ) : portfolioRecs ? (
+            <div className="space-y-4 py-2">
+              {/* Forced Chain-of-Thought Reasoning Box */}
+              {portfolioRecs.reasoning && (
+                <div className="rounded-xl border border-indigo-800/40 bg-indigo-950/20 p-3.5 text-xs text-indigo-200 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-indigo-300 uppercase tracking-wider text-[11px]">
+                    <span>🧠</span> Architectural Skill Gap Reasoning &amp; Suitability Analysis
+                  </div>
+                  <p className="leading-relaxed text-slate-300 text-xs">
+                    {portfolioRecs.reasoning}
+                  </p>
+                </div>
+              )}
+
+              {/* 3 Project Blueprints */}
+              <div className="space-y-4">
+                {portfolioRecs.projects.map((proj, idx) => {
+                  const isCopied = copiedBulletId === proj.title;
+
+                  return (
+                    <Card
+                      key={idx}
+                      className="border-slate-800 bg-slate-950/90 text-slate-100 p-4 rounded-xl space-y-3 shadow-md hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-base text-white">
+                              {idx + 1}. {proj.title}
+                            </span>
+                            <Badge
+                              className={`text-[10px] font-semibold ${
+                                proj.difficulty === 'Advanced'
+                                  ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                  : proj.difficulty === 'Intermediate'
+                                  ? 'bg-indigo-950 text-indigo-300 border border-indigo-800'
+                                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              }`}
+                            >
+                              {proj.difficulty}
+                            </Badge>
+                            <span className="text-[11px] text-slate-400">
+                              ⏱️ ~{proj.estimatedHours} Hours
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {proj.problemStatement}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg border border-emerald-600/40 bg-emerald-950/40 px-3 py-1 text-center shrink-0">
+                          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 block">
+                            Suitability
+                          </span>
+                          <span className="text-sm font-black text-emerald-300">
+                            {proj.suitabilityScore}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Skills Leveraged vs Missing Bridged */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-lg bg-slate-900/80 p-2.5 border border-slate-800 space-y-1">
+                          <span className="text-[10px] font-bold uppercase text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> Existing Skills Leveraged:
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {proj.existingSkillsUsed.map((sk) => (
+                              <span
+                                key={sk}
+                                className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/40 text-[10px] font-medium"
+                              >
+                                {sk}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg bg-slate-900/80 p-2.5 border border-slate-800 space-y-1">
+                          <span className="text-[10px] font-bold uppercase text-amber-400 flex items-center gap-1">
+                            <span>🎯</span> Missing Skills Bridged:
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {proj.missingSkillsTargeted.map((sk) => (
+                              <span
+                                key={sk}
+                                className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700/40 text-[10px] font-medium"
+                              >
+                                {sk}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3-Step MVP Roadmap */}
+                      <div className="rounded-lg bg-slate-900/60 p-3 border border-slate-800/80 space-y-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 block">
+                          🚀 3-Weekend MVP Milestones:
+                        </span>
+                        <ul className="space-y-1 text-xs text-slate-300">
+                          {proj.mvpMilestones.map((m, mIdx) => (
+                            <li key={mIdx} className="flex items-start gap-2">
+                              <span className="text-indigo-400 font-mono text-[11px] font-bold shrink-0">
+                                0{mIdx + 1}.
+                              </span>
+                              <span>{m}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Resume Bullets + Copy Button */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60 text-xs">
+                        <div className="space-y-1 flex-1">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                            ATS-Ready Resume Bullets:
+                          </span>
+                          {proj.resumeBulletPoints.map((b, bIdx) => (
+                            <p key={bIdx} className="text-slate-300 italic text-[11px] leading-relaxed">
+                              • {b}
+                            </p>
+                          ))}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCopyBullets(proj.title, proj.resumeBulletPoints)}
+                          className="shrink-0 text-xs border-indigo-700/60 hover:bg-indigo-950/50 text-indigo-300 h-8"
+                        >
+                          {isCopied ? '✓ Copied to Clipboard!' : '📋 Copy Resume Bullets'}
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  onClick={handleProceedToApplyAnyway}
+                  className="w-full sm:w-auto text-xs border-slate-700 text-slate-300 hover:bg-slate-800"
+                >
+                  Proceed to Apply Anyway &rarr;
+                </Button>
+                <Button
+                  onClick={() => setShowPortfolioCheckModal(false)}
+                  className="w-full sm:w-auto text-xs bg-indigo-600 hover:bg-indigo-500 font-bold px-6"
+                >
+                  🛠️ I&apos;ll Build This First
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              No recommendations available.
             </div>
           )}
         </DialogContent>

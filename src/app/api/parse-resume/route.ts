@@ -78,6 +78,7 @@ MATCHING RULES:
 3. CGPA / Percentage: Extract their current/graduation CGPA as a number out of 10.0 (e.g. 8.42). If given in percentage, convert to 10-point scale (divide by 10 or 9.5).
 4. Batch Year: The expected year of graduation (e.g. 2026, 2025, 2027).
 5. Technical Skills: Extract all technical skills, programming languages (Python, Java, C++, JS/TS), frameworks (React, Next.js, Spring, Django), databases (SQL, Postgres, MongoDB), cloud tools (AWS, Docker, Git), and CS fundamentals mentioned. Standardize names cleanly.
+6. Academic & Engineering Projects: Extract all notable technical/software projects mentioned. For each project, extract its title, technologies/libraries used (techStack array), and a 1-2 sentence description. If no projects are explicitly present, return an empty array [].
 
 Return ONLY raw JSON without markdown backticks or extra text:
 {
@@ -92,7 +93,14 @@ Return ONLY raw JSON without markdown backticks or extra text:
   "cgpa": number or null,
   "batchYear": number or null,
   "activeBacklogs": number or 0,
-  "skills": ["string"]
+  "skills": ["string"],
+  "projects": [
+    {
+      "title": "string",
+      "techStack": ["string"],
+      "description": "string"
+    }
+  ]
 }`;
 
     let parsed: any = null;

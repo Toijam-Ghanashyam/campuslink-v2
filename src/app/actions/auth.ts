@@ -26,6 +26,7 @@ export async function registerNewUser(data: {
   activeBacklogs?: number;
   resumeUrl?: string;
   skills?: string[];
+  projects?: Array<{ title: string; techStack?: string[]; description?: string }>;
 }): Promise<{
   success: boolean;
   userId?: string;
@@ -163,6 +164,7 @@ export async function registerNewUser(data: {
       company_name: companyName || (role === 'RECRUITER' ? 'Corporate Partner' : undefined),
       designation: designation || (role === 'TPO_ADMIN' ? 'Training & Placement Officer' : role === 'RECRUITER' ? 'Talent Acquisition' : undefined),
       skills: data.skills || [],
+      projects: data.projects || [],
     },
   });
 
@@ -223,6 +225,7 @@ export async function registerNewUser(data: {
         rejection_reason: null,
         is_locked: isLocked,
         resume_url: resumeUrl || null,
+        projects: data.projects || [],
       };
 
       if (existingSp) {

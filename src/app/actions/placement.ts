@@ -179,4 +179,50 @@ export async function updateStudentSkills(newSkills: string[]) {
   return { success: true, skills: normalized };
 }
 
+/**
+ * Persists verified / scanned student project entries to user_metadata and student_profiles
+ */
+export async function updateStudentProjects(projects: any[]) {
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) {
+    return { success: false, error: 'User must be authenticated.' };
+  }
+
+  const cleanProjects = Array.isArray(projects) ? projects : [];
+
+  // 1. Update user_metadata in auth.users (100% resilient across Supabase environments)
+  try {
+    const existingMeta = user.user_metadata || {};
+    await adminSupabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...existingMeta,
+        projects: cleanProjects,
+      },
+    });
+  } catch (err) {
+    console.warn('Failed to update auth user_metadata projects:', err);
+  }
+
+  // 2. Update student_profiles if table column exists
+  try {
+    const { error: profileErr } = await adminSupabase
+      .from('student_profiles')
+      .update({ projects: cleanProjects })
+      .eq('user_id', user.id);
+
+    if (profileErr) {
+      console.warn('Profile projects update notice (table column may be pending migration):', profileErr.message);
+    }
+  } catch (err) {
+    console.warn('Student profiles table projects update warning:', err);
+  }
+
+  revalidatePath('/student');
+  revalidatePath('/student/drives');
+  return { success: true, projects: cleanProjects };
+}
+
 

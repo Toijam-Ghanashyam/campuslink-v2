@@ -25,6 +25,7 @@ import {
 export default function StudentDashboardPage() {
   const [student, setStudent] = useState<any>(null);
   const [studentSkills, setStudentSkills] = useState<string[]>([]);
+  const [studentProjects, setStudentProjects] = useState<any[]>([]);
   const [topDrives, setTopDrives] = useState<RankedPlacementDrive[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,12 +82,20 @@ export default function StudentDashboardPage() {
       if (raw) localReadiness = JSON.parse(raw);
     } catch (e) {}
 
+    const hasTestRecord = Boolean(
+      profile?.last_readiness_test_at ||
+      userMeta.last_readiness_test_at ||
+      (profile?.readiness_status && profile.readiness_status !== 'NOT_TESTED') ||
+      (userMeta.readiness_status && userMeta.readiness_status !== 'NOT_TESTED') ||
+      localReadiness?.updatedAt
+    );
+
     const resolvedReadinessScore =
-      profile?.readiness_score !== undefined && profile?.readiness_score !== null && profile?.readiness_score > 0
+      profile?.readiness_score !== undefined && profile?.readiness_score !== null
         ? profile.readiness_score
-        : userMeta.readiness_score !== undefined && userMeta.readiness_score !== null && userMeta.readiness_score > 0
+        : userMeta.readiness_score !== undefined && userMeta.readiness_score !== null
         ? userMeta.readiness_score
-        : localReadiness?.score > 0
+        : localReadiness?.score !== undefined && localReadiness?.score !== null
         ? localReadiness.score
         : 0;
 
@@ -121,7 +130,7 @@ export default function StudentDashboardPage() {
       setFixBacklogs(Number(profile.active_backlogs) || 0);
     }
 
-    // 2. Extract verified student skills
+    // 2. Extract verified student skills & projects
     let skills: string[] = [];
     if (profile && Array.isArray(profile.skills) && profile.skills.length > 0) {
       skills = profile.skills;
@@ -129,6 +138,14 @@ export default function StudentDashboardPage() {
       skills = user.user_metadata.skills;
     }
     setStudentSkills(skills);
+
+    let projects: any[] = [];
+    if (profile && Array.isArray(profile.projects) && profile.projects.length > 0) {
+      projects = profile.projects;
+    } else if (user.user_metadata?.projects && Array.isArray(user.user_metadata.projects)) {
+      projects = user.user_metadata.projects;
+    }
+    setStudentProjects(projects);
 
     // 3. Fetch Placement Drives and Rank Top Matches
     const { data: driveList } = await supabase
@@ -424,6 +441,12 @@ export default function StudentDashboardPage() {
                 <p>Branch: <span className="text-slate-200">{student.branch || 'Engineering'}</span></p>
                 <p>Batch: <span className="text-slate-200">{student.batch_year || 2026}</span></p>
                 <p>College: <span className="text-indigo-300 font-medium">{getCollegeById(student.tenant_id).code}</span></p>
+                <p>
+                  Projects:{' '}
+                  <span className={studentProjects.length > 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                    {studentProjects.length > 0 ? `${studentProjects.length} Verified` : '⚠️ 0 Projects'}
+                  </span>
+                </p>
               </CardContent>
             </Card>
 
@@ -527,8 +550,8 @@ export default function StudentDashboardPage() {
                   <div className="rounded-xl border border-indigo-500/30 bg-slate-950/80 px-3.5 py-2 text-center min-w-[90px]">
                     <span className="text-[10px] font-semibold text-slate-400 uppercase block">Readiness</span>
                     <span className="text-lg font-black text-white">
-                      {student.readiness_score !== undefined && student.readiness_score !== null && student.readiness_score > 0
-                        ? `${student.readiness_score}/100`
+                      {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
+                        ? `${student.readiness_score ?? 0}/100`
                         : '--'}
                     </span>
                   </div>
@@ -538,14 +561,18 @@ export default function StudentDashboardPage() {
                     <span className={`text-lg font-black ${
                       (student.readiness_integrity_score ?? 100) >= 80 ? 'text-emerald-400' : 'text-rose-400'
                     }`}>
-                      {student.readiness_score ? `${student.readiness_integrity_score ?? 100}%` : '100%'}
+                      {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
+                        ? `${student.readiness_integrity_score ?? 100}%`
+                        : '100%'}
                     </span>
                   </div>
                 </div>
 
                 <Link href="/student/readiness-test">
                   <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 shadow-lg shadow-indigo-600/30 whitespace-nowrap">
-                    {student.readiness_score ? 'Retake Readiness Test →' : 'Take Readiness Test →'}
+                    {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
+                      ? 'Retake Readiness Test →'
+                      : 'Take Readiness Test →'}
                   </Button>
                 </Link>
               </div>
@@ -688,14 +715,27 @@ export default function StudentDashboardPage() {
                         )}
                       </div>
 
-                      <Link href="/student/drives" className="block pt-2">
-                        <Button
-                          size="sm"
-                          className="w-full text-xs h-8 bg-indigo-600 hover:bg-indigo-500 font-semibold"
-                        >
-                          View &amp; Apply &rarr;
-                        </Button>
-                      </Link>
+                      <div className="space-y-1.5 pt-2">
+                        {studentProjects.length === 0 && (
+                          <Link href={`/student/drives?driveId=${drive.id}&openRecs=true`} className="block">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-[11px] h-7 border-amber-600/50 text-amber-300 hover:bg-amber-950/40 font-medium flex items-center justify-center gap-1"
+                            >
+                              <span>💡</span> Recommended Projects &rarr;
+                            </Button>
+                          </Link>
+                        )}
+                        <Link href="/student/drives" className="block">
+                          <Button
+                            size="sm"
+                            className="w-full text-xs h-8 bg-indigo-600 hover:bg-indigo-500 font-semibold"
+                          >
+                            View &amp; Apply &rarr;
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   );
                 })}

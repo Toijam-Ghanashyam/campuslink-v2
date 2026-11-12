@@ -38,6 +38,7 @@ function LoginPageContent() {
   const [activeBacklogs, setActiveBacklogs] = useState('0');
   const [resumeFileName, setResumeFileName] = useState('');
   const [parsedSkills, setParsedSkills] = useState<string[]>([]);
+  const [parsedProjects, setParsedProjects] = useState<any[]>([]);
   const [parsingResume, setParsingResume] = useState(false);
   const [resumeSuccessMsg, setResumeSuccessMsg] = useState('');
   const [registrationMismatches, setRegistrationMismatches] = useState<string[]>([]);
@@ -148,6 +149,10 @@ function LoginPageContent() {
           setParsedSkills(d.skills);
         }
 
+        if (Array.isArray(d.projects) && d.projects.length > 0) {
+          setParsedProjects(d.projects);
+        }
+
         setResumeSuccessMsg('✨ Resume parsed with Gemini AI! Details autofilled below. Please review and verify before submitting.');
       }
     } catch (err: any) {
@@ -191,6 +196,7 @@ function LoginPageContent() {
           activeBacklogs: role === 'STUDENT' ? (parseInt(activeBacklogs, 10) || 0) : undefined,
           resumeUrl: role === 'STUDENT' ? (resumeFileName || undefined) : undefined,
           skills: role === 'STUDENT' ? parsedSkills : undefined,
+          projects: role === 'STUDENT' ? parsedProjects : undefined,
         });
 
         if (!res.success) {
