@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { GoogleGenAI } from '@google/genai';
 import { sanitizeResumeText } from '@/lib/sanitizer';
+import { GEMINI_MODELS } from '@/lib/gemini-models';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -53,23 +54,13 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
 }
 `;
 
-    // Try working Gemini models with timeout
-    const geminiModels = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-3.5-flash',
-      'gemini-3.6-flash',
-      'gemini-3.8-flash',
-    ];
+    // Primary: gemini-3.6-flash, followed by fallback chain
     let response: any = null;
     let lastAiError: any = null;
 
-    for (const modelName of geminiModels) {
+    for (const modelName of GEMINI_MODELS) {
       try {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Timeout on ${modelName}`)), 12000)
-        );
-        const genPromise = ai.models.generateContent({
+        response = await ai.models.generateContent({
           model: modelName,
           contents: [
             {
@@ -81,10 +72,9 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
             prompt,
           ],
         });
-        response = await Promise.race([genPromise, timeoutPromise]);
         if (response?.text) break;
-      } catch (err: any) {
-        console.warn(`Model ${modelName} failed, switching to backup model:`, err?.message || err);
+      } catch (err) {
+        console.warn(`Model ${modelName} failed, switching to backup model:`, err);
         lastAiError = err;
       }
     }

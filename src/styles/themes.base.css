@@ -1,0 +1,84 @@
+/* src/styles/themes.base.css */
+:root[data-theme='day'] {
+  --bg: rgb(var(--c-bg));
+  --surface: rgb(var(--c-surface));
+  --surface2: rgb(var(--c-fg) / 0.04);
+  --bg-elevated: rgb(var(--c-surface));
+  --bg-subtle: rgb(var(--c-bg));
+  --fg: rgb(var(--c-fg));
+  --fg-soft: rgb(var(--c-fg-soft));
+  --fg-muted: rgb(var(--c-fg-soft));
+  --line: rgb(var(--c-line));
+  --border: rgb(var(--c-line));
+  --border-strong: rgb(var(--c-fg) / 0.25);
+  --accent: rgb(var(--c-accent));
+  --accent-tint: rgb(var(--c-accent-tint));
+  --accent-deep: rgb(var(--c-accent-deep));
+  --accent-ink: rgb(var(--c-accent-ink));
+  --jade: rgb(var(--c-jade));
+  --jade-tint: rgb(var(--c-jade-tint));
+  --brick: rgb(var(--c-brick));
+  --brick-tint: rgb(var(--c-brick-tint));
+  --lagoon: rgb(var(--c-lagoon));
+  --sidebar: rgb(var(--c-sidebar));
+  --sidebar-fg: rgb(var(--c-sidebar-fg));
+  --btn: rgb(var(--c-btn));
+  --btn-fg: rgb(var(--c-btn-fg));
+  --bg-glass: rgb(var(--c-glass-base) / var(--glass-alpha));
+
+  --glass-blur: 22px; --glass-saturate: 1.6; --glass-highlight: 0.9;
+  --glass-shadow: 0 10px 40px -14px rgb(17 17 19 / 0.12);
+  --grain-opacity: 0.02;
+  --backdrop-a-alpha: 0.7; --backdrop-b-alpha: 0.18; --backdrop-c-alpha: 0;
+  --glow: 0 0 0 0 transparent;
+}
+
+:root[data-theme='day'] ::selection {
+  background: rgb(var(--c-accent-tint));
+  color: rgb(var(--c-accent-deep));
+}
+
+:root[data-theme='night'] {
+  --bg: rgb(var(--c-bg));
+  --surface: rgb(var(--c-surface));
+  --surface2: rgb(var(--c-fg) / 0.06);
+  --bg-elevated: rgb(var(--c-surface));
+  --bg-subtle: rgb(var(--c-bg));
+  --fg: rgb(var(--c-fg));
+  --fg-soft: rgb(var(--c-fg-soft));
+  --fg-muted: rgb(var(--c-fg-soft));
+  --line: rgb(var(--c-line));
+  --border: rgb(var(--c-line));
+  --border-strong: rgb(var(--c-fg) / 0.28);
+  --accent: rgb(var(--c-accent));
+  --accent-tint: rgb(var(--c-accent-tint));
+  --accent-deep: rgb(var(--c-accent-deep));
+  --accent-ink: rgb(var(--c-accent-ink));
+  --jade: rgb(var(--c-jade));
+  --jade-tint: rgb(var(--c-jade-tint));
+  --brick: rgb(var(--c-brick));
+  --brick-tint: rgb(var(--c-brick-tint));
+  --lagoon: rgb(var(--c-lagoon));
+  --sidebar: rgb(var(--c-sidebar));
+  --sidebar-fg: rgb(var(--c-sidebar-fg));
+  --btn: rgb(var(--c-btn));
+  --btn-fg: rgb(var(--c-btn-fg));
+  --bg-glass: rgb(var(--c-glass-base) / var(--glass-alpha));
+
+  --glass-blur: 18px; --glass-saturate: 1.2; --glass-highlight: 0.1;
+  --glass-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.7);
+  --grain-opacity: 0.05;
+  --backdrop-a-alpha: 0.08; --backdrop-b-alpha: 0.16; --backdrop-c-alpha: 0.1;
+  --glow: 0 0 14px rgb(245 158 11 / 0.45);
+}
+
+:root[data-theme='night'] ::selection {
+  background: rgb(var(--c-accent));
+  color: #000000;
+}
+
+:focus-visible { outline: 2px solid rgb(var(--c-lagoon)); outline-offset: 2px; }
+button, a, input, select { touch-action: manipulation; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }

@@ -1,18 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Radio, Volume2, Rocket, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { acceptOffer } from '@/app/actions/placement';
+import { AppShell } from '@/components/layout/AppShell';
+import { Masthead } from '@/components/editorial/Masthead';
+import { Card } from '@/components/editorial/Card';
+import { Stamp } from '@/components/editorial/Stamp';
+import { Callout } from '@/components/editorial/Callout';
+import { MarginNote } from '@/components/editorial/MarginNote';
+import { Button } from '@/components/editorial/Button';
+import { PageTransition } from '@/components/editorial/PageTransition';
+import { useToast } from '@/components/editorial/Toast';
 
 export default function CandidateLiveStatusPage() {
-  const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const { toast } = useToast();
 
   const loadStudentState = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -23,8 +31,6 @@ export default function CandidateLiveStatusPage() {
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
-
-    setProfile(student);
 
     if (student) {
       const { data: apps } = await supabase
@@ -42,16 +48,17 @@ export default function CandidateLiveStatusPage() {
             tier
           )
         `)
-        .eq('student_id', student.id);
+        .eq('student_id', student.id)
+        .order('updated_at', { ascending: false });
 
       setApplications(apps || []);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadStudentState();
 
-    // Listen to real-time events for this student's applications
     const channel = supabase
       .channel('candidate-live-dispatch')
       .on(
@@ -65,17 +72,20 @@ export default function CandidateLiveStatusPage() {
           loadStudentState();
           if (payload.new && payload.new.ai_feedback_summary?.includes('[DISPATCH ALERT]')) {
             setActiveAlert(payload.new.ai_feedback_summary);
-            // Browser chime audio synthesized using Web Audio API
+            toast(payload.new.ai_feedback_summary, 'ochre');
+
+            // Synthesize Web Audio API D5 Chime (587.33 Hz)
             try {
-              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+              const ctx = new AudioCtx();
               const osc = ctx.createOscillator();
               osc.type = 'sine';
-              osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+              osc.frequency.setValueAtTime(587.33, ctx.currentTime);
               osc.connect(ctx.destination);
               osc.start();
-              osc.stop(ctx.currentTime + 0.4);
-            } catch (e) {
-              console.log('Audio not allowed without gesture');
+              osc.stop(ctx.currentTime + 0.45);
+            } catch {
+              // Audio requires prior gesture
             }
           }
         }
@@ -87,111 +97,172 @@ export default function CandidateLiveStatusPage() {
     };
   }, []);
 
+  const playPagerChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+      toast('Synthesized D5 Pager Chime (587.33Hz)', 'ochre');
+    } catch {
+      // Audio permission
+    }
+  };
+
   const handleAccept = async (appId: string) => {
     const res = await acceptOffer(appId);
     if (res.success) {
-      alert(res.message);
+      toast(res.message || 'Offer locked!', 'jade');
       loadStudentState();
     } else {
-      alert(res.error);
+      toast(res.error || 'Failed to accept offer', 'brick');
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Link href="/student" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
-                &larr; Back to Dashboard
-              </Link>
+    <AppShell role="student">
+      <PageTransition className="space-y-6">
+        <Masthead
+          context="03 · SUPABASE REALTIME PAGER · DRIVE-DAY TELEMETRY"
+          title="Candidate Live Dispatch Board."
+          lede="Keep this frequency active on drive day. When recruiters dispatch you from the War Room, an instant audio chime and room assignment will trigger below."
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Volume2}
+                onClick={playPagerChime}
+              >
+                Test 587.33Hz Chime
+              </Button>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-jade-tint/50 border border-jade/40 font-mono text-xs font-semibold text-jade">
+                <span className="w-2 h-2 rounded-full bg-jade animate-ping" />
+                REALTIME FREQUENCY ACTIVE
+              </span>
             </div>
-            <h1 className="text-2xl font-bold">Candidate Live Dispatch Board</h1>
-            <p className="text-xs text-slate-400">Keep this screen open during drive day for real-time interview calls.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/student/drives">
-              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
-                Drives
-              </Button>
-            </Link>
-            <Link href="/student/remediation">
-              <Button variant="outline" size="sm" className="border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
-                Remediation
-              </Button>
-            </Link>
-          </div>
-        </header>
+          }
+        />
 
-        {/* Live Call Pager Banner */}
+        {/* Pulsing Live Call Pager Banner */}
         {activeAlert && (
-          <div className="rounded-xl border border-amber-500 bg-amber-500/10 p-5 animate-pulse text-amber-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs uppercase font-extrabold tracking-wider text-amber-400">Immediate Action Required</p>
-                <p className="text-lg font-bold mt-1">{activeAlert}</p>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setActiveAlert(null)} className="border-amber-500 text-amber-200">
-                Dismiss
+          <Callout
+            tone="ochre"
+            icon={Volume2}
+            title="IMMEDIATE PANEL DISPATCH ALERT"
+            className="animate-pulse border-2 border-accent"
+            action={
+              <Button size="sm" variant="secondary" onClick={() => setActiveAlert(null)}>
+                Acknowledge
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <p className="font-mono text-sm font-bold text-fg">{activeAlert}</p>
+          </Callout>
         )}
 
-        <div className="space-y-4">
-          {applications.map((app) => (
-            <Card key={app.id} className="border-slate-800 bg-slate-900 text-slate-100">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
+        {loading ? (
+          <div className="py-12 text-center font-mono text-xs text-fg-soft">
+            Synchronizing live dispatch feed...
+          </div>
+        ) : applications.length === 0 ? (
+          <Card className="p-10 text-center space-y-3">
+            <Radio className="w-8 h-8 text-fg-soft mx-auto" />
+            <h3 className="font-display text-lg font-semibold text-fg">
+              No Active Drive Dispatches
+            </h3>
+            <p className="text-xs text-fg-soft max-w-md mx-auto">
+              Apply to a placement drive first. Once registered, your live round transitions (R1, R2, HR, Offer) will stream here automatically.
+            </p>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {applications.map((app) => (
+              <Card key={app.id} className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
                   <div>
-                    <CardTitle className="text-lg">{app.placement_drives?.company_name}</CardTitle>
-                    <p className="text-xs text-slate-400">{app.placement_drives?.role_title} ({app.placement_drives?.tier})</p>
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="font-display font-semibold text-xl text-fg">
+                        {app.placement_drives?.company_name}
+                      </h3>
+                      <Stamp tone="ink">{app.placement_drives?.tier}</Stamp>
+                    </div>
+                    <p className="text-xs text-fg-soft mt-0.5">
+                      {app.placement_drives?.role_title}
+                    </p>
                   </div>
-                  <Badge className="bg-indigo-600 text-xs">{app.stage}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-xs text-slate-400">
-                  {app.ai_feedback_summary}
+
+                  <Stamp
+                    tone={
+                      app.stage === 'OFFERED'
+                        ? 'jade'
+                        : app.stage === 'REJECTED'
+                        ? 'brick'
+                        : 'ochre'
+                    }
+                  >
+                    {app.stage}
+                  </Stamp>
                 </div>
 
+                {app.ai_feedback_summary && (
+                  <MarginNote label="WAR ROOM / SCREENING TELEMETRY">
+                    {app.ai_feedback_summary}
+                  </MarginNote>
+                )}
+
                 {app.stage === 'OFFERED' && app.offer_status === 'PENDING' && (
-                  <div className="rounded border border-emerald-800 bg-emerald-950/40 p-4 flex justify-between items-center">
+                  <div className="p-4 rounded-control border border-jade/50 bg-jade-tint/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs text-emerald-400 uppercase font-semibold">Offer Received</p>
-                      <p className="text-xl font-bold text-slate-100">₹{app.offer_ctc} LPA</p>
+                      <span className="font-mono text-[10px] uppercase tracking-wider font-bold text-jade block">
+                        CORPORATE OFFER EXTENDED
+                      </span>
+                      <span className="font-display text-2xl font-bold text-fg">
+                        ₹{app.offer_ctc} LPA
+                      </span>
                     </div>
-                    <Button onClick={() => handleAccept(app.id)} className="bg-emerald-600 hover:bg-emerald-500">
-                      Accept Offer (Lock Status)
+                    <Button
+                      variant="success"
+                      icon={CheckCircle2}
+                      onClick={() => handleAccept(app.id)}
+                    >
+                      Accept Offer &amp; Lock Status
                     </Button>
                   </div>
                 )}
 
                 {app.stage === 'REJECTED' && (
-                  <div className="rounded-lg border border-rose-900/60 bg-rose-950/20 p-4 space-y-2">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                      <div>
-                        <span className="text-xs uppercase font-bold tracking-wider text-rose-400">Application Status</span>
-                        <p className="text-sm font-semibold text-slate-200">Not Selected for this Drive</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Turn this rejection into an actionable learning roadmap with difficulty-calibrated timelines and tutorials.
-                        </p>
-                      </div>
-                      <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(app.placement_drives?.company_name || 'Drive')}&role=${encodeURIComponent(app.placement_drives?.role_title || 'Engineering')}`}>
-                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white shrink-0 shadow-md shadow-indigo-600/30">
-                          🚀 Generate Skill Roadmap
-                        </Button>
-                      </Link>
+                  <div className="p-4 rounded-control border border-brick/40 bg-brick-tint/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <span className="font-mono text-[10px] uppercase tracking-wider font-bold text-brick block">
+                        CANDIDATE REMEDIATION TRIGGER
+                      </span>
+                      <p className="text-xs text-fg mt-0.5">
+                        Convert this screening audit into a personalized, difficulty-calibrated learning roadmap and practice in the Monaco Sandbox.
+                      </p>
                     </div>
+                    <Link
+                      href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(
+                        app.placement_drives?.company_name || 'Drive'
+                      )}&role=${encodeURIComponent(
+                        app.placement_drives?.role_title || 'Engineering'
+                      )}`}
+                    >
+                      <Button variant="accent" icon={Rocket}>
+                        Generate Skill Roadmap
+                      </Button>
+                    </Link>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </PageTransition>
+    </AppShell>
   );
 }
-

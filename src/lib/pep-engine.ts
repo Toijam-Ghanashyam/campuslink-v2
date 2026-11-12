@@ -10,13 +10,7 @@ export function evaluateEligibility(
 
   // 1. Profile Verification Lock Check
   if (!student.is_locked) {
-    if (student.verification_status === 'MISMATCH_LOCKED' || student.rejection_reason) {
-      reasons.push(
-        `Profile Locked (Dataset Mismatch): ${student.rejection_reason || 'Submitted details do not match college dataset.'} Please fix your details on the Student Dashboard.`
-      );
-    } else {
-      reasons.push('Student academic record has not been verified and locked by the Placement Cell.');
-    }
+    reasons.push('Student academic record has not been verified and locked by the Placement Cell.');
   }
 
   // 2. Active Backlogs Gate

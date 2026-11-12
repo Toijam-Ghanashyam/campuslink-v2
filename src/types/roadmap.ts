@@ -23,8 +23,6 @@ export interface RoadmapMilestone {
   starterCodeSnippet?: string;
   language?: 'python' | 'javascript' | 'cpp';
   completed?: boolean;
-  topicTag?: string;
-  curatedProblems?: any[];
 }
 
 export interface CandidateRoadmap {

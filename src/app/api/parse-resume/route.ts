@@ -1,29 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { GEMINI_MODELS } from '@/lib/gemini-models';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-const FAST_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
-  'gemini-3.5-flash',
-  'gemini-3.6-flash',
-  'gemini-3.8-flash',
-];
-
-async function generateWithTimeout(model: string, contents: any, timeoutMs = 8000) {
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model ${model}`)), timeoutMs)
-  );
-  const genPromise = ai.models.generateContent({
-    model,
-    contents,
-    config: {
-      responseMimeType: 'application/json',
-    },
-  });
-  return Promise.race([genPromise, timeoutPromise]);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -77,7 +56,6 @@ MATCHING RULES:
 
 3. CGPA / Percentage: Extract their current/graduation CGPA as a number out of 10.0 (e.g. 8.42). If given in percentage, convert to 10-point scale (divide by 10 or 9.5).
 4. Batch Year: The expected year of graduation (e.g. 2026, 2025, 2027).
-5. Technical Skills: Extract all technical skills, programming languages (Python, Java, C++, JS/TS), frameworks (React, Next.js, Spring, Django), databases (SQL, Postgres, MongoDB), cloud tools (AWS, Docker, Git), and CS fundamentals mentioned. Standardize names cleanly.
 
 Return ONLY raw JSON without markdown backticks or extra text:
 {
@@ -91,18 +69,17 @@ Return ONLY raw JSON without markdown backticks or extra text:
   "branch": "string or null",
   "cgpa": number or null,
   "batchYear": number or null,
-  "activeBacklogs": number or 0,
-  "skills": ["string"]
+  "activeBacklogs": number or 0
 }`;
 
     let parsed: any = null;
     let lastError: any = null;
 
-    for (const model of FAST_MODELS) {
+    for (const model of GEMINI_MODELS) {
       try {
-        const response = await generateWithTimeout(
+        const response = await ai.models.generateContent({
           model,
-          [
+          contents: [
             {
               inlineData: {
                 mimeType: 'application/pdf',
@@ -111,21 +88,15 @@ Return ONLY raw JSON without markdown backticks or extra text:
             },
             prompt,
           ],
-          12000
-        );
+        });
         if (response?.text) {
-          let cleaned = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const firstBrace = cleaned.indexOf('{');
-          const lastBrace = cleaned.lastIndexOf('}');
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-          }
+          const cleaned = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
           parsed = JSON.parse(cleaned);
           break;
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`[Parse Resume] Model ${model} failed, trying next:`, err?.message || err);
+        console.warn(`[Parse Resume] Model ${model} failed, trying next:`, err?.message);
       }
     }
 

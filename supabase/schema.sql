@@ -289,3 +289,47 @@ CREATE POLICY "Admins and Recruiters can view all roadmaps"
   USING (
     (auth.jwt() -> 'user_metadata' ->> 'role') IN ('TPO_ADMIN', 'RECRUITER')
   );
+
+
+-- ====================================================================
+-- Public Users & Multi-Tenant Scoping Extensions
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id TEXT,
+  college_id UUID,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL DEFAULT 'STUDENT',
+  first_name TEXT,
+  last_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS verification_source TEXT DEFAULT 'ADMIN_MANUAL';
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS college_id UUID;
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS resume_url TEXT;
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'PENDING_VERIFICATION';
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
+CREATE POLICY "Users can read own profile"
+  ON public.users FOR SELECT
+  TO authenticated
+  USING (id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role') IN ('TPO_ADMIN', 'RECRUITER'));
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
+CREATE POLICY "Users can insert own profile"
+  ON public.users FOR INSERT
+  TO authenticated
+  WITH CHECK (id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile"
+  ON public.users FOR UPDATE
+  TO authenticated
+  USING (id = auth.uid());

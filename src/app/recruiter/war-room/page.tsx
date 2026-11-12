@@ -1,22 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { advanceCandidateStage } from '@/app/actions/war-room';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-
-const STAGES = [
-  'APPLIED',
-  'OA_CLEARED',
-  'INTERVIEW_R1',
-  'INTERVIEW_R2',
-  'HR_ROUND',
-  'OFFERED',
-  'REJECTED',
-];
+import { AppShell } from '@/components/layout/AppShell';
+import { Masthead } from '@/components/editorial/Masthead';
+import { Card } from '@/components/editorial/Card';
+import { Stamp } from '@/components/editorial/Stamp';
+import { Button } from '@/components/editorial/Button';
+import { PageTransition } from '@/components/editorial/PageTransition';
+import { useToast } from '@/components/editorial/Toast';
 
 export default function RecruiterWarRoom() {
   const [drives, setDrives] = useState<any[]>([]);
@@ -27,11 +20,14 @@ export default function RecruiterWarRoom() {
   const [loading, setLoading] = useState<boolean>(true);
 
   const supabase = createClient();
+  const { toast } = useToast();
 
-  // Load drives
   useEffect(() => {
     async function fetchDrives() {
-      const { data } = await supabase.from('placement_drives').select('*');
+      const { data } = await supabase
+        .from('placement_drives')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (data && data.length > 0) {
         setDrives(data);
         setSelectedDriveId(data[0].id);
@@ -41,7 +37,6 @@ export default function RecruiterWarRoom() {
     fetchDrives();
   }, []);
 
-  // Fetch applications for selected drive
   const fetchApplications = async (driveId: string) => {
     const { data } = await supabase
       .from('drive_applications')
@@ -53,7 +48,12 @@ export default function RecruiterWarRoom() {
         offer_ctc,
         offer_status,
         student_profiles (
-          *
+          id,
+          full_name,
+          roll_number,
+          branch,
+          verified_cgpa,
+          placement_status
         )
       `)
       .eq('drive_id', driveId)
@@ -66,7 +66,6 @@ export default function RecruiterWarRoom() {
     if (selectedDriveId) {
       fetchApplications(selectedDriveId);
 
-      // Listen to live real-time changes
       const channel = supabase
         .channel(`recruiter-warroom-${selectedDriveId}`)
         .on(
@@ -91,219 +90,187 @@ export default function RecruiterWarRoom() {
 
   const handleStageChange = async (appId: string, stage: string) => {
     const isOffer = stage === 'OFFERED';
-    await advanceCandidateStage(appId, stage, panelRoom, isOffer ? ctcOffer : undefined);
-    fetchApplications(selectedDriveId);
+    const res = await advanceCandidateStage(
+      appId,
+      stage,
+      panelRoom,
+      isOffer ? ctcOffer : undefined
+    );
+    if (res.success) {
+      toast(`Dispatched candidate to ${stage} (${panelRoom})`, 'jade');
+      fetchApplications(selectedDriveId);
+    } else {
+      toast(`Dispatch error: ${res.error}`, 'brick');
+    }
   };
 
-  if (loading) {
-    return <div className="p-8 text-slate-100">Loading War Room...</div>;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <header className="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 gap-4">
+    <AppShell role="recruiter">
+      <PageTransition className="space-y-6">
+        <Masthead
+          context="02 · ENTERPRISE DRIVE-DAY WAR ROOM · LIVE PANEL DISPATCH"
+          title="Candidate Queue & Live Dispatch."
+          lede="Candidates are ranked by Gemini AI Fit Score. Clicking any round trigger dispatches a live audio alert to the student's device; rejecting pre-generates their AI skill roadmap."
+        />
+
+        {/* War Room Control Strip */}
+        <Card className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-indigo-400">
-              Enterprise Drive-Day War Room
-            </h1>
-            <p className="text-sm text-slate-400">
-              High-Throughput Candidate Pipeline &amp; Panel Dispatch
-            </p>
+            <label className="font-mono text-[10px] uppercase tracking-wider text-fg-soft font-semibold block mb-1">
+              ACTIVE PLACEMENT DRIVE
+            </label>
+            <select
+              value={selectedDriveId}
+              onChange={(e) => setSelectedDriveId(e.target.value)}
+              className="w-full h-9 px-3 rounded-control border border-line bg-bg text-xs font-medium text-fg"
+            >
+              {drives.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.company_name} — {d.role_title} ({d.tier})
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div>
-              <label className="text-xs uppercase text-slate-400 font-semibold block">Active Drive</label>
-              <select
-                value={selectedDriveId}
-                onChange={(e) => setSelectedDriveId(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm text-slate-100"
-              >
-                {drives.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.company_name} - {d.role_title} ({d.tier})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs uppercase text-slate-400 font-semibold block">Dispatch Venue</label>
-              <Input
-                value={panelRoom}
-                onChange={(e) => setPanelRoom(e.target.value)}
-                className="h-8 bg-slate-900 border-slate-800 text-xs w-40"
-                placeholder="Lab / Panel No."
-              />
-            </div>
-
-            <div>
-              <label className="text-xs uppercase text-slate-400 font-semibold block">Offer CTC (LPA)</label>
-              <Input
-                type="number"
-                value={ctcOffer}
-                onChange={(e) => setCtcOffer(parseFloat(e.target.value))}
-                className="h-8 bg-slate-900 border-slate-800 text-xs w-24"
-              />
-            </div>
-          </div>
-        </header>
-
-        {/* Applications List */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center text-xs text-slate-400 uppercase tracking-wider font-semibold px-2">
-            <span>Candidate &amp; AI Screening</span>
-            <span>Current Stage &amp; Dispatch Actions</span>
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-wider text-fg-soft font-semibold block mb-1">
+              DISPATCH VENUE / PANEL ROOM
+            </label>
+            <input
+              type="text"
+              value={panelRoom}
+              onChange={(e) => setPanelRoom(e.target.value)}
+              placeholder="e.g. Computing Lab 4 - Panel 2"
+              className="w-full h-9 px-3 rounded-control border border-line bg-bg text-xs font-mono text-fg"
+            />
           </div>
 
-          {applications.length === 0 ? (
-            <Card className="border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
-              No candidates have applied to this drive yet.
-            </Card>
-          ) : (
-            applications.map((app) => {
-              const student = app.student_profiles;
-              const user = student?.users;
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-wider text-fg-soft font-semibold block mb-1">
+              OFFER PACKAGE (LPA)
+            </label>
+            <input
+              type="number"
+              step="0.5"
+              value={ctcOffer}
+              onChange={(e) => setCtcOffer(parseFloat(e.target.value) || 0)}
+              className="w-full h-9 px-3 rounded-control border border-line bg-bg text-xs font-mono text-fg"
+            />
+          </div>
+        </Card>
 
-              return (
-                <Card
-                  key={app.id}
-                  className="border-slate-800 bg-slate-900/80 hover:bg-slate-900 text-slate-100 transition-colors"
-                >
-                  <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-100 text-base">
-                          {(student as any)?.full_name || (student?.roll_number ? `Roll: ${student.roll_number}` : 'Candidate')}
-                        </span>
-                        <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs">
-                          {student?.roll_number}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {student?.branch}
-                        </Badge>
-                        <Badge className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs">
-                          CGPA: {student?.verified_cgpa}
-                        </Badge>
-                      </div>
+        {/* Ranked Candidate Queue */}
+        {loading ? (
+          <div className="py-12 text-center font-mono text-xs text-fg-soft">
+            Initializing War Room telemetry...
+          </div>
+        ) : applications.length === 0 ? (
+          <Card className="p-12 text-center text-xs text-fg-soft">
+            No candidates have applied to this drive yet.
+          </Card>
+        ) : (
+          <div className="w-full overflow-x-auto border-y border-line no-scrollbar">
+            <table className="w-full min-w-[820px] text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-line bg-surface/60 font-mono text-[10.5px] uppercase tracking-wider text-fg-soft">
+                  <th className="py-3 px-4">Candidate &amp; Roll</th>
+                  <th className="py-3 px-4">Branch &amp; CGPA</th>
+                  <th className="py-3 px-4">AI Fit Score</th>
+                  <th className="py-3 px-4">Stage</th>
+                  <th className="py-3 px-4 text-right">One-Click Panel Dispatch</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {applications.map((app) => {
+                  const st = app.student_profiles;
+                  return (
+                    <tr key={app.id} className="hover:bg-surface/40 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <p className="font-display font-semibold text-base text-fg">
+                          {st?.full_name || `Candidate (${st?.roll_number || 'N/A'})`}
+                        </p>
+                        <p className="font-mono text-xs text-fg-soft">{st?.roll_number}</p>
+                      </td>
 
-                      <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span>AI Match: <strong className="text-emerald-400">{app.ai_fit_score || 0}%</strong></span>
-                        <span>•</span>
-                        <span className="truncate max-w-md italic text-slate-300">
-                          {app.ai_feedback_summary || 'Pending evaluation'}
-                        </span>
-                      </div>
+                      <td className="py-3.5 px-4 text-xs">
+                        <span className="font-medium text-fg">{st?.branch}</span>
+                        <p className="font-mono text-jade font-semibold">
+                          {st?.verified_cgpa} CGPA
+                        </p>
+                      </td>
 
-                      {/* Proctored Student Readiness & Integrity Badges */}
-                      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-indigo-950/70 border border-indigo-700/60 text-indigo-300">
-                          🎯 Readiness:{' '}
-                          <span className="text-white font-bold">
-                            {(student as any)?.readiness_score !== undefined && (student as any)?.readiness_score !== null && (student as any)?.readiness_score > 0
-                              ? `${(student as any).readiness_score}/100`
-                              : 'Not Tested'}
-                          </span>
-                        </span>
+                      <td className="py-3.5 px-4">
+                        <div className="font-mono text-xs space-y-1 max-w-[260px]">
+                          <strong className="text-jade text-sm">
+                            {app.ai_fit_score || 0}% Match
+                          </strong>
+                          <p className="text-[11px] text-fg-soft truncate">
+                            {app.ai_feedback_summary || 'Awaiting AI screening'}
+                          </p>
+                        </div>
+                      </td>
 
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] border ${
-                            ((student as any)?.readiness_integrity_score ?? 100) >= 80
-                              ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300'
-                              : 'bg-rose-950/70 border-rose-700/60 text-rose-300'
-                          }`}
+                      <td className="py-3.5 px-4">
+                        <Stamp
+                          tone={
+                            app.stage === 'OFFERED'
+                              ? 'jade'
+                              : app.stage === 'REJECTED'
+                              ? 'brick'
+                              : 'ochre'
+                          }
                         >
-                          🛡️ Integrity:{' '}
-                          <span className="font-bold">
-                            {(student as any)?.readiness_score
-                              ? `${(student as any)?.readiness_integrity_score ?? 100}%`
-                              : '100%'}
-                          </span>
-                          {((student as any)?.readiness_integrity_score ?? 100) < 80 && (
-                            <span className="text-[10px] text-rose-400 font-bold ml-1">⚠️ Flags</span>
-                          )}
-                        </span>
+                          {app.stage}
+                        </Stamp>
+                      </td>
 
-                        {(student as any)?.readiness_status && (student as any)?.readiness_status !== 'NOT_TESTED' && (
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                              (student as any).readiness_status === 'HIGHLY_READY'
-                                ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50'
-                                : (student as any).readiness_status === 'INTERVIEW_READY'
-                                ? 'bg-indigo-900/60 text-indigo-300 border border-indigo-700/50'
-                                : 'bg-amber-900/60 text-amber-300 border border-amber-700/50'
-                            }`}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleStageChange(app.id, 'INTERVIEW_R1')}
                           >
-                            {(student as any).readiness_status.replace('_', ' ')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge
-                        className={`text-xs px-2.5 py-1 ${
-                          app.stage === 'OFFERED'
-                            ? 'bg-emerald-600'
-                            : app.stage === 'REJECTED'
-                            ? 'bg-rose-600'
-                            : 'bg-indigo-600'
-                        }`}
-                      >
-                        {app.stage}
-                      </Badge>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 border-slate-700 hover:bg-slate-800 text-xs"
-                          onClick={() => handleStageChange(app.id, 'INTERVIEW_R1')}
-                        >
-                          Call R1
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 border-slate-700 hover:bg-slate-800 text-xs"
-                          onClick={() => handleStageChange(app.id, 'INTERVIEW_R2')}
-                        >
-                          Call R2
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 border-slate-700 hover:bg-slate-800 text-xs"
-                          onClick={() => handleStageChange(app.id, 'HR_ROUND')}
-                        >
-                          Call HR
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-8 bg-emerald-600 hover:bg-emerald-500 text-xs"
-                          onClick={() => handleStageChange(app.id, 'OFFERED')}
-                        >
-                          Offer
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-8 text-xs"
-                          onClick={() => handleStageChange(app.id, 'REJECTED')}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
+                            Call R1
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleStageChange(app.id, 'INTERVIEW_R2')}
+                          >
+                            Call R2
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleStageChange(app.id, 'HR_ROUND')}
+                          >
+                            Call HR
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleStageChange(app.id, 'OFFERED')}
+                          >
+                            Offer
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleStageChange(app.id, 'REJECTED')}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </PageTransition>
+    </AppShell>
   );
 }
-

@@ -68,23 +68,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { applicationId, companyName, roleTitle, feedbackSummary, missingSkills, forceRegenerate } = body;
+    const { applicationId, companyName, roleTitle, feedbackSummary, forceRegenerate } = body;
 
     let targetCompany = companyName || 'Technology Enterprise';
     let targetRole = roleTitle || 'Software Development Engineer';
     let feedback = feedbackSummary || '';
 
-    let parsedMissingSkills: string[] = [];
-    if (Array.isArray(missingSkills)) {
-      parsedMissingSkills = missingSkills.map((s: any) => String(s).trim()).filter(Boolean);
-    } else if (typeof missingSkills === 'string' && missingSkills.trim()) {
-      parsedMissingSkills = missingSkills.split(',').map((s: string) => s.trim()).filter(Boolean);
-    }
-
     // 3. Multi-Level Database Cache Lookup (Instant 0-second hit)
-    if (!forceRegenerate && parsedMissingSkills.length === 0) {
-      // Level A: Exact Application ID match (only if not requesting a different custom company/role)
-      if (applicationId && !companyName) {
+    if (!forceRegenerate) {
+      // Level A: Exact Application ID match
+      if (applicationId) {
         const { data: existingAppRoadmap } = await supabase
           .from('candidate_roadmaps')
           .select('*')
@@ -135,7 +128,6 @@ export async function POST(req: NextRequest) {
       targetCompany,
       targetRole,
       feedback,
-      missingSkills: parsedMissingSkills,
       verifiedCgpa: student.verified_cgpa || 7.5,
       branch: student.branch || 'Computer Science & Engineering',
     });
@@ -143,11 +135,6 @@ export async function POST(req: NextRequest) {
     if (!parsedResponse || !parsedResponse.milestones) {
       return NextResponse.json({ error: 'Failed to generate roadmap content from AI engine' }, { status: 500 });
     }
-
-    const finalMissingSkills =
-      parsedMissingSkills.length > 0
-        ? parsedMissingSkills
-        : parsedResponse.missingSkills || [];
 
     // 5. Persist generated roadmap into candidate_roadmaps table
     const { data: insertedRoadmap, error: insertErr } = await supabase
@@ -159,7 +146,7 @@ export async function POST(req: NextRequest) {
         role_title: targetRole,
         target_role: targetRole,
         total_duration_weeks: parsedResponse.totalDurationWeeks || 8,
-        missing_skills: finalMissingSkills,
+        missing_skills: parsedResponse.missingSkills || [],
         milestones: parsedResponse.milestones || [],
       })
       .select('*')

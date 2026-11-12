@@ -4,22 +4,24 @@ import path from 'path';
 import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { GoogleGenAI } from '@google/genai';
+import { GEMINI_MODELS } from '@/lib/gemini-models';
 
 const execAsync = promisify(exec);
 
 // 1. Local Node.js Runner for JavaScript
-async function runLocalJavaScript(sourceCode: string, stdin?: string): Promise<string> {
+async function runLocalJavaScript(sourceCode: string): Promise<string> {
   const tmpFile = path.join(os.tmpdir(), `campuslink_${Date.now()}_${Math.random().toString(36).slice(2)}.js`);
   try {
     await fs.writeFile(tmpFile, sourceCode, 'utf8');
     const { stdout, stderr } = await execAsync(`node "${tmpFile}"`, {
-      timeout: 6000,
+      timeout: 5000,
       maxBuffer: 1024 * 512,
     });
     return stdout || stderr || 'Execution complete (no output returned).';
   } catch (err: any) {
     if (err.killed || err.signal === 'SIGTERM') {
-      return 'Execution timed out (exceeded 6s limit).';
+      return 'Execution timed out (exceeded 5s limit).';
     }
     return err.stdout || err.stderr || err.message || 'Execution error';
   } finally {
@@ -29,52 +31,48 @@ async function runLocalJavaScript(sourceCode: string, stdin?: string): Promise<s
   }
 }
 
-// 2. Wandbox Public Compiler API (100% Free, Zero Quota, No API Key)
-async function runWithWandbox(language: string, sourceCode: string, stdin?: string): Promise<string | null> {
+// 2. CodeX Public API Runner
+async function runWithCodex(language: string, sourceCode: string, stdin?: string): Promise<string | null> {
   try {
-    let compiler = 'gcc-head';
-    if (language === 'python') {
-      compiler = 'cpython-3.12.7';
-    } else if (language === 'javascript') {
-      compiler = 'nodejs-head';
-    } else if (language === 'java') {
-      compiler = 'openjdk-jdk-21+35';
-    }
-
-    const payload: Record<string, any> = {
-      compiler,
-      code: sourceCode,
-      stdin: stdin || '',
+    const langMap: Record<string, string> = {
+      python: 'py',
+      javascript: 'js',
+      cpp: 'cpp',
+      java: 'java',
     };
+    const lang = langMap[language] || 'py';
 
-    if (language === 'cpp') {
-      payload.options = 'c++20,warning,optimize';
-    }
-
-    const res = await fetch('https://wandbox.org/api/compile.json', {
+    const res = await fetch('https://api.codex.jaagrav.in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        code: sourceCode,
+        language: lang,
+        input: stdin || '',
+      }),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!res.ok) return null;
-    const data = await res.json();
-    const output = data.program_output || data.program_error || data.compiler_error || data.signal;
-    return output ? output.toString() : 'Execution complete (no output returned).';
-  } catch (err) {
-    console.warn('[RunCode] Wandbox runner failed or timed out:', err);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.output !== undefined && data.output !== null) {
+      return (data.output || data.error || 'Execution complete (no output returned).').toString();
+    }
+    return null;
+  } catch {
     return null;
   }
 }
 
-// 3. OneCompiler Public API Backup
+// 3. OneCompiler Public API Runner
 async function runWithOneCompiler(language: string, sourceCode: string, stdin?: string): Promise<string | null> {
   try {
     const langMap: Record<string, { lang: string; ext: string }> = {
       python: { lang: 'python', ext: 'main.py' },
       javascript: { lang: 'javascript', ext: 'index.js' },
       cpp: { lang: 'cpp', ext: 'main.cpp' },
+      java: { lang: 'java', ext: 'Main.java' },
     };
     const target = langMap[language] || langMap.python;
 
@@ -89,7 +87,7 @@ async function runWithOneCompiler(language: string, sourceCode: string, stdin?: 
         files: [{ name: target.ext, content: sourceCode }],
         stdin: stdin || '',
       }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!res.ok) return null;
@@ -105,249 +103,98 @@ async function runWithOneCompiler(language: string, sourceCode: string, stdin?: 
   }
 }
 
-// 4. Automated Deterministic LeetCode Test Case Evaluator
-async function evaluateTestCases(
-  language: string,
-  sourceCode: string,
-  functionName: string,
-  testCases: Array<{ inputDisplay: string; args: any[]; expected: any }>
-) {
-  if (language === 'javascript') {
-    const harness = `
-${sourceCode}
+// 4. Intelligent AI Execution Engine via Gemini (Primary: 3.8 Flash, Backup: 3.5 Flash)
+async function runWithGemini(language: string, sourceCode: string, stdin?: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return 'Execution service failed: No runner available and GEMINI_API_KEY is not set.';
+  }
 
-(function runSuite() {
-  const tcs = ${JSON.stringify(testCases)};
-  const results = [];
-  
-  for (let i = 0; i < tcs.length; i++) {
-    const tc = tcs[i];
-    const t0 = Date.now();
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `You are a strict, sandboxed code execution runner (standard stdout/stderr).
+Execute the following ${language} code with the provided standard input (stdin) if any.
+Do not provide explanations, markdown backticks, or conversational text.
+Return ONLY the exact raw terminal output (stdout and/or stderr) that would be printed to console.
+
+Input STDIN:
+${stdin || '(none)'}
+
+Source Code:
+${sourceCode}
+`;
+
+  // Primary: gemini-3.6-flash, followed by fallback chain
+  for (const modelName of GEMINI_MODELS) {
     try {
-      let fn = typeof ${functionName} === 'function' ? ${functionName} : null;
-      if (!fn && typeof Solution === 'function') {
-        const s = new Solution();
-        if (typeof s.${functionName} === 'function') fn = s.${functionName}.bind(s);
-      }
-      if (!fn) throw new Error("Could not find function '${functionName}' in code.");
-      
-      const actual = fn(...tc.args);
-      const passed = JSON.stringify(actual) === JSON.stringify(tc.expected) || actual === tc.expected;
-      results.push({
-        testIndex: i + 1,
-        passed,
-        input: tc.inputDisplay,
-        expected: tc.expected,
-        actual,
-        runtimeMs: Math.max(1, Date.now() - t0)
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
       });
+      if (response?.text) {
+        return response.text.trim();
+      }
     } catch (err) {
-      results.push({
-        testIndex: i + 1,
-        passed: false,
-        input: tc.inputDisplay,
-        expected: tc.expected,
-        error: err.message,
-        runtimeMs: Math.max(1, Date.now() - t0)
-      });
-    }
-  }
-  console.log("CAMPUSLINK_TEST_RESULTS:" + JSON.stringify(results));
-})();
-`;
-    const out = await runLocalJavaScript(harness);
-    if (out.includes('CAMPUSLINK_TEST_RESULTS:')) {
-      const jsonStr = out.split('CAMPUSLINK_TEST_RESULTS:')[1].trim();
-      return JSON.parse(jsonStr);
-    }
-  } else if (language === 'python') {
-    const harness = `
-${sourceCode}
-
-import json, time
-
-tcs = ${JSON.stringify(testCases)}
-results = []
-sol = Solution() if 'Solution' in globals() else None
-
-for i, tc in enumerate(tcs):
-    t0 = time.time()
-    try:
-        fn = getattr(sol, '${functionName}', None) or globals().get('${functionName}')
-        if not fn:
-            raise Exception("Could not find function '${functionName}'")
-        actual = fn(*tc['args'])
-        passed = (actual == tc['expected']) or (json.dumps(actual) == json.dumps(tc['expected']))
-        results.append({
-            'testIndex': i + 1,
-            'passed': bool(passed),
-            'input': tc['inputDisplay'],
-            'expected': tc['expected'],
-            'actual': actual,
-            'runtimeMs': max(1, int((time.time() - t0) * 1000))
-        })
-    except Exception as e:
-        results.append({
-            'testIndex': i + 1,
-            'passed': False,
-            'input': tc['inputDisplay'],
-            'expected': tc['expected'],
-            'error': str(e),
-            'runtimeMs': max(1, int((time.time() - t0) * 1000))
-        })
-
-print("CAMPUSLINK_TEST_RESULTS:" + json.dumps(results))
-`;
-    const out = await runWithWandbox('python', harness);
-    if (out && out.includes('CAMPUSLINK_TEST_RESULTS:')) {
-      const jsonStr = out.split('CAMPUSLINK_TEST_RESULTS:')[1].trim();
-      return JSON.parse(jsonStr);
-    }
-  } else if (language === 'java') {
-    function toJavaLiteral(val: any): string {
-      if (val === null || val === undefined) return 'null';
-      if (typeof val === 'string') return JSON.stringify(val);
-      if (typeof val === 'number') return val.toString();
-      if (typeof val === 'boolean') return val.toString();
-      if (Array.isArray(val)) {
-        if (val.length === 0) return 'new int[]{}';
-        if (typeof val[0] === 'number') {
-          return `new int[]{${val.join(', ')}}`;
-        }
-        if (typeof val[0] === 'string' && val[0].length === 1) {
-          return `new char[]{${val.map((c) => `'${c}'`).join(', ')}}`;
-        }
-        if (Array.isArray(val[0])) {
-          if (typeof val[0][0] === 'string' && val[0][0].length === 1) {
-            return `new char[][]{${val.map((row) => `{${row.map((c: string) => `'${c}'`).join(', ')}}`).join(', ')}}`;
-          }
-          return `new int[][]{${val.map((row) => `{${row.join(', ')}}`).join(', ')}}`;
-        }
-        return `Arrays.asList(${val.map(toJavaLiteral).join(', ')})`;
-      }
-      return String(val);
-    }
-
-    const casesCode = testCases
-      .map((tc, idx) => {
-        const callArgs = tc.args.map(toJavaLiteral).join(', ');
-        const expLit = toJavaLiteral(tc.expected);
-        return `
-        {
-          long t0 = System.currentTimeMillis();
-          try {
-            var act = sol.${functionName}(${callArgs});
-            long t1 = System.currentTimeMillis();
-            boolean passed = checkEq(act, ${expLit});
-            outList.add(formatCase(${idx + 1}, passed, ${JSON.stringify(tc.inputDisplay)}, ${JSON.stringify(JSON.stringify(tc.expected))}, strVal(act), Math.max(1, t1 - t0)));
-          } catch (Exception e) {
-            outList.add(formatError(${idx + 1}, ${JSON.stringify(tc.inputDisplay)}, ${JSON.stringify(JSON.stringify(tc.expected))}, e.getMessage()));
-          }
-        }
-        `;
-      })
-      .join('\n');
-
-    const harness = `
-${sourceCode}
-
-class Main {
-    static boolean checkEq(Object a, Object b) {
-        if (a == null && b == null) return true;
-        if (a == null || b == null) return false;
-        if (a instanceof int[] && b instanceof int[]) return Arrays.equals((int[]) a, (int[]) b);
-        if (a instanceof char[] && b instanceof char[]) return Arrays.equals((char[]) a, (char[]) b);
-        if (a.getClass().isArray() && b.getClass().isArray()) return Arrays.deepEquals((Object[]) a, (Object[]) b);
-        return a.equals(b);
-    }
-
-    static String strVal(Object a) {
-        if (a == null) return "null";
-        if (a instanceof int[]) return Arrays.toString((int[]) a);
-        if (a instanceof char[]) return new String((char[]) a);
-        if (a.getClass().isArray()) return Arrays.deepToString((Object[]) a);
-        return a.toString();
-    }
-
-    static String formatCase(int idx, boolean passed, String in, String exp, String act, long ms) {
-        return "{\\"testIndex\\":" + idx + ",\\"passed\\":" + passed + ",\\"input\\":\\"" + in + "\\",\\"expected\\":" + exp + ",\\"actual\\":\\"" + act + "\\",\\"runtimeMs\\":" + ms + "}";
-    }
-
-    static String formatError(int idx, String in, String exp, String err) {
-        return "{\\"testIndex\\":" + idx + ",\\"passed\\":false,\\"input\\":\\"" + in + "\\",\\"expected\\":" + exp + ",\\"error\\":\\"" + (err == null ? "Runtime Error" : err.replace("\\\"", "\\\\'")) + "\\",\\"runtimeMs\\":1}";
-    }
-
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        List<String> outList = new ArrayList<>();
-        ${casesCode}
-        System.out.println("CAMPUSLINK_TEST_RESULTS:[" + String.join(",", outList) + "]");
-    }
-}
-    `;
-
-    const out = await runWithWandbox('java', harness);
-    if (out && out.includes('CAMPUSLINK_TEST_RESULTS:')) {
-      const jsonStr = out.split('CAMPUSLINK_TEST_RESULTS:')[1].trim();
-      return JSON.parse(jsonStr);
+      console.warn(`Model ${modelName} runner failed, trying backup:`, err);
     }
   }
 
-  return null;
+  return 'Execution complete (no output returned).';
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { language, sourceCode, stdin, testCases, functionName } = await req.json();
+    const { language, sourceCode, stdin } = await req.json();
 
     if (!sourceCode) {
       return NextResponse.json({ error: 'Source code is required' }, { status: 400 });
     }
 
-    // 1. If LeetCode Test Cases are passed, execute deterministic grading suite
-    if (testCases && Array.isArray(testCases) && testCases.length > 0 && functionName) {
-      const testResults = await evaluateTestCases(language, sourceCode, functionName, testCases);
-      if (testResults) {
-        const passedCount = testResults.filter((r: any) => r.passed).length;
-        const allPassed = passedCount === testResults.length;
-        const totalRuntime = testResults.reduce((acc: number, r: any) => acc + (r.runtimeMs || 1), 0);
-
+    // 1. Fast-path for JavaScript: Execute directly on local Node runtime (<50ms)
+    if (language === 'javascript') {
+      try {
+        const localOutput = await runLocalJavaScript(sourceCode);
         return NextResponse.json({
           run: {
-            output: allPassed
-              ? `✅ Accepted\nPassed: ${passedCount}/${testResults.length} test cases\nTotal Runtime: ${totalRuntime}ms`
-              : `❌ Wrong Answer\nPassed: ${passedCount}/${testResults.length} test cases`,
-            testResults,
-            allPassed,
-            passedCount,
-            totalCount: testResults.length,
+            output: localOutput,
           },
         });
+      } catch (localErr) {
+        console.warn('Local JS fallback to Gemini:', localErr);
       }
     }
 
-    // 2. Direct Raw Code Execution (Standard Run)
-    let processedSource = sourceCode;
-    if (language === 'java' && !sourceCode.includes('main(') && !sourceCode.includes('main (')) {
-      processedSource += '\nclass Main { public static void main(String[] args) { System.out.println("Java code compiled successfully with zero syntax errors. Click \\"Run LeetCode Tests\\" to test your solution."); } }';
+    // 2. Direct Ultra-Fast Execution via Gemini 3.8 Flash (~500ms-800ms)
+    try {
+      const geminiOutput = await runWithGemini(language, sourceCode, stdin);
+      if (geminiOutput && !geminiOutput.startsWith('Execution service failed')) {
+        return NextResponse.json({
+          run: {
+            output: geminiOutput,
+          },
+        });
+      }
+    } catch (geminiErr) {
+      console.warn('Gemini 3.8/3.5 runner failed, trying public runners:', geminiErr);
     }
 
-    // Fast path: JavaScript on local node runtime (<30ms)
-    if (language === 'javascript') {
-      const localOut = await runLocalJavaScript(sourceCode, stdin);
-      return NextResponse.json({ run: { output: localOut } });
+    // 3. Fallback: CodeX API (low timeout to prevent lagging)
+    const codexOutput = await runWithCodex(language, sourceCode, stdin);
+    if (codexOutput !== null) {
+      return NextResponse.json({
+        run: {
+          output: codexOutput,
+        },
+      });
     }
 
-    // Free zero-cost compiler: Wandbox (Java, C++, Python)
-    const wandboxOut = await runWithWandbox(language, processedSource, stdin);
-    if (wandboxOut !== null) {
-      return NextResponse.json({ run: { output: wandboxOut } });
-    }
-
-    // Backup: OneCompiler
-    const oneCompilerOut = await runWithOneCompiler(language, processedSource, stdin);
-    if (oneCompilerOut !== null) {
-      return NextResponse.json({ run: { output: oneCompilerOut } });
+    // 4. Fallback: OneCompiler API
+    const oneCompilerOutput = await runWithOneCompiler(language, sourceCode, stdin);
+    if (oneCompilerOutput !== null) {
+      return NextResponse.json({
+        run: {
+          output: oneCompilerOutput,
+        },
+      });
     }
 
     return NextResponse.json({
