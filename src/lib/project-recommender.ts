@@ -23,7 +23,7 @@ const PROJECT_JSON_SCHEMA = {
       skillGapReasoning: {
         type: 'string',
         description:
-          'Forced Chain-of-Thought analysis: explain which missing skills are most critical for this company/role, how the student can bridge them using existing skills, and how each project is scored using Suitability = (0.40 * Gap Coverage) + (0.30 * Domain Alignment) + (0.20 * Foundation Leverage) + (0.10 * Feasibility).',
+          'Concise point-wise Forced Chain-of-Thought breakdown (max 4 bullet points starting with "•"). Keep short, punchy, and highly readable. NO dense continuous paragraphs.',
       },
       recommendedProjects: {
         type: 'array',
@@ -108,13 +108,12 @@ export async function generateTailoredProjects(
 Your mission is to generate exactly 3 production-grade, resume-worthy project blueprints for a student interviewing at "${companyName}" for the "${roleTitle}" role.
 
 CRITICAL DIRECTIVES:
-1. FORCED CHAIN-OF-THOUGHT SCORING:
-   In the "skillGapReasoning" field (generated BEFORE the projects), analyze:
-   - What critical engineering problems "${companyName}" solves in its industry.
-   - Why the student's missing skills (${missingSkills.join(', ') || 'Domain Specialization'}) are hiring blockers for this role.
-   - How each recommended project is calculated using the strict suitability formula:
-     Suitability = (0.40 * Gap Coverage) + (0.30 * Domain Alignment) + (0.20 * Foundation Leverage) + (0.10 * Feasibility)
-     Score each project between 75 and 98 based on this rubric.
+1. FORCED CHAIN-OF-THOUGHT SCORING (STRICTLY POINT-WISE & CONCISE):
+   In the "skillGapReasoning" field, DO NOT write a giant narrative paragraph. Output exactly 3 to 4 short, scannable bullet points starting with "•":
+   • Role & Domain Context: 1 concise sentence on the core engineering challenge at ${companyName}.
+   • Critical Hiring Blockers: 1 bullet highlighting why missing skills (${missingSkills.join(', ') || 'Domain Specialization'}) block candidate shortlisting.
+   • Project Fit & Strategy: 1 bullet per project explaining how its Suitability score = (0.40 * Gap Coverage) + (0.30 * Domain Alignment) + (0.20 * Foundation Leverage) + (0.10 * Feasibility) bridges the gap using existing skills (${matchedSkills.join(', ') || 'Core Programming'}).
+   Keep total length under 140 words and strictly formatted as concise "•" bullet points.
 
 2. STRICTLY FORBIDDEN GENERIC PROJECTS:
    DO NOT recommend To-Do apps, Weather apps, Simple Calculators, Tic-Tac-Toe, or generic Blog clones.

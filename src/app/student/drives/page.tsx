@@ -29,6 +29,92 @@ const DEMO_STARTER_SKILLS = [
   'REST APIs',
 ];
 
+interface ReasoningPoint {
+  category?: string;
+  icon: string;
+  text: string;
+}
+
+function parseReasoningToBulletPoints(raw: string): ReasoningPoint[] {
+  if (!raw) return [];
+
+  // 1. If already formatted with bullet points or newlines
+  const rawLines = raw.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  if (rawLines.length > 2) {
+    return rawLines.map((l) => {
+      const clean = l.replace(/^[•\-\*]\s*/, '').trim();
+      let icon = '•';
+      let category = '';
+      if (/role|domain|focus|context/i.test(clean.slice(0, 30))) {
+        icon = '🎯';
+        category = 'Role Context';
+      } else if (/blocker|gap|missing|critical/i.test(clean.slice(0, 30))) {
+        icon = '🚨';
+        category = 'Key Blocker';
+      } else if (/project|blueprint|fit|strategy|score/i.test(clean.slice(0, 30))) {
+        icon = '🚀';
+        category = 'Blueprint Strategy';
+      }
+      return { category, icon, text: clean };
+    });
+  }
+
+  // 2. Deconstruct dense paragraphs into concise, scannable bullet points
+  const points: ReasoningPoint[] = [];
+  const sentences = raw.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim()).filter(Boolean);
+
+  const blockerIdx = sentences.findIndex(
+    (s) => s.toLowerCase().includes('hiring blocker') || s.toLowerCase().includes('missing skill')
+  );
+  if (blockerIdx > 0) {
+    points.push({
+      category: 'Role Focus',
+      icon: '🎯',
+      text: sentences.slice(0, blockerIdx).join(' '),
+    });
+  } else if (sentences[0]) {
+    points.push({
+      category: 'Role Focus',
+      icon: '🎯',
+      text: sentences[0],
+    });
+  }
+
+  const blockersMatch = raw.match(
+    /critical hiring blockers(?: because)?:?\s*([\s\S]*?)(?=(?:The recommended projects|Each recommended project|Project 1|\. Project))/i
+  );
+  if (blockersMatch && blockersMatch[1]) {
+    const rawBlockers = blockersMatch[1];
+    const subBlockers = rawBlockers
+      .split(/(?:\([0-9]\)|;(?:\s*and)?|\band\s+Git\b)/gi)
+      .map((b) => b.trim().replace(/^[:;,\-–—\s]+/, ''))
+      .filter((b) => b.length > 15);
+
+    if (subBlockers.length > 0) {
+      subBlockers.forEach((b) => {
+        points.push({ category: 'Key Blocker', icon: '🚨', text: b });
+      });
+    } else {
+      points.push({ category: 'Key Blocker', icon: '🚨', text: rawBlockers.trim() });
+    }
+  }
+
+  const projectMatches = raw.match(/Project\s+[1-3]\s*\([^)]*\)[^.]*\./gi);
+  if (projectMatches && projectMatches.length > 0) {
+    projectMatches.forEach((p) => {
+      points.push({ category: 'Blueprint Strategy', icon: '🚀', text: p.trim() });
+    });
+  }
+
+  if (points.length >= 2) return points;
+
+  return sentences.map((s, idx) => ({
+    category: idx === 0 ? 'Role Focus' : 'Key Takeaway',
+    icon: '•',
+    text: s,
+  }));
+}
+
 export default function StudentDrivesPage() {
   const [rawDrives, setRawDrives] = useState<any[]>([]);
   const [student, setStudent] = useState<any>(null);
@@ -1128,15 +1214,36 @@ export default function StudentDrivesPage() {
             </div>
           ) : portfolioRecs ? (
             <div className="space-y-4 py-2">
-              {/* Forced Chain-of-Thought Reasoning Box */}
+              {/* Point-Wise Skill Gap Reasoning & Suitability Breakdown */}
               {portfolioRecs.reasoning && (
-                <div className="rounded-xl border border-indigo-800/40 bg-indigo-950/20 p-3.5 text-xs text-indigo-200 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-indigo-300 uppercase tracking-wider text-[11px]">
-                    <span>🧠</span> Architectural Skill Gap Reasoning &amp; Suitability Analysis
+                <div className="rounded-xl border border-indigo-800/40 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-indigo-950/20 p-4 text-xs space-y-2.5 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-indigo-800/40 pb-2">
+                    <div className="flex items-center gap-2 font-bold text-indigo-300 uppercase tracking-wider text-[11px]">
+                      <span>🧠</span> Key Skill Gap Analysis &amp; Blueprint Strategy
+                    </div>
+                    <span className="text-[10px] text-indigo-400 font-medium bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-700/50 self-start sm:self-center">
+                      Formula: 40% Gap • 30% Domain • 20% Foundation • 10% Feasibility
+                    </span>
                   </div>
-                  <p className="leading-relaxed text-slate-300 text-xs">
-                    {portfolioRecs.reasoning}
-                  </p>
+
+                  <ul className="space-y-2 text-xs text-slate-300">
+                    {parseReasoningToBulletPoints(portfolioRecs.reasoning).map((pt, pIdx) => (
+                      <li
+                        key={pIdx}
+                        className="flex items-start gap-2.5 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60"
+                      >
+                        <span className="text-base shrink-0 mt-0.5">{pt.icon || '•'}</span>
+                        <div className="space-y-0.5 flex-1">
+                          {pt.category && (
+                            <span className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider block">
+                              {pt.category}
+                            </span>
+                          )}
+                          <p className="text-slate-200 text-xs leading-relaxed">{pt.text}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
