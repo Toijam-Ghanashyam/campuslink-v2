@@ -14,6 +14,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Globe } from 'lucide-react';
+import { CompanyResearchDrawer } from '@/components/student/CompanyResearchDrawer';
 import { RecommendedProjectBlueprint, PortfolioSuitabilityResult } from '@/types/projects';
 import { evaluatePortfolioSuitabilityForDrive } from '@/lib/portfolio-matcher';
 
@@ -146,6 +148,10 @@ export default function StudentDrivesPage() {
     suitability?: PortfolioSuitabilityResult;
   } | null>(null);
   const [copiedBulletId, setCopiedBulletId] = useState<string | null>(null);
+
+  // Company Research Intelligence Dossier Drawer State
+  const [researchDrive, setResearchDrive] = useState<any>(null);
+  const [showResearchDrawer, setShowResearchDrawer] = useState(false);
 
   // Resume Skills Re-Scan Modal State
   const [showRescanModal, setShowRescanModal] = useState(false);
@@ -1012,6 +1018,21 @@ export default function StudentDrivesPage() {
                         </Button>
                       </div>
 
+                      {/* Company Research Dossier Button */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setResearchDrive(drive);
+                          setShowResearchDrawer(true);
+                        }}
+                        className="w-full text-xs h-8 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                        Research Company
+                      </Button>
+
                       {application ? (
                         <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-1">
                           <div className="flex justify-between">
@@ -1395,6 +1416,19 @@ export default function StudentDrivesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Company Research Intelligence Dossier Drawer */}
+      <CompanyResearchDrawer
+        isOpen={showResearchDrawer}
+        onClose={() => setShowResearchDrawer(false)}
+        drive={researchDrive}
+        currentStudent={student}
+        application={researchDrive ? myApplications[researchDrive.id] : null}
+        onApply={(targetDrive: any) => {
+          setShowResearchDrawer(false);
+          handleApplyClick(targetDrive || researchDrive);
+        }}
+      />
     </div>
   );
 }

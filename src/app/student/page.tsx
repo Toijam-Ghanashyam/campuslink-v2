@@ -22,6 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Globe } from 'lucide-react';
+import { CompanyResearchDrawer } from '@/components/student/CompanyResearchDrawer';
 
 export default function StudentDashboardPage() {
   const [student, setStudent] = useState<any>(null);
@@ -31,6 +33,10 @@ export default function StudentDashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  // Company Research Dossier State
+  const [researchDrive, setResearchDrive] = useState<any>(null);
+  const [showResearchDrawer, setShowResearchDrawer] = useState(false);
 
   // Fix Mismatched Data & Re-Verify Modal State
   const [showFixModal, setShowFixModal] = useState(false);
@@ -747,14 +753,28 @@ export default function StudentDashboardPage() {
                             </Button>
                           </Link>
                         )}
-                        <Link href="/student/drives" className="block">
+                        <div className="flex gap-2">
                           <Button
+                            variant="outline"
                             size="sm"
-                            className="w-full text-xs h-8 bg-indigo-600 hover:bg-indigo-500 font-semibold"
+                            onClick={() => {
+                              setResearchDrive(drive);
+                              setShowResearchDrawer(true);
+                            }}
+                            className="flex-1 text-xs h-8 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium flex items-center justify-center gap-1.5"
                           >
-                            View &amp; Apply &rarr;
+                            <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                            Research
                           </Button>
-                        </Link>
+                          <Link href="/student/drives" className="flex-1 block">
+                            <Button
+                              size="sm"
+                              className="w-full text-xs h-8 bg-indigo-600 hover:bg-indigo-500 font-semibold"
+                            >
+                              Apply &rarr;
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   );
@@ -831,28 +851,42 @@ export default function StudentDashboardPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {canAccept ? (
-                            <Button
-                              size="sm"
-                              onClick={() => handleAcceptOffer(app.id)}
-                              disabled={acceptingId === app.id}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-xs"
-                            >
-                              {acceptingId === app.id ? 'Processing...' : 'Accept Offer'}
-                            </Button>
-                          ) : app.stage === 'REJECTED' ? (
-                            <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(drive?.company_name || 'Drive')}&role=${encodeURIComponent(drive?.role_title || 'Engineering')}`}>
+                          <div className="flex items-center justify-end gap-2">
+                            {drive && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-indigo-600/50 text-indigo-400 hover:bg-indigo-950/40 text-xs gap-1"
+                                onClick={() => {
+                                  setResearchDrive(drive);
+                                  setShowResearchDrawer(true);
+                                }}
+                                className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs h-7.5 px-2.5 font-medium flex items-center gap-1"
                               >
-                                <span>🚀</span> Roadmap
+                                <Globe className="h-3 w-3 text-indigo-400" />
+                                {app.stage === 'INTERVIEW' ? 'Prep Dossier' : 'Dossier'}
                               </Button>
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-500">—</span>
-                          )}
+                            )}
+                            {canAccept ? (
+                              <Button
+                                size="sm"
+                                onClick={() => handleAcceptOffer(app.id)}
+                                disabled={acceptingId === app.id}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-xs"
+                              >
+                                {acceptingId === app.id ? 'Processing...' : 'Accept Offer'}
+                              </Button>
+                            ) : app.stage === 'REJECTED' ? (
+                              <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(drive?.company_name || 'Drive')}&role=${encodeURIComponent(drive?.role_title || 'Engineering')}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-indigo-600/50 text-indigo-400 hover:bg-indigo-950/40 text-xs gap-1"
+                                >
+                                  <span>🚀</span> Roadmap
+                                </Button>
+                              </Link>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -984,6 +1018,19 @@ export default function StudentDashboardPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Intelligence Research Dossier Drawer */}
+      <CompanyResearchDrawer
+        isOpen={showResearchDrawer}
+        onClose={() => setShowResearchDrawer(false)}
+        drive={researchDrive}
+        currentStudent={student}
+        application={
+          researchDrive
+            ? applications.find((a) => a.drive_id === researchDrive.id || a.placement_drives?.id === researchDrive.id)
+            : null
+        }
+      />
     </div>
   );
 }
