@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { acceptOffer } from '@/app/actions/placement';
+import { ensureStudentProfile } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getCollegeById } from '@/lib/colleges';
 import {
   Table,
   TableBody,
@@ -34,11 +36,25 @@ export default function StudentDashboardPage() {
     }
 
     // 1. Fetch Student Profile
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('student_profiles')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (!profile) {
+      try {
+        await ensureStudentProfile(user.id, user.email || '', user.user_metadata?.college_id);
+        const { data: createdProfile } = await supabase
+          .from('student_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        profile = createdProfile;
+      } catch (e) {
+        console.warn('Could not auto-create profile:', e);
+      }
+    }
 
     setStudent(profile);
 
@@ -170,6 +186,33 @@ export default function StudentDashboardPage() {
           </div>
         </header>
 
+        {/* Institutional Verification Status Banner */}
+        {student && !student.is_locked && (
+          <div className="rounded-lg border border-amber-800/60 bg-amber-950/40 p-4 text-xs text-amber-300 flex items-start gap-3">
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="font-semibold text-amber-200 text-sm">Academic Record Pending College TPO Verification</p>
+              <p className="mt-0.5 text-amber-300/90 leading-relaxed">
+                Your profile is submitted under <span className="font-bold text-white">{getCollegeById(student.tenant_id).name}</span>. Under BPUT Placement Eligibility Policy (PEP) Rule 1, you can browse placement drives, but drive applications will unlock once your College Placement Cell verifies and locks your record.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {student && student.is_locked && (
+          <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/30 p-3 text-xs text-emerald-300 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-400 font-bold">✓</span>
+              <span>
+                Verified &amp; Locked by <span className="font-semibold text-white">{getCollegeById(student.tenant_id).name}</span> — Fully eligible for PEP Placement Drives.
+              </span>
+            </div>
+            <Badge className="bg-emerald-950 text-emerald-400 border border-emerald-700/50 text-[10px]">
+              PEP RULE 1 COMPLIANT
+            </Badge>
+          </div>
+        )}
+
         {/* Academic & Verification Profile Overview */}
         {student ? (
           <div className="grid gap-4 md:grid-cols-4">
@@ -179,8 +222,9 @@ export default function StudentDashboardPage() {
                 <CardTitle className="text-lg font-bold">{student.full_name || 'Student'}</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-400 space-y-1">
-                <p>Roll: <span className="text-slate-200">{student.roll_number || 'N/A'}</span></p>
+                <p>Roll: <span className="text-slate-200 font-mono">{student.roll_number || 'N/A'}</span></p>
                 <p>Branch: <span className="text-slate-200">{student.branch || 'Engineering'}</span></p>
+                <p>College: <span className="text-indigo-300 font-medium">{getCollegeById(student.tenant_id).code}</span></p>
               </CardContent>
             </Card>
 

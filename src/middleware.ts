@@ -8,6 +8,16 @@ export async function middleware(request: NextRequest) {
         },
     });
 
+    // 1. Never intercept or mangle internal Next.js Server Action POST streams or form POSTs
+    if (
+        request.method === 'POST' ||
+        request.headers.has('next-action') ||
+        request.headers.has('x-action-id') ||
+        request.headers.get('content-type')?.includes('multipart/form-data')
+    ) {
+        return response;
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,9 +31,7 @@ export async function middleware(request: NextRequest) {
                         request.cookies.set(name, value)
                     );
                     response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
+                        request,
                     });
                     cookiesToSet.forEach(({ name, value, options }) =>
                         response.cookies.set(name, value, options)
@@ -47,7 +55,7 @@ export async function middleware(request: NextRequest) {
         return redirectResponse;
     };
 
-    // 1. Unauthenticated users cannot access protected routes
+    // 2. Unauthenticated users cannot access protected routes
     if (!user) {
         if (!isAuthPage && !isApiOrAuthRoute && pathname !== '/') {
             return createRedirect('/login');
@@ -55,29 +63,26 @@ export async function middleware(request: NextRequest) {
         return response;
     }
 
-    // 2. Extract user role from user_metadata (defaults to STUDENT for principle of least privilege)
+    // 3. Extract user role from user_metadata (defaults to STUDENT)
     const userRole = (user.user_metadata?.role as string | undefined)?.toUpperCase() || 'STUDENT';
 
-    // 3. Authenticated users visiting auth pages get redirected to their designated dashboard
+    // 4. Authenticated users visiting auth pages get redirected to their designated dashboard
     if (isAuthPage) {
         if (userRole === 'TPO_ADMIN') return createRedirect('/admin');
         if (userRole === 'RECRUITER') return createRedirect('/recruiter');
         return createRedirect('/student');
     }
 
-    // 4. Role-based Route Protection
+    // 5. Role-based Route Protection
     if (userRole === 'STUDENT') {
-        // Students cannot view /admin or /recruiter routes
         if (pathname.startsWith('/admin') || pathname.startsWith('/recruiter')) {
             return createRedirect('/student');
         }
     } else if (userRole === 'RECRUITER') {
-        // Recruiters cannot view /admin or student portal routes
         if (pathname.startsWith('/admin') || pathname.startsWith('/student')) {
             return createRedirect('/recruiter');
         }
     } else if (userRole === 'TPO_ADMIN') {
-        // TPO Admins should not access student-specific workflow pages
         if (pathname.startsWith('/student')) {
             return createRedirect('/admin');
         }

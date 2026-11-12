@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { toggleStudentLock, updateStudentAcademicRecord, createPlacementDrive } from '@/app/actions/admin';
+import { toggleStudentLock, verifyStudentProfile, updateStudentAcademicRecord, createPlacementDrive } from '@/app/actions/admin';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,11 @@ import {
 } from '@/components/ui/table';
 import { PlacementTier, PlacementStatus } from '@/types/pep';
 import { CurriculumDeficitCluster } from '@/types/roadmap';
+import { AFFILIATED_COLLEGES, getCollegeById } from '@/lib/colleges';
 
 export default function AdminPortalPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [assignedCollegeId, setAssignedCollegeId] = useState<string>(AFFILIATED_COLLEGES[0].id);
   const [students, setStudents] = useState<any[]>([]);
   const [drives, setDrives] = useState<any[]>([]);
   const [roadmaps, setRoadmaps] = useState<any[]>([]);
@@ -54,16 +57,39 @@ export default function AdminPortalPage() {
   const loadData = async () => {
     setLoading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    setCurrentUser(user);
+
+    // Resolve the admin's strictly assigned college from user metadata or public.users
+    let adminCollege = user.user_metadata?.college_id;
+    if (!adminCollege) {
+      const { data: pubUser } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      adminCollege = pubUser?.tenant_id || AFFILIATED_COLLEGES[0].id;
+    }
+    setAssignedCollegeId(adminCollege);
+
+    // 1. Fetch Students STRICTLY scoped to this admin's assigned college
     const { data: studentList } = await supabase
       .from('student_profiles')
       .select('*')
+      .eq('tenant_id', adminCollege)
       .order('created_at', { ascending: false });
 
+    // 2. Fetch Placement Drives
     const { data: driveList } = await supabase
       .from('placement_drives')
       .select('*')
       .order('created_at', { ascending: false });
 
+    // 3. Fetch Roadmaps for curriculum deficit aggregation
     const { data: roadmapList } = await supabase
       .from('candidate_roadmaps')
       .select('*')
@@ -75,64 +101,30 @@ export default function AdminPortalPage() {
     setLoading(false);
   };
 
-  const getDeficitClusters = (): CurriculumDeficitCluster[] => {
-    return [
-      {
-        clusterName: 'Cloud, Containerization & CI/CD Pipelines',
-        domain: 'DevOps & Infrastructure',
-        skills: ['Docker Containerization', 'Kubernetes Cluster Manifests', 'GitHub Actions CI/CD', 'AWS/GCP Cloud Architecture'],
-        affectedStudentsCount: Math.max(14, roadmaps.length * 2),
-        rejectionFrequencyPercent: 48,
-        currentSyllabusStatus: 'Absent in 2022 Autonomous Syllabus (Theoretical OS only)',
-        recommendedAction: 'Introduce a 4-week practical lab module on Containerization & Microservice Deployment in 6th Sem CS-304.',
-        marketRoleDemand: ['Google Cloud', 'Microsoft', 'Deloitte Digital'],
-      },
-      {
-        clusterName: 'Distributed Systems & High-Throughput Event Streams',
-        domain: 'Backend Engineering',
-        skills: ['Apache Kafka', 'Event-Driven Microservices', 'Raft Consensus', 'Distributed Locks'],
-        affectedStudentsCount: Math.max(11, roadmaps.length + 3),
-        rejectionFrequencyPercent: 39,
-        currentSyllabusStatus: 'Elective course with zero hands-on laboratory programming',
-        recommendedAction: 'Mandate distributed systems lab exercises using Kafka and Redis Pub/Sub in 7th Sem Distributed Computing.',
-        marketRoleDemand: ['Google Cloud', 'Microsoft'],
-      },
-      {
-        clusterName: 'Database Indexing, Execution Plans & Performance',
-        domain: 'Data Architecture',
-        skills: ['PostgreSQL EXPLAIN ANALYZE', 'B-Tree vs Hash Indexing', 'Redis Caching & Invalidation', 'ACID Isolation Levels'],
-        affectedStudentsCount: Math.max(16, roadmaps.length * 2 + 1),
-        rejectionFrequencyPercent: 54,
-        currentSyllabusStatus: 'Syllabus limited to basic SQL DDL/DML and 3NF normalization',
-        recommendedAction: 'Upgrade DBMS lab to cover real query execution profiling, indexing strategies, and caching tiers.',
-        marketRoleDemand: ['TCS Digital', 'Deloitte Digital', 'Infosys Specialist'],
-      },
-      {
-        clusterName: 'Production Resiliency & Idempotent Architecture',
-        domain: 'Software Architecture',
-        skills: ['Idempotency Keys', 'Rate Limiting Algorithms', 'Circuit Breakers', 'Dead-Letter Queues (DLQ)'],
-        affectedStudentsCount: Math.max(9, roadmaps.length + 1),
-        rejectionFrequencyPercent: 31,
-        currentSyllabusStatus: 'Not covered in conventional Object-Oriented Software Engineering',
-        recommendedAction: 'Incorporate 15-hour micro-course on production resilience patterns and fault-tolerant API design.',
-        marketRoleDemand: ['Microsoft', 'Deloitte Digital'],
-      },
-      {
-        clusterName: 'Modern Full-Stack & Type-Safe Engineering',
-        domain: 'Web Engineering',
-        skills: ['TypeScript Generics & Utility Types', 'Next.js App Router / SSR', 'REST/GraphQL Security', 'State Machines'],
-        affectedStudentsCount: Math.max(12, roadmaps.length + 4),
-        rejectionFrequencyPercent: 42,
-        currentSyllabusStatus: 'Legacy syllabus focuses on PHP 5.6 and basic HTML/CSS/JS',
-        recommendedAction: 'Modernize Web Technology course to TypeScript, React Server Components, and secure API architecture.',
-        marketRoleDemand: ['TCS Digital', 'Deloitte Digital'],
-      },
-    ];
-  };
-
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleApproveStudent = async (studentId: string, currentCgpa: number, currentBacklogs: number) => {
+    const res = await verifyStudentProfile(studentId, true, currentCgpa, currentBacklogs);
+    if (res.success) {
+      loadData();
+    } else {
+      alert(`Error approving student: ${res.error}`);
+    }
+  };
+
+  const handleRejectStudent = async (studentId: string) => {
+    if (!confirm('Reject this academic record? The candidate will be notified to correct and resubmit.')) {
+      return;
+    }
+    const res = await verifyStudentProfile(studentId, false);
+    if (res.success) {
+      loadData();
+    } else {
+      alert(`Error: ${res.error}`);
+    }
+  };
 
   const handleToggleLock = async (studentId: string, currentLock: boolean) => {
     const res = await toggleStudentLock(studentId, !currentLock);
@@ -191,10 +183,13 @@ export default function AdminPortalPage() {
     router.push('/login');
   };
 
-  // Compute Metrics
+  const currentCollege = getCollegeById(assignedCollegeId);
+
+  // Compute Metrics strictly for this College
   const totalStudents = students.length;
   const lockedCount = students.filter((s) => s.is_locked).length;
-  const placedCount = students.filter((s) => s.placement_status.startsWith('PLACED')).length;
+  const pendingCount = students.filter((s) => !s.is_locked).length;
+  const placedCount = students.filter((s) => s.placement_status && s.placement_status.startsWith('PLACED')).length;
   const placementRate = totalStudents > 0 ? ((placedCount / totalStudents) * 100).toFixed(1) : '0';
 
   if (loading) {
@@ -204,17 +199,28 @@ export default function AdminPortalPage() {
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 text-slate-100">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+        {/* Header with Permanent College Scoping */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-indigo-400">
-              TPO Institutional Administrator Console
-            </h1>
-            <p className="text-xs text-slate-400">
-              Academic Record Verification, PEP Policy Enforcement &amp; Placement Drives
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-2xl">🏛️</span>
+              <h1 className="text-2xl font-extrabold tracking-tight text-indigo-400">
+                {currentCollege.name}
+              </h1>
+              <Badge className="bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-mono text-xs">
+                {currentCollege.code}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-emerald-400 font-medium">🔒 Institutional Firewall Enforced</span>
+              <span>•</span>
+              <span>Logged in: <span className="text-slate-300 font-mono">{currentUser?.email}</span></span>
+              <span>•</span>
+              <span>Exclusive access to <span className="font-semibold text-slate-200">{currentCollege.code}</span> candidates only</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               onClick={() => setShowDriveModal(true)}
               className="bg-indigo-600 hover:bg-indigo-500 text-xs"
@@ -231,45 +237,49 @@ export default function AdminPortalPage() {
           </div>
         </header>
 
-        {/* Analytics KPIs */}
+        {/* Analytics KPIs Scoped to this College */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-slate-800 bg-slate-900 text-slate-100">
             <CardHeader className="pb-2">
-              <span className="text-xs font-semibold uppercase text-slate-400">Enrolled Candidates</span>
+              <span className="text-xs font-semibold uppercase text-slate-400">
+                {currentCollege.code} Candidates
+              </span>
               <CardTitle className="text-3xl font-bold">{totalStudents}</CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-slate-400">
-              Active candidates in placement pool
+              Active student profiles in {currentCollege.code}
             </CardContent>
           </Card>
 
           <Card className="border-slate-800 bg-slate-900 text-slate-100">
             <CardHeader className="pb-2">
-              <span className="text-xs font-semibold uppercase text-slate-400">PEP Verified &amp; Locked</span>
-              <CardTitle className="text-3xl font-bold text-emerald-400">{lockedCount}</CardTitle>
+              <span className="text-xs font-semibold uppercase text-slate-400">Pending TPO Verification</span>
+              <CardTitle className={`text-3xl font-bold ${pendingCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {pendingCount}
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-slate-400">
-              {totalStudents - lockedCount} awaiting verification
+              {pendingCount > 0 ? 'Awaiting verification & PEP lock' : 'All student records verified'}
             </CardContent>
           </Card>
 
           <Card className="border-slate-800 bg-slate-900 text-slate-100">
             <CardHeader className="pb-2">
-              <span className="text-xs font-semibold uppercase text-slate-400">Institutional Placement Rate</span>
+              <span className="text-xs font-semibold uppercase text-slate-400">{currentCollege.code} Placement Rate</span>
               <CardTitle className="text-3xl font-bold text-indigo-400">{placementRate}%</CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-slate-400">
-              {placedCount} candidates placed across Tiers
+              {placedCount} placed out of {totalStudents} candidates
             </CardContent>
           </Card>
 
           <Card className="border-slate-800 bg-slate-900 text-slate-100">
             <CardHeader className="pb-2">
-              <span className="text-xs font-semibold uppercase text-slate-400">Active Placement Drives</span>
-              <CardTitle className="text-3xl font-bold text-amber-400">{drives.length}</CardTitle>
+              <span className="text-xs font-semibold uppercase text-slate-400">Eligible Drives</span>
+              <CardTitle className="text-3xl font-bold text-emerald-400">{drives.length}</CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-slate-400">
-              Across Tier 1, Tier 2, and Tier 3
+              Open for {currentCollege.code} verified candidates
             </CardContent>
           </Card>
         </div>
@@ -282,7 +292,7 @@ export default function AdminPortalPage() {
             onClick={() => setActiveTab('students')}
             className={activeTab === 'students' ? 'bg-indigo-600 hover:bg-indigo-500' : 'text-slate-400'}
           >
-            Student Verification &amp; PEP Lock ({students.length})
+            {currentCollege.code} Verification Queue ({students.length})
           </Button>
           <Button
             variant={activeTab === 'drives' ? 'default' : 'ghost'}
@@ -298,7 +308,7 @@ export default function AdminPortalPage() {
             onClick={() => setActiveTab('curriculum')}
             className={activeTab === 'curriculum' ? 'bg-indigo-600 hover:bg-indigo-500' : 'text-slate-400'}
           >
-            <span>📊</span> Market Skill Deficits &amp; Syllabus Alignment
+            <span>📊</span> {currentCollege.code} Curriculum &amp; Skill Deficits
           </Button>
         </div>
 
@@ -306,24 +316,28 @@ export default function AdminPortalPage() {
         {activeTab === 'students' && (
           <Card className="border-slate-800 bg-slate-900 text-slate-100">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Candidate Eligibility Verification Queue</CardTitle>
+              <CardTitle className="text-lg">
+                Candidate Eligibility Verification Queue — {currentCollege.name}
+              </CardTitle>
               <p className="text-xs text-slate-400">
-                Rule 1 of PEP requires a locked academic record before any drive application is permitted.
+                Rule 1 of PEP requires a locked academic record before any drive application is permitted. TPO approval verifies self-reported CGPA and backlogs for {currentCollege.code} students.
               </p>
             </CardHeader>
             <CardContent>
               {students.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-xs">No registered student profiles found.</div>
+                <div className="text-center py-12 text-slate-400 text-xs">
+                  No students currently registered under {currentCollege.name} ({currentCollege.code}).
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
-                      <TableHead className="text-slate-400">Candidate</TableHead>
-                      <TableHead className="text-slate-400">Roll / Branch</TableHead>
-                      <TableHead className="text-slate-400">Verified CGPA</TableHead>
+                      <TableHead className="text-slate-400">Candidate / Roll No</TableHead>
+                      <TableHead className="text-slate-400">Branch &amp; Batch</TableHead>
+                      <TableHead className="text-slate-400">Self-Reported CGPA</TableHead>
                       <TableHead className="text-slate-400">Backlogs</TableHead>
-                      <TableHead className="text-slate-400">Placement Tier</TableHead>
-                      <TableHead className="text-slate-400">PEP Lock</TableHead>
+                      <TableHead className="text-slate-400">PEP Lock Status</TableHead>
+                      <TableHead className="text-slate-400">Verification Source</TableHead>
                       <TableHead className="text-right text-slate-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -331,25 +345,20 @@ export default function AdminPortalPage() {
                     {students.map((st) => (
                       <TableRow key={st.id} className="border-slate-800 hover:bg-slate-800/40">
                         <TableCell>
-                          <div className="font-semibold text-slate-200">{st.full_name || 'Candidate'}</div>
-                          <div className="text-xs text-slate-400">₹{Number(st.current_highest_ctc || 0).toFixed(2)} LPA max</div>
+                          <div className="font-semibold text-slate-200">{st.full_name || 'Student Candidate'}</div>
+                          <div className="text-xs font-mono text-indigo-300">{st.roll_number || 'No Roll Number'}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-slate-200">{st.roll_number || 'N/A'}</div>
-                          <div className="text-xs text-slate-400">{st.branch || 'General'}</div>
+                          <div className="text-slate-200 text-xs">{st.branch || 'Engineering'}</div>
+                          <div className="text-[11px] text-slate-400">Batch {st.batch_year || 2026}</div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-bold text-indigo-400">{Number(st.verified_cgpa).toFixed(2)}</span>
+                          <span className="font-bold text-indigo-400 text-sm">{Number(st.verified_cgpa).toFixed(2)}</span>
                         </TableCell>
                         <TableCell>
                           <span className={st.active_backlogs > 0 ? 'text-rose-400 font-semibold' : 'text-emerald-400'}>
                             {st.active_backlogs}
                           </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs">
-                            {st.placement_status}
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -359,10 +368,15 @@ export default function AdminPortalPage() {
                                 : 'bg-amber-950 text-amber-400 border border-amber-800'
                             }`}
                           >
-                            {st.is_locked ? 'Verified & Locked' : 'Unlocked / Pending'}
+                            {st.is_locked ? '✓ Verified & Locked' : '⏳ Pending TPO Lock'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
+                        <TableCell>
+                          <span className="text-[11px] text-slate-400">
+                            {st.verification_source || 'ADMIN_MANUAL'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right space-x-1.5">
                           <Button
                             size="sm"
                             variant="outline"
@@ -371,17 +385,34 @@ export default function AdminPortalPage() {
                           >
                             Edit
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleToggleLock(st.id, st.is_locked)}
-                            className={`h-7 text-xs ${
-                              st.is_locked
-                                ? 'bg-amber-600 hover:bg-amber-500'
-                                : 'bg-emerald-600 hover:bg-emerald-500'
-                            }`}
-                          >
-                            {st.is_locked ? 'Unlock' : 'Verify & Lock'}
-                          </Button>
+
+                          {!st.is_locked ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveStudent(st.id, st.verified_cgpa, st.active_backlogs)}
+                                className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold"
+                              >
+                                ✓ Approve &amp; Lock
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRejectStudent(st.id)}
+                                className="h-7 text-xs border-rose-800 text-rose-400 hover:bg-rose-950/40"
+                              >
+                                ✗ Reject
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleToggleLock(st.id, st.is_locked)}
+                              className="h-7 text-xs bg-amber-600 hover:bg-amber-500 font-semibold"
+                            >
+                              Unlock Record
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -419,149 +450,46 @@ export default function AdminPortalPage() {
           </div>
         )}
 
-        {/* Market Skill Deficits & Curriculum Alignment Tab */}
+        {/* Curriculum Deficits Tab */}
         {activeTab === 'curriculum' && (
-          <div className="space-y-6">
-            <Card className="border-indigo-900/60 bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 p-5 text-slate-100">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-indigo-600 text-[11px]">Academic Intelligence</Badge>
-                    <span className="text-xs text-slate-400">Institutional Placement Analytics</span>
+          <Card className="border-slate-800 bg-slate-900 text-slate-100">
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Market Skill Deficit Clustering — {currentCollege.name} ({currentCollege.code})
+              </CardTitle>
+              <p className="text-xs text-slate-400">
+                Aggregated screening diagnostics for {currentCollege.code} students.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-slate-800 bg-slate-950/60 flex items-start gap-3">
+                  <span className="text-xl">💡</span>
+                  <div className="text-xs text-slate-300 space-y-1">
+                    <p className="font-semibold text-indigo-400">{currentCollege.code} Departmental Recommendations</p>
+                    <p>
+                      Diagnostics indicate {currentCollege.code} candidates frequently face screening rejections in cloud containerization, event streaming architectures, and real database execution profiling.
+                    </p>
                   </div>
-                  <h2 className="text-2xl font-bold mt-1">Market Skill Deficits &amp; College Syllabus Alignment</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Aggregated clustering of rejection diagnostic audits across corporate placement drives to modernize university syllabus.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => alert('Exporting Academic Senate Curriculum Proposal (PDF)...')}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white"
-                  >
-                    📄 Export Senate Proposal
-                  </Button>
                 </div>
               </div>
-
-              {/* Quick Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-800">
-                <div className="bg-slate-950/80 p-3 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Deficit Audits</span>
-                  <span className="text-xl font-bold text-slate-100">{roadmaps.length + 18}</span>
-                </div>
-                <div className="bg-slate-950/80 p-3 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Highest Deficit Domain</span>
-                  <span className="text-sm font-bold text-rose-400">Database Optimization (54%)</span>
-                </div>
-                <div className="bg-slate-950/80 p-3 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Curriculum Gap Index</span>
-                  <span className="text-xl font-bold text-amber-400">68% Outdated</span>
-                </div>
-                <div className="bg-slate-950/80 p-3 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Avg Up-skill Duration</span>
-                  <span className="text-xl font-bold text-emerald-400">6.8 Weeks</span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Comparison Table */}
-            <Card className="border-slate-800 bg-slate-900 text-slate-100">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Institutional Market Deficit vs College Syllabus Comparative Matrix</CardTitle>
-                <p className="text-xs text-slate-400">
-                  Direct cross-mapping of market technical rejections against college course outcomes to guide academic committee syllabus revisions.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-800 hover:bg-transparent">
-                        <TableHead className="text-slate-400 w-1/4">Skill Deficit Cluster</TableHead>
-                        <TableHead className="text-slate-400">Market Rejection Impact</TableHead>
-                        <TableHead className="text-slate-400 w-1/4">Current College Syllabus Status</TableHead>
-                        <TableHead className="text-slate-400 w-1/3">Recommended Curriculum Action</TableHead>
-                        <TableHead className="text-slate-400">Hiring Drives Affected</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {getDeficitClusters().map((cluster, cIdx) => (
-                        <TableRow key={cIdx} className="border-slate-800 hover:bg-slate-800/40">
-                          <TableCell className="align-top">
-                            <div className="font-semibold text-slate-200 text-sm">{cluster.clusterName}</div>
-                            <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-700 mt-1">
-                              {cluster.domain}
-                            </Badge>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {cluster.skills.map((s, si) => (
-                                <span key={si} className="text-[10px] bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-slate-300">
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="align-top">
-                            <div className="space-y-1">
-                              <Badge className="bg-rose-950 text-rose-300 border border-rose-800 text-xs font-bold">
-                                {cluster.rejectionFrequencyPercent}% of Rejections
-                              </Badge>
-                              <div className="text-[11px] text-slate-400">
-                                {cluster.affectedStudentsCount} Candidates Affected
-                              </div>
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="align-top">
-                            <div className="rounded bg-rose-950/20 border border-rose-900/40 p-2.5 text-xs text-rose-300">
-                              <span className="font-bold block text-[11px] uppercase tracking-wider text-rose-400 mb-0.5">Syllabus Gap</span>
-                              {cluster.currentSyllabusStatus}
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="align-top">
-                            <div className="rounded bg-indigo-950/30 border border-indigo-900/40 p-2.5 text-xs text-slate-200">
-                              <span className="font-bold block text-[11px] uppercase tracking-wider text-indigo-400 mb-0.5">Action Plan</span>
-                              {cluster.recommendedAction}
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="align-top">
-                            <div className="flex flex-wrap gap-1">
-                              {cluster.marketRoleDemand.map((co, coi) => (
-                                <Badge key={coi} variant="secondary" className="text-[10px] bg-slate-950 border-slate-800 text-slate-300">
-                                  {co}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
-      {/* Edit Student Record Modal */}
-      <Dialog open={!!editingStudent} onOpenChange={() => setEditingStudent(null)}>
+      {/* Edit Student Academic Record Dialog */}
+      <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
         <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Academic Record: {editingStudent?.full_name}</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Update institutional records for roll number {editingStudent?.roll_number}.
+            <DialogTitle>Edit Academic Record</DialogTitle>
+            <DialogDescription className="text-slate-400 text-xs">
+              Update verified credentials for {editingStudent?.roll_number}
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Verified CGPA</label>
+              <label className="text-xs text-slate-400">Verified CGPA (0.00 - 10.00)</label>
               <Input
                 type="number"
                 step="0.01"
@@ -572,20 +500,18 @@ export default function AdminPortalPage() {
                 className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
               />
             </div>
-
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Active Standing Backlogs</label>
+              <label className="text-xs text-slate-400">Active Standing Backlogs</label>
               <Input
                 type="number"
                 min="0"
                 value={editBacklogs}
-                onChange={(e) => setEditBacklogs(parseInt(e.target.value) || 0)}
+                onChange={(e) => setEditBacklogs(parseInt(e.target.value, 10) || 0)}
                 className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
               />
             </div>
-
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Placement Status Tier</label>
+              <label className="text-xs text-slate-400">Placement Policy Status</label>
               <select
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as PlacementStatus)}
@@ -598,67 +524,62 @@ export default function AdminPortalPage() {
                 <option value="DEBARRED">DEBARRED</option>
               </select>
             </div>
-
             <Button
-              onClick={handleSaveStudent}
               disabled={savingStudent}
+              onClick={handleSaveStudent}
               className="w-full bg-indigo-600 hover:bg-indigo-500"
             >
-              {savingStudent ? 'Saving...' : 'Save Academic Record'}
+              {savingStudent ? 'Saving...' : 'Save & Update Record'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Publish New Drive Modal */}
+      {/* New Drive Dialog */}
       <Dialog open={showDriveModal} onOpenChange={setShowDriveModal}>
         <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Publish New Placement Drive</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Configure corporate partner details, package tiers, and eligibility cutoffs.
+            <DialogDescription className="text-slate-400 text-xs">
+              Configure corporate placement drive visible to eligible verified students.
             </DialogDescription>
           </DialogHeader>
-
           <form onSubmit={handleCreateDrive} className="space-y-3 py-2">
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Company Name</label>
+              <label className="text-xs text-slate-400">Company Name</label>
               <Input
                 required
                 value={newDrive.company_name}
                 onChange={(e) => setNewDrive({ ...newDrive, company_name: e.target.value })}
                 className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
-                placeholder="Google / Atlassian"
+                placeholder="Google Cloud"
               />
             </div>
-
             <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Role Title</label>
+              <label className="text-xs text-slate-400">Role Title</label>
               <Input
                 required
                 value={newDrive.role_title}
                 onChange={(e) => setNewDrive({ ...newDrive, role_title: e.target.value })}
                 className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
-                placeholder="Software Development Engineer"
+                placeholder="Cloud Infrastructure Engineer"
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-400">Tier</label>
+                <label className="text-xs text-slate-400">Placement Tier</label>
                 <select
                   value={newDrive.tier}
                   onChange={(e) => setNewDrive({ ...newDrive, tier: e.target.value as PlacementTier })}
                   className="mt-1 w-full rounded-md border border-slate-800 bg-slate-950 p-2 text-sm text-slate-100 focus:outline-none"
                 >
-                  <option value="TIER_1">TIER_1 (Dream)</option>
-                  <option value="TIER_2">TIER_2 (Core/IT)</option>
-                  <option value="TIER_3">TIER_3 (Mass)</option>
+                  <option value="TIER_1">TIER_1 (&gt;= 12 LPA)</option>
+                  <option value="TIER_2">TIER_2 (6 - 12 LPA)</option>
+                  <option value="TIER_3">TIER_3 (&lt; 6 LPA)</option>
                 </select>
               </div>
-
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-400">CGPA Cutoff</label>
+                <label className="text-xs text-slate-400">Min CGPA Cutoff</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -669,25 +590,21 @@ export default function AdminPortalPage() {
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-400">Min CTC (LPA)</label>
+                <label className="text-xs text-slate-400">Min CTC (LPA)</label>
                 <Input
                   type="number"
-                  step="0.5"
                   required
                   value={newDrive.min_ctc}
                   onChange={(e) => setNewDrive({ ...newDrive, min_ctc: parseFloat(e.target.value) || 0 })}
                   className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
                 />
               </div>
-
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-400">Max CTC (LPA)</label>
+                <label className="text-xs text-slate-400">Max CTC (LPA)</label>
                 <Input
                   type="number"
-                  step="0.5"
                   required
                   value={newDrive.max_ctc}
                   onChange={(e) => setNewDrive({ ...newDrive, max_ctc: parseFloat(e.target.value) || 0 })}
@@ -695,17 +612,6 @@ export default function AdminPortalPage() {
                 />
               </div>
             </div>
-
-            <div>
-              <label className="text-xs font-semibold uppercase text-slate-400">Description</label>
-              <Input
-                value={newDrive.description}
-                onChange={(e) => setNewDrive({ ...newDrive, description: e.target.value })}
-                className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
-                placeholder="Job description and drive schedule notes"
-              />
-            </div>
-
             <Button
               type="submit"
               disabled={publishingDrive}
@@ -719,4 +625,3 @@ export default function AdminPortalPage() {
     </div>
   );
 }
-

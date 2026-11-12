@@ -62,6 +62,10 @@ export default function StudentDrivesPage() {
   }, []);
 
   const handleApplyClick = (drive: any) => {
+    if (student && !student.is_locked) {
+      alert('Academic Record Pending Verification: Under PEP Rule 1, your academic record must be verified and locked by your College Placement Cell before submitting drive applications.');
+      return;
+    }
     setSelectedDrive(drive);
     setResumeFile(null);
     setEvalResult(null);
@@ -156,6 +160,18 @@ export default function StudentDrivesPage() {
             )}
           </div>
         </header>
+
+        {student && !student.is_locked && (
+          <div className="rounded-lg border border-amber-800/60 bg-amber-950/40 p-4 text-xs text-amber-300 flex items-start gap-3">
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="font-semibold text-amber-200">PEP Rule 1 Notice: Academic Record Awaiting TPO Lock</p>
+              <p className="text-amber-300/80 mt-0.5">
+                Your submitted CGPA and resume are currently being reviewed by your College Placement Cell. You can review job descriptions and eligibility criteria below, and application submissions will activate once your TPO approves your profile.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {drives.map((drive) => {

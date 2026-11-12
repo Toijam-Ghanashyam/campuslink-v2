@@ -142,7 +142,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950 py-8">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} CampusLink. Enterprise Campus Placement Intelligence System.</p>
+          <p>&copy; 2026 CampusLink. Enterprise Campus Placement Intelligence System.</p>
           <div className="flex gap-4">
             <Link href="/student" className="hover:text-slate-300">Students</Link>
             <Link href="/recruiter" className="hover:text-slate-300">Recruiters</Link>
