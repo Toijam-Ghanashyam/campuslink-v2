@@ -53,14 +53,23 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
 }
 `;
 
-    // Try Gemini 2.5 Flash / 3.8 Flash / 3.5 Flash
-    const geminiModels = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash'];
+    // Try working Gemini models with timeout
+    const geminiModels = [
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.8-flash',
+    ];
     let response: any = null;
     let lastAiError: any = null;
 
     for (const modelName of geminiModels) {
       try {
-        response = await ai.models.generateContent({
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout on ${modelName}`)), 12000)
+        );
+        const genPromise = ai.models.generateContent({
           model: modelName,
           contents: [
             {
@@ -72,9 +81,10 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
             prompt,
           ],
         });
+        response = await Promise.race([genPromise, timeoutPromise]);
         if (response?.text) break;
-      } catch (err) {
-        console.warn(`Model ${modelName} failed, switching to backup model:`, err);
+      } catch (err: any) {
+        console.warn(`Model ${modelName} failed, switching to backup model:`, err?.message || err);
         lastAiError = err;
       }
     }

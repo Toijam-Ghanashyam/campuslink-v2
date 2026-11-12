@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { synthesizeRoadmapAI } from '@/lib/roadmap-generator';
 import { revalidatePath } from 'next/cache';
 
-async function pregenerateRoadmapOnRejection(applicationId: string) {
+export async function pregenerateRoadmapOnRejection(applicationId: string) {
   try {
     const supabase = createAdminClient();
 

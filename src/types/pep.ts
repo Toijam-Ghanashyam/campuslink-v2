@@ -14,6 +14,8 @@ export interface StudentEligibilityProfile {
   placement_status: PlacementStatus;
   current_highest_ctc: number;
   is_locked: boolean;
+  verification_status?: string;
+  rejection_reason?: string | null;
 }
 
 export interface DriveEligibilityCriteria {

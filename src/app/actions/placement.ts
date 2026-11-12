@@ -1,7 +1,8 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { evaluateEligibility } from '@/lib/pep-engine';
+import { normalizeSkills } from '@/lib/compatibility-matcher';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -132,4 +133,50 @@ export async function acceptOffer(applicationId: string) {
   revalidatePath('/student/drives');
   return { success: true, message: `Offer accepted! Status upgraded to ${newStatus}.` };
 }
+
+/**
+ * Updates a student's resume skills in student_profiles and auth metadata
+ */
+export async function updateStudentSkills(newSkills: string[]) {
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) {
+    return { success: false, error: 'User must be authenticated.' };
+  }
+
+  const normalized = normalizeSkills(newSkills);
+
+  // 1. Update user_metadata in auth.users
+  try {
+    await adminSupabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...(user.user_metadata || {}),
+        skills: normalized,
+      },
+    });
+  } catch (err) {
+    console.warn('Failed to update auth user_metadata skills:', err);
+  }
+
+  // 2. Update student_profiles if table column exists
+  try {
+    const { error: profileErr } = await supabase
+      .from('student_profiles')
+      .update({ skills: normalized })
+      .eq('user_id', user.id);
+
+    if (profileErr && !profileErr.message.includes('skills')) {
+      console.warn('Profile skills update error:', profileErr);
+    }
+  } catch (err) {
+    console.warn('Student profiles table update warning:', err);
+  }
+
+  revalidatePath('/student');
+  revalidatePath('/student/drives');
+  return { success: true, skills: normalized };
+}
+
 

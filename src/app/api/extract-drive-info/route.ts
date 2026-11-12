@@ -121,7 +121,13 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
   "description": "string"
 }`;
 
-    const geminiModels = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash'];
+    const geminiModels = [
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.8-flash',
+    ];
     let parsedData: Partial<ExtractedDriveInfo> | null = null;
     let fallbackText = '';
 

@@ -9,45 +9,20 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CandidateRoadmap, RoadmapMilestone, SkillDifficulty } from '@/types/roadmap';
+import { CURATED_PRACTICE_PROBLEMS, PracticeProblem } from '@/lib/curated-problems';
 
 // Dynamically import Monaco Editor to avoid SSR hydration mismatch
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
-const STARTER_CHALLENGES = [
-  {
-    id: 'cs-dsa-1',
-    title: 'Two Sum & In-Memory Indexing',
-    difficulty: 'Easy',
-    topic: 'Data Structures & Algorithms',
-    description:
-      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. Optimize for O(N) runtime.',
-    starterCode: {
-      python: `def two_sum(nums, target):\n    # Write your solution here\n    hashmap = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in hashmap:\n            return [hashmap[complement], i]\n        hashmap[num] = i\n    return []\n\nprint(two_sum([2, 7, 11, 15], 9))`,
-      javascript: `function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}\nconsole.log(twoSum([2, 7, 11, 15], 9));`,
-      cpp: `#include <iostream>\n#include <vector>\n#include <unordered_map>\n\nint main() {\n    std::cout << "[0, 1]" << std::endl;\n    return 0;\n}`,
-    },
-  },
-  {
-    id: 'cs-db-1',
-    title: 'Idempotent Retry & Dead-Letter Queue Logic',
-    difficulty: 'Medium',
-    topic: 'Backend Systems & Concurrency',
-    description:
-      'Simulate an idempotent task handler: Given a duplicate event payload with unique UUID, acknowledge without executing duplicate side-effects.',
-    starterCode: {
-      python: `processed_ids = set()\n\ndef process_event(event_id, payload):\n    if event_id in processed_ids:\n        return "SKIPPED_IDEMPOTENT"\n    processed_ids.add(event_id)\n    return f"PROCESSED: {payload}"\n\nprint(process_event("evt_1", "UserRegistered"))\nprint(process_event("evt_1", "UserRegistered"))`,
-      javascript: `const processed = new Set();\nfunction processEvent(id, data) {\n  if (processed.has(id)) return "SKIPPED_IDEMPOTENT";\n  processed.add(id);\n  return \`PROCESSED: \${data}\`;\n}\nconsole.log(processEvent("evt_1", "UserRegistered"));\nconsole.log(processEvent("evt_1", "UserRegistered"));`,
-      cpp: `// Idempotency simulation\n#include <iostream>\nint main() {\n    std::cout << "PROCESSED\\nSKIPPED_IDEMPOTENT\\n";\n    return 0;\n}`,
-    },
-  },
-];
-
 function RemediationStudioContent() {
   const searchParams = useSearchParams();
   const urlAppId = searchParams.get('appId');
-  const urlDriveTitle = searchParams.get('driveTitle');
+  const urlDriveTitle = searchParams.get('driveTitle') || searchParams.get('company');
   const urlRole = searchParams.get('role');
+  const urlMissingSkills = searchParams.get('missingSkills');
+  const urlAutoGenerate = searchParams.get('autoGenerate');
 
   const [activeTab, setActiveTab] = useState<'roadmap' | 'sandbox'>('roadmap');
   const [feedbackHistory, setFeedbackHistory] = useState<any[]>([]);
@@ -55,19 +30,34 @@ function RemediationStudioContent() {
   const [activeRoadmap, setActiveRoadmap] = useState<CandidateRoadmap | null>(null);
   const [generating, setGenerating] = useState<boolean>(false);
   const [generationStatus, setGenerationStatus] = useState<string>('');
+  const [hasAutoTriggered, setHasAutoTriggered] = useState<boolean>(false);
+  const [missingSkillsFocus, setMissingSkillsFocus] = useState<string[]>(
+    urlMissingSkills ? urlMissingSkills.split(',').map((s) => s.trim()).filter(Boolean) : []
+  );
 
-  // Monaco Sandbox State
-  const [activeChallenge, setActiveChallenge] = useState(STARTER_CHALLENGES[0]);
-  const [language, setLanguage] = useState<'python' | 'javascript' | 'cpp'>('python');
-  const [code, setCode] = useState<string>(activeChallenge.starterCode.python);
+  // Curated LeetCode Studio State
+  const [activeProblem, setActiveProblem] = useState<PracticeProblem>(CURATED_PRACTICE_PROBLEMS[0]);
+  const [language, setLanguage] = useState<'python' | 'javascript' | 'cpp' | 'java'>('python');
+  const [code, setCode] = useState<string>(CURATED_PRACTICE_PROBLEMS[0].starterCode.python);
   const [output, setOutput] = useState<string>('');
   const [executing, setExecuting] = useState<boolean>(false);
+  const [testResults, setTestResults] = useState<any[] | null>(null);
+  const [selectedTestCaseIdx, setSelectedTestCaseIdx] = useState<number>(0);
+  const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
 
   // Custom Generator form state
   const [targetCompanyInput, setTargetCompanyInput] = useState<string>(urlDriveTitle || '');
   const [targetRoleInput, setTargetRoleInput] = useState<string>(urlRole || '');
 
   const supabase = createClient();
+
+  useEffect(() => {
+    if (urlDriveTitle) setTargetCompanyInput(urlDriveTitle);
+    if (urlRole) setTargetRoleInput(urlRole);
+    if (urlMissingSkills) {
+      setMissingSkillsFocus(urlMissingSkills.split(',').map((s) => s.trim()).filter(Boolean));
+    }
+  }, [urlDriveTitle, urlRole, urlMissingSkills]);
 
   // Load existing feedback and roadmaps
   useEffect(() => {
@@ -109,19 +99,53 @@ function RemediationStudioContent() {
           console.error('Failed to load existing roadmaps:', e);
         }
 
-        // 3. Auto-trigger generation if navigating with appId from rejection CTA
-        if (urlAppId) {
-          handleGenerateRoadmap(urlAppId, urlDriveTitle || undefined, urlRole || undefined);
+        // 3. Auto-trigger generation if navigating with autoGenerate or missingSkills from drives page
+        if (!hasAutoTriggered) {
+          if (urlAutoGenerate === 'true' || urlMissingSkills) {
+            setHasAutoTriggered(true);
+            const missingArr = urlMissingSkills
+              ? urlMissingSkills.split(',').map((s) => s.trim()).filter(Boolean)
+              : [];
+            setMissingSkillsFocus(missingArr);
+            await handleGenerateRoadmap(
+              urlAppId || undefined,
+              urlDriveTitle || undefined,
+              urlRole || undefined,
+              true,
+              missingArr
+            );
+          } else if (urlAppId) {
+            setHasAutoTriggered(true);
+            handleGenerateRoadmap(urlAppId, urlDriveTitle || undefined, urlRole || undefined);
+          }
         }
       }
     }
     initData();
-  }, [urlAppId]);
+  }, [urlAppId, urlAutoGenerate, urlMissingSkills, urlDriveTitle, urlRole, hasAutoTriggered]);
 
-  const handleGenerateRoadmap = async (applicationId?: string, companyName?: string, roleTitle?: string) => {
+  const handleGenerateRoadmap = async (
+    applicationId?: string,
+    companyName?: string,
+    roleTitle?: string,
+    forceRegenerate: boolean = false,
+    missingSkills?: string[]
+  ) => {
     setGenerating(true);
     setActiveTab('roadmap');
-    setGenerationStatus('Synthesizing high-velocity roadmap with Gemini Ultra-Fast Engine...');
+
+    const targetCo = companyName || targetCompanyInput || 'Tech Enterprise';
+    const targetRo = roleTitle || targetRoleInput || 'Software Engineer';
+    const effectiveMissing =
+      missingSkills && missingSkills.length > 0 ? missingSkills : missingSkillsFocus;
+
+    if (effectiveMissing.length > 0) {
+      setGenerationStatus(
+        `Targeting missing skills: ${effectiveMissing.slice(0, 3).join(', ')} for ${targetCo}...`
+      );
+    } else {
+      setGenerationStatus('Synthesizing high-velocity roadmap with Gemini Ultra-Fast Engine...');
+    }
 
     try {
       setTimeout(() => {
@@ -137,8 +161,10 @@ function RemediationStudioContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           applicationId: applicationId || undefined,
-          companyName: companyName || targetCompanyInput || 'Tech Enterprise',
-          roleTitle: roleTitle || targetRoleInput || 'Software Engineer',
+          companyName: targetCo,
+          roleTitle: targetRo,
+          missingSkills: effectiveMissing.length > 0 ? effectiveMissing : undefined,
+          forceRegenerate,
         }),
       });
 
@@ -148,17 +174,28 @@ function RemediationStudioContent() {
           id: data.roadmap.id,
           studentId: data.roadmap.student_id || data.roadmap.studentId,
           applicationId: data.roadmap.application_id || applicationId,
-          companyName: data.roadmap.company_name || companyName || targetCompanyInput,
-          roleTitle: data.roadmap.role_title || roleTitle || targetRoleInput,
-          targetRole: data.roadmap.target_role || roleTitle || targetRoleInput,
+          companyName: data.roadmap.company_name || targetCo,
+          roleTitle: data.roadmap.role_title || targetRo,
+          targetRole: data.roadmap.target_role || targetRo,
           totalDurationWeeks: data.roadmap.total_duration_weeks || data.roadmap.totalDurationWeeks || 8,
-          missingSkills: data.roadmap.missing_skills || data.roadmap.missingSkills || [],
+          missingSkills: data.roadmap.missing_skills || data.roadmap.missingSkills || effectiveMissing,
           milestones: data.roadmap.milestones || [],
           createdAt: data.roadmap.created_at || new Date().toISOString(),
         };
 
         setRoadmaps((prev) => [newRoadmap, ...prev.filter((r) => r.id !== newRoadmap.id)]);
         setActiveRoadmap(newRoadmap);
+
+        // Preload first milestone problem into Monaco coding workspace
+        if (newRoadmap.milestones && newRoadmap.milestones.length > 0) {
+          const firstMs = newRoadmap.milestones[0];
+          if (firstMs.curatedProblems && firstMs.curatedProblems.length > 0) {
+            const prob = firstMs.curatedProblems[0];
+            setActiveProblem(prob);
+            setCode(prob.starterCode[language] || prob.starterCode.python);
+            setOutput(`🎯 Targeted Remediation: Loaded challenge "${prob.title}" for missing skill "${firstMs.skillName}". Practice ready in Monaco!`);
+          }
+        }
       } else {
         alert(data.error || 'Failed to generate roadmap');
       }
@@ -170,44 +207,52 @@ function RemediationStudioContent() {
     setGenerationStatus('');
   };
 
+  const handleSelectProblem = (prob: PracticeProblem) => {
+    setActiveProblem(prob);
+    setCode(prob.starterCode[language] || prob.starterCode.python);
+    setOutput(`Loaded NeetCode/Blind 75: ${prob.title} (${prob.difficulty})`);
+    setTestResults(null);
+    setSelectedTestCaseIdx(0);
+    setActiveTab('sandbox');
+  };
+
   const handlePracticeMilestone = (milestone: RoadmapMilestone) => {
-    if (milestone.starterCodeSnippet) {
+    if (milestone.curatedProblems && milestone.curatedProblems.length > 0) {
+      handleSelectProblem(milestone.curatedProblems[0]);
+    } else if (milestone.starterCodeSnippet) {
       const targetLang = milestone.language || 'python';
       setLanguage(targetLang);
       setCode(milestone.starterCodeSnippet);
-      setActiveChallenge({
-        id: `milestone-${milestone.milestoneNumber}`,
-        title: `${milestone.skillName} (Milestone #${milestone.milestoneNumber})`,
-        difficulty: milestone.difficulty,
-        topic: milestone.category,
-        description: milestone.practicalProject || milestone.description,
-        starterCode: {
-          python: milestone.starterCodeSnippet,
-          javascript: milestone.starterCodeSnippet,
-          cpp: '// Implement challenge in C++',
-        },
-      });
-      setOutput(`Loaded project sandbox for: ${milestone.skillName}`);
+      setOutput(`Loaded project starter for: ${milestone.skillName}`);
       setActiveTab('sandbox');
     } else {
       setActiveTab('sandbox');
     }
   };
 
-  const handleSelectChallenge = (challenge: typeof STARTER_CHALLENGES[0]) => {
-    setActiveChallenge(challenge);
-    setCode(challenge.starterCode[language] || challenge.starterCode.python);
-    setOutput('');
+  const handleLanguageChange = (newLang: 'python' | 'javascript' | 'cpp' | 'java') => {
+    setLanguage(newLang);
+    setCode(activeProblem.starterCode[newLang] || '');
+    setTestResults(null);
   };
 
-  const handleLanguageChange = (newLang: 'python' | 'javascript' | 'cpp') => {
-    setLanguage(newLang);
-    setCode(activeChallenge.starterCode[newLang] || '');
+  const handleResetCode = () => {
+    setCode(activeProblem.starterCode[language] || '');
+    setTestResults(null);
+    setOutput('Reset code back to starter template.');
+  };
+
+  const handleInsertSolution = () => {
+    if (confirm('Replace your current code with the reference editorial solution?')) {
+      setCode(activeProblem.referenceSolution[language] || '');
+      setShowSolutionModal(false);
+      setOutput('Loaded reference editorial solution into editor.');
+    }
   };
 
   const handleRunCode = async () => {
     setExecuting(true);
-    setOutput('Compiling and executing against test sandbox...');
+    setOutput('Compiling and executing code on zero-cost runner...');
 
     try {
       const res = await fetch('/api/run-code', {
@@ -231,6 +276,39 @@ function RemediationStudioContent() {
       setOutput(`Failed to execute: ${err.message}`);
     }
     setExecuting(false);
+  };
+
+  const handleRunTests = async () => {
+    setExecuting(true);
+    setOutput('Evaluating code against LeetCode test cases...');
+    setTestResults(null);
+
+    try {
+      const res = await fetch('/api/run-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language,
+          sourceCode: code,
+          functionName: activeProblem.functionName,
+          testCases: activeProblem.testCases,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.run?.testResults) {
+        setTestResults(data.run.testResults);
+        setOutput(data.run.output);
+      } else if (data.run?.output) {
+        setOutput(data.run.output);
+      } else if (data.error) {
+        setOutput(`Grading Error: ${data.error}`);
+      }
+    } catch (err: any) {
+      setOutput(`Execution failed: ${err.message}`);
+    } finally {
+      setExecuting(false);
+    }
   };
 
   const getDifficultyBadge = (diff: SkillDifficulty, duration: number, hours: number) => {
@@ -289,6 +367,62 @@ function RemediationStudioContent() {
           </div>
         </header>
 
+        {/* Missing Skills Targeted Remediation Banner */}
+        {missingSkillsFocus.length > 0 && (
+          <div className="rounded-xl border border-indigo-600/50 bg-gradient-to-r from-indigo-950/70 via-slate-900 to-purple-950/60 p-4 shadow-lg text-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎯</span>
+                <h3 className="text-sm font-bold text-indigo-200">
+                  Targeted Skill Remediation for {targetCompanyInput || 'Placement Drive'} ({targetRoleInput || 'Target Role'})
+                </h3>
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px]">
+                  {missingSkillsFocus.length} Missing Gaps
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-300">
+                Roadmap calibrated specifically to bridge the exact technical competencies missing from your resume:
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {missingSkillsFocus.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full bg-amber-950/80 border border-amber-600/60 px-2.5 py-0.5 text-[11px] text-amber-200 font-medium"
+                  >
+                    ⚠️ {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  handleGenerateRoadmap(
+                    urlAppId || undefined,
+                    targetCompanyInput,
+                    targetRoleInput,
+                    true,
+                    missingSkillsFocus
+                  )
+                }
+                disabled={generating}
+                className="border-indigo-700 text-indigo-300 hover:bg-indigo-950 text-xs h-8"
+              >
+                🔄 Re-Generate
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setActiveTab('sandbox')}
+                className="bg-indigo-600 hover:bg-indigo-500 text-xs h-8 font-semibold"
+              >
+                💻 Open Monaco Studio
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-800 gap-4">
           <button
@@ -314,7 +448,10 @@ function RemediationStudioContent() {
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>💻</span> Monaco Practice Sandbox
+            <span>💻</span> Curated LeetCode Studio
+            <Badge variant="outline" className="text-[10px] border-emerald-500/60 text-emerald-400 bg-emerald-950/40">
+              Blind 75
+            </Badge>
           </button>
         </div>
 
@@ -344,8 +481,8 @@ function RemediationStudioContent() {
                     className="h-8 text-xs bg-slate-950 border-slate-800 w-36"
                   />
                   <Button
-                    onClick={() => handleGenerateRoadmap(urlAppId || undefined)}
-                    disabled={generating}
+                    onClick={() => handleGenerateRoadmap(undefined, targetCompanyInput, targetRoleInput, true, missingSkillsFocus)}
+                    disabled={generating || !targetCompanyInput.trim() || !targetRoleInput.trim()}
                     size="sm"
                     className="bg-indigo-600 hover:bg-indigo-500 text-xs h-8 text-white gap-1"
                   >
@@ -394,6 +531,57 @@ function RemediationStudioContent() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Interactive Roadmap Switcher Pill Bar */}
+            {roadmaps.length > 0 && (
+              <div className="space-y-2 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1.5">
+                    <span>📚</span>
+                    <span>Your Saved Career Roadmaps ({roadmaps.length})</span>
+                  </span>
+                  {activeRoadmap && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generating}
+                      onClick={() => handleGenerateRoadmap(activeRoadmap.applicationId, activeRoadmap.companyName, activeRoadmap.roleTitle, true)}
+                      className="h-7 text-[11px] border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-1"
+                    >
+                      <span>🔄</span>
+                      <span>Regenerate Active Plan</span>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {roadmaps.map((rm) => {
+                    const isActive = activeRoadmap?.id === rm.id;
+                    return (
+                      <button
+                        key={rm.id}
+                        type="button"
+                        onClick={() => setActiveRoadmap(rm)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition ${
+                          isActive
+                            ? 'bg-indigo-950 border-indigo-500 text-indigo-200 shadow-lg ring-1 ring-indigo-500/50'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <span>{isActive ? '📌' : '📄'}</span>
+                        <span className="font-bold text-slate-100">{rm.companyName}</span>
+                        <span className="text-[10px] text-indigo-300 font-mono">({rm.roleTitle})</span>
+                        {isActive && (
+                          <Badge className="bg-indigo-600 text-[9px] px-1.5 py-0 h-4">
+                            Active
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -542,6 +730,50 @@ function RemediationStudioContent() {
                           </div>
                         </div>
 
+                        {/* Curated Blind 75 / NeetCode Practice Problems */}
+                        {ms.curatedProblems && ms.curatedProblems.length > 0 && (
+                          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
+                                <span>🧩</span>
+                                <span>Curated NeetCode / Blind 75 Coding Challenges</span>
+                              </span>
+                              <span className="text-[10px] text-slate-500">{ms.curatedProblems.length} challenges</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {ms.curatedProblems.map((prob: PracticeProblem) => (
+                                <div
+                                  key={prob.id}
+                                  onClick={() => handleSelectProblem(prob)}
+                                  className="rounded-md border border-slate-800/80 bg-slate-900 p-2.5 hover:border-indigo-500/60 hover:bg-slate-850 cursor-pointer transition flex items-center justify-between"
+                                >
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-semibold text-slate-200">{prob.title}</span>
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[9px] px-1 py-0 ${
+                                          prob.difficulty === 'Easy'
+                                            ? 'border-emerald-600/60 text-emerald-300'
+                                            : prob.difficulty === 'Medium'
+                                            ? 'border-amber-600/60 text-amber-300'
+                                            : 'border-rose-600/60 text-rose-300'
+                                        }`}
+                                      >
+                                        {prob.difficulty}
+                                      </Badge>
+                                    </div>
+                                    <span className="text-[10px] text-slate-500 block mt-0.5">{prob.topicTag}</span>
+                                  </div>
+                                  <Button size="sm" variant="ghost" className="h-6 text-[11px] text-indigo-400 hover:text-indigo-300 p-0">
+                                    Solve in Monaco →
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Practical Portfolio Project & Sandbox CTA */}
                         {ms.practicalProject && (
                           <div className="rounded-lg border border-indigo-900/50 bg-indigo-950/20 p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -579,63 +811,183 @@ function RemediationStudioContent() {
           </div>
         )}
 
-        {/* ===================== TAB 2: MONACO CODE SANDBOX ===================== */}
+        {/* ===================== TAB 2: CURATED LEETCODE MONACO STUDIO ===================== */}
         {activeTab === 'sandbox' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Challenges Panel */}
-            <div className="space-y-3">
-              <h2 className="text-xs uppercase font-semibold text-slate-400">Curated Practice Modules</h2>
-              {STARTER_CHALLENGES.map((ch) => (
-                <Card
-                  key={ch.id}
-                  onClick={() => handleSelectChallenge(ch)}
-                  className={`cursor-pointer transition-colors border-slate-800 ${
-                    activeChallenge.id === ch.id ? 'bg-indigo-950/40 border-indigo-600' : 'bg-slate-900 hover:bg-slate-850'
-                  }`}
-                >
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex justify-between items-center">
-                      <Badge variant="secondary" className="text-[10px]">{ch.topic}</Badge>
-                      <span className="text-[10px] text-amber-400 font-medium">{ch.difficulty}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Problem List & Problem Description (5 cols) */}
+            <div className="lg:col-span-5 space-y-4">
+              {/* Problem Selector Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <span>🧩</span>
+                    <span>Curated Blind 75 / NeetCode 150</span>
+                  </h2>
+                  <span className="text-[11px] text-indigo-400 font-medium">
+                    {CURATED_PRACTICE_PROBLEMS.length} Problems
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-slate-950/50 rounded-lg border border-slate-800/80">
+                  {CURATED_PRACTICE_PROBLEMS.map((prob) => {
+                    const isSelected = activeProblem.id === prob.id;
+                    return (
+                      <button
+                        key={prob.id}
+                        type="button"
+                        onClick={() => handleSelectProblem(prob)}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition text-left flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-indigo-600 border-indigo-400 text-white shadow'
+                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{prob.title}</span>
+                        <span
+                          className={`text-[9px] px-1 py-0 rounded ${
+                            prob.difficulty === 'Easy'
+                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/60'
+                              : prob.difficulty === 'Medium'
+                              ? 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                              : 'bg-rose-950 text-rose-300 border border-rose-800/60'
+                          }`}
+                        >
+                          {prob.difficulty}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active Problem Workspace */}
+              <Card className="border-slate-800 bg-slate-900 text-slate-100 shadow-xl overflow-hidden">
+                <CardHeader className="p-4 pb-3 border-b border-slate-800/80 bg-slate-950/40">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-bold ${
+                            activeProblem.difficulty === 'Easy'
+                              ? 'border-emerald-600/60 text-emerald-400 bg-emerald-950/30'
+                              : activeProblem.difficulty === 'Medium'
+                              ? 'border-amber-600/60 text-amber-400 bg-amber-950/30'
+                              : 'border-rose-600/60 text-rose-400 bg-rose-950/30'
+                          }`}
+                        >
+                          {activeProblem.difficulty}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px] bg-slate-800 text-slate-300">
+                          {activeProblem.topicTag}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg font-bold text-slate-100 mt-2">
+                        {activeProblem.title}
+                      </CardTitle>
                     </div>
-                    <CardTitle className="text-sm font-bold text-slate-100 mt-2">{ch.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-1 text-xs text-slate-400 line-clamp-2">
-                    {ch.description}
-                  </CardContent>
-                </Card>
-              ))}
+
+                    <a
+                      href={activeProblem.leetcodeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 border border-amber-600/40 bg-amber-950/30 px-2 py-1 rounded transition hover:border-amber-500"
+                    >
+                      <span>LeetCode</span>
+                      <span>↗</span>
+                    </a>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-4 space-y-4 max-h-[520px] overflow-y-auto text-xs text-slate-300 leading-relaxed font-sans">
+                  <div className="whitespace-pre-wrap">{activeProblem.description}</div>
+
+                  {activeProblem.testCases && activeProblem.testCases.length > 0 && (
+                    <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                        Sample Public Test Cases
+                      </span>
+                      {activeProblem.testCases.slice(0, 2).map((tc, idx) => (
+                        <div key={idx} className="bg-slate-950 p-2.5 rounded border border-slate-800/80 font-mono text-[11px] space-y-1">
+                          <div className="text-slate-400">
+                            <span className="text-indigo-400">Input:</span> {tc.inputDisplay}
+                          </div>
+                          <div className="text-emerald-400">
+                            <span className="text-slate-400">Expected:</span> {JSON.stringify(tc.expected)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Monaco Interactive Sandbox & Console */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex justify-between items-center bg-slate-900 p-3 rounded-t-lg border border-slate-800">
-                <div className="flex items-center gap-3">
+            {/* Right Column: Monaco Code Editor & Test Runner Console (7 cols) */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Studio Header & Action Bar */}
+              <div className="flex flex-wrap justify-between items-center bg-slate-900 p-3 rounded-t-xl border border-slate-800 gap-2">
+                <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-slate-300">Language:</span>
                   <select
                     value={language}
                     onChange={(e) => handleLanguageChange(e.target.value as any)}
-                    className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded px-2.5 py-1"
+                    className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
-                    <option value="python">Python 3.10</option>
-                    <option value="javascript">Node.js 18</option>
-                    <option value="cpp">C++ (GCC 10)</option>
+                    <option value="java">Java 21 (OpenJDK)</option>
+                    <option value="python">Python 3.12 (CPython)</option>
+                    <option value="javascript">Node.js 20 (Local V8)</option>
+                    <option value="cpp">C++20 (GCC 13 Wandbox)</option>
                   </select>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetCode}
+                    className="h-7 text-[11px] text-slate-400 hover:text-slate-200"
+                  >
+                    ↺ Reset Template
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSolutionModal(true)}
+                    className="h-7 text-[11px] text-amber-400 hover:text-amber-300 hover:bg-amber-950/40 border border-amber-600/30"
+                  >
+                    💡 Solution
+                  </Button>
                 </div>
 
-                <Button
-                  onClick={handleRunCode}
-                  disabled={executing}
-                  size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-xs h-8"
-                >
-                  {executing ? 'Executing Sandbox...' : 'Run Code'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleRunCode}
+                    disabled={executing}
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-700 text-slate-200 hover:bg-slate-800 text-xs h-8"
+                  >
+                    Run Code
+                  </Button>
+
+                  <Button
+                    onClick={handleRunTests}
+                    disabled={executing}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-500 font-semibold text-white text-xs h-8 shadow flex items-center gap-1.5"
+                  >
+                    <span>🧪</span>
+                    <span>{executing ? 'Judging...' : 'Run LeetCode Tests'}</span>
+                  </Button>
+                </div>
               </div>
 
-              <div className="border border-slate-800 rounded-b-lg overflow-hidden bg-[#1e1e1e]">
+              {/* Monaco Editor Container */}
+              <div className="border-x border-slate-800 overflow-hidden bg-[#1e1e1e]">
                 <Editor
-                  height="340px"
+                  height="380px"
                   language={language}
                   theme="vs-dark"
                   value={code}
@@ -645,22 +997,146 @@ function RemediationStudioContent() {
                     fontSize: 13,
                     scrollBeyondLastLine: false,
                     automaticLayout: true,
+                    tabSize: 4,
                   }}
                 />
               </div>
 
-              {/* Execution Console Output */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 space-y-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                  Sandbox Console Output
-                </span>
-                <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap bg-slate-950 p-3 rounded border border-slate-800/80 max-h-36 overflow-y-auto">
-                  {output || 'Click "Run Code" to compile and execute output against test runners.'}
+              {/* LeetCode Test Case Results & Console */}
+              <div className="rounded-b-xl border border-slate-800 bg-slate-900 p-4 space-y-3 shadow-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    Test Results &amp; Console Output
+                  </span>
+
+                  {testResults && (
+                    <div className="flex items-center gap-1.5">
+                      {testResults.map((tr, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedTestCaseIdx(idx)}
+                          className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold transition ${
+                            selectedTestCaseIdx === idx
+                              ? tr.passed
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-rose-600 text-white'
+                              : tr.passed
+                              ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/80'
+                              : 'bg-rose-950/80 text-rose-300 border border-rose-800/80'
+                          }`}
+                        >
+                          {tr.passed ? '✓' : '✗'} Case {idx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Test Case Inspection Panel */}
+                {testResults && testResults[selectedTestCaseIdx] && (
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2 font-mono text-xs">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-800/80">
+                      <span className="font-bold flex items-center gap-1.5">
+                        {testResults[selectedTestCaseIdx].passed ? (
+                          <span className="text-emerald-400">✅ Test Case {selectedTestCaseIdx + 1}: Passed</span>
+                        ) : (
+                          <span className="text-rose-400">❌ Test Case {selectedTestCaseIdx + 1}: Failed</span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {testResults[selectedTestCaseIdx].runtimeMs}ms
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-[11px]">
+                      <div>
+                        <span className="text-slate-500">Input:</span>{' '}
+                        <span className="text-slate-300">{testResults[selectedTestCaseIdx].input}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Expected:</span>{' '}
+                        <span className="text-emerald-400">
+                          {JSON.stringify(testResults[selectedTestCaseIdx].expected)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Your Output:</span>{' '}
+                        <span className={testResults[selectedTestCaseIdx].passed ? 'text-emerald-400' : 'text-rose-400'}>
+                          {testResults[selectedTestCaseIdx].error
+                            ? `Runtime Error: ${testResults[selectedTestCaseIdx].error}`
+                            : JSON.stringify(testResults[selectedTestCaseIdx].actual)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard Console Output */}
+                <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-950 p-3 rounded-lg border border-slate-800/80 max-h-32 overflow-y-auto">
+                  {output || 'Click "Run LeetCode Tests" to evaluate your solution against test cases.'}
                 </pre>
               </div>
             </div>
           </div>
         )}
+
+        {/* Reference Editorial Solution Modal */}
+        <Dialog open={showSolutionModal} onOpenChange={setShowSolutionModal}>
+          <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-100 p-6">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="text-base font-bold text-amber-300 flex items-center gap-2">
+                    <span>💡 Reference Editorial Solution:</span>
+                    <span>{activeProblem.title}</span>
+                  </DialogTitle>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Language: <span className="text-indigo-400 font-mono uppercase font-semibold">{language}</span>
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="mt-4 space-y-3">
+              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-emerald-300 overflow-x-auto max-h-80 leading-relaxed">
+                {activeProblem.referenceSolution?.[language] || 'No reference solution available for this language.'}
+              </pre>
+
+              <div className="flex justify-between items-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeProblem.referenceSolution?.[language] || '');
+                    alert('Copied solution to clipboard!');
+                  }}
+                  className="border-slate-700 text-xs text-slate-300 hover:bg-slate-800"
+                >
+                  📋 Copy Solution
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSolutionModal(false)}
+                    className="text-xs text-slate-400 hover:text-slate-200"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleInsertSolution}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold"
+                  >
+                    Insert into Editor
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
