@@ -48,12 +48,6 @@ export default function StudentAiInterviewPage() {
                   Readiness Test
                 </Link>
               </div>
-
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-md bg-indigo-950/70 border border-indigo-700/60 font-mono text-[11px] font-semibold text-indigo-300">
-                  DUAL-STREAM RECORDING ARMED
-                </span>
-              </div>
             </div>
 
             {/* AI Technical Interview Component */}
