@@ -1061,7 +1061,7 @@ export default function StudentDrivesPage() {
 
       {/* MODAL: PORTFOLIO READINESS CHECK (AI PROJECT RECOMMENDATIONS) */}
       <Dialog open={showPortfolioCheckModal} onOpenChange={setShowPortfolioCheckModal}>
-        <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 w-[96vw] max-w-7xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl max-h-[88vh] overflow-y-auto p-6 sm:p-8">
           <DialogHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pr-6">
               <div className="flex items-center gap-3">
