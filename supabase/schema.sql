@@ -331,9 +331,9 @@ CREATE POLICY "Students or Admins can insert profile"
 -- C. PLACEMENT DRIVES POLICIES
 -- --------------------------------------------------------------------
 DROP POLICY IF EXISTS "Authenticated users can read placement drives" ON public.placement_drives;
-CREATE POLICY "Authenticated users can read placement drives"
+DROP POLICY IF EXISTS "Anyone can read placement drives" ON public.placement_drives;
+CREATE POLICY "Anyone can read placement drives"
   ON public.placement_drives FOR SELECT
-  TO authenticated
   USING (true);
 
 DROP POLICY IF EXISTS "Admins and Recruiters can insert placement drives" ON public.placement_drives;

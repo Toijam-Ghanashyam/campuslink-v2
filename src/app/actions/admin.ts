@@ -81,7 +81,7 @@ export async function createPlacementDrive(data: {
   const parsedDriveDate = safeParseDate(data.drive_date, 7);
   const parsedDeadline = safeParseDate(data.deadline, 5);
 
-  const { error } = await supabase.from('placement_drives').insert({
+  const insertPayload: Record<string, any> = {
     company_name: data.company_name,
     role_title: data.role_title,
     tier: data.tier,
@@ -92,7 +92,17 @@ export async function createPlacementDrive(data: {
     drive_date: parsedDriveDate,
     deadline: parsedDeadline,
     description: data.description || '',
-  });
+  };
+
+  let { error } = await supabase.from('placement_drives').insert(insertPayload);
+
+  // Graceful fallback for existing databases that have not run the migration yet
+  if (error && (error.message.includes('deadline') || error.message.includes('description') || error.message.includes('schema cache'))) {
+    delete insertPayload.deadline;
+    delete insertPayload.description;
+    const retry = await supabase.from('placement_drives').insert(insertPayload);
+    error = retry.error;
+  }
 
   if (error) {
     return { success: false, error: error.message };
