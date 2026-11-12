@@ -12,3 +12,4 @@ export function PageTransition({ children, className = '', ...props }) {
 }
 
 export default PageTransition;
+

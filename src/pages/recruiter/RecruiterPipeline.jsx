@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Users,
   Video,
@@ -23,12 +23,14 @@ import { Badge } from '../../components/ui/badge';
 import { Stamp } from '../../components/ui/Stamp';
 import { Drawer } from '../../components/ui/Drawer';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { InteractiveProctoringTimeline } from '../../components/interview/InteractiveProctoringTimeline';
 
 export function RecruiterPipeline() {
   const { pipeline = [], setPipeline, students = [], aiInterviewSessions = {} } = useStore();
   const [selectedBioCandidate, setSelectedBioCandidate] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const masterVideoRef = useRef(null);
 
   const handleOpenCandidate = (candidate) => {
     setSelectedBioCandidate(candidate);
@@ -269,11 +271,21 @@ export function RecruiterPipeline() {
                   <p className="text-[11px] text-fg-soft">
                     Continuous master recording capturing the full round, reading pauses, and inter-question gaps.
                   </p>
+
+                  {/* Interactive Scrubber with Jump-to-Violation Pins */}
+                  <InteractiveProctoringTimeline
+                    videoRef={masterVideoRef}
+                    totalDurationSec={currentSession.totalDurationSec || 180}
+                    questionClips={currentSession.questionClips || []}
+                    proctoringEvents={currentSession.proctoringEvents || []}
+                  />
+
                   {currentSession.fullSessionVideoUrl ? (
                     <video
+                      ref={masterVideoRef}
                       controls
                       src={currentSession.fullSessionVideoUrl}
-                      className="w-full aspect-video bg-black rounded-lg border border-line"
+                      className="w-full aspect-video bg-black rounded-lg border border-slate-800 shadow-lg"
                     />
                   ) : (
                     <div className="p-4 rounded-lg bg-black text-center text-xs text-fg-soft border border-line">

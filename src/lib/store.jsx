@@ -214,6 +214,32 @@ const SEEDED_PIPELINE = [
   },
 ];
 
+const SEEDED_SESSIONS = {
+  'demo-student-id': {
+    studentId: 'demo-student-id',
+    fullSessionVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    totalDurationSec: 180,
+    integrityScore: 82,
+    questionClips: [
+      { questionNumber: 1, questionId: 1, category: 'Introduction', prompt: 'Walk us through your technical background and the most complex system you have built at BPUT.', startedAtSessionSec: 8, durationSec: 18 },
+      { questionNumber: 2, questionId: 2, category: 'Data Structures', prompt: 'How would you design an LRU Cache with O(1) read and write operations? Explain the underlying data structures.', startedAtSessionSec: 32, durationSec: 16 },
+      { questionNumber: 3, questionId: 3, category: 'Frontend Architecture', prompt: 'Explain how React reconciliation and virtual DOM diffing optimize rendering performance in data-heavy dashboards.', startedAtSessionSec: 54, durationSec: 18 },
+      { questionNumber: 4, questionId: 4, category: 'Database Systems', prompt: 'When would you choose PostgreSQL composite indexing over a hash index, and how do you diagnose a slow query?', startedAtSessionSec: 78, durationSec: 17 },
+      { questionNumber: 5, questionId: 5, category: 'System Design', prompt: 'Design a real-time conflict-free interview slot booking service handling 1,500 concurrent student requests.', startedAtSessionSec: 102, durationSec: 20 },
+      { questionNumber: 6, questionId: 6, category: 'API Security', prompt: 'Compare stateless JWT authentication with session-based cookies. How do you mitigate token replay attacks?', startedAtSessionSec: 128, durationSec: 15 },
+      { questionNumber: 7, questionId: 7, category: 'Concurrency', prompt: 'How does the Node.js event loop handle CPU-bound tasks vs. asynchronous I/O operations?', startedAtSessionSec: 148, durationSec: 16 },
+      { questionNumber: 8, questionId: 8, category: 'Behavioral', prompt: 'Tell us about a time a hackathon deadline was at risk. How did you prioritize and deliver?', startedAtSessionSec: 168, durationSec: 10 },
+    ],
+    proctoringEvents: [
+      { id: 'evt-1', timestampSec: 28, type: 'HEAD_TURNED_AWAY', status: 'warning', reason: 'Head yaw turned > 72% away from display' },
+      { id: 'evt-2', timestampSec: 72, type: 'EYE_GAZE_OFF_SCREEN', status: 'warning', reason: 'Blendshape eye gaze reading off-screen' },
+      { id: 'evt-3', timestampSec: 96, type: 'MULTIPLE_FACES_DETECTED', status: 'violation', reason: 'Second individual detected in camera frame' },
+      { id: 'evt-4', timestampSec: 124, type: 'TAB_SWITCH_OR_FOCUS_LOSS', status: 'violation', reason: 'Browser visibilitychange tab switch event' },
+    ],
+    completedAt: '2026-11-13T04:30:00Z',
+  },
+};
+
 const StoreContext = createContext(null);
 
 export function StoreProvider({ children, initialStudent = null, initialDrives = null, initialApps = null }) {
@@ -255,7 +281,7 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
   const [activeResearchDrive, setActiveResearchDrive] = useState(null);
 
   // AI Interview Sessions & Recruiter Pipeline State
-  const [aiInterviewSessions, setAiInterviewSessions] = useState({});
+  const [aiInterviewSessions, setAiInterviewSessions] = useState(SEEDED_SESSIONS);
   const [students, setStudents] = useState(SEEDED_STUDENTS);
   const [pipeline, setPipeline] = useState(SEEDED_PIPELINE);
   const [notifications, setNotifications] = useState({

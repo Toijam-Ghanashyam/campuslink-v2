@@ -13,7 +13,12 @@ import {
   ArrowRight,
   Radio,
   Film,
+  AlertTriangle,
+  Users,
+  Compass,
+  Eye,
 } from 'lucide-react';
+import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { Card } from '../../components/ui/card';
@@ -21,6 +26,63 @@ import { Button } from '../../components/ui/button';
 import { Stamp } from '../../components/ui/Stamp';
 import { useToast } from '../../components/ui/toast';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { InteractiveProctoringTimeline } from '../../components/interview/InteractiveProctoringTimeline';
+
+// 1. Initialize once when permissions are granted
+export async function initProctoringModel() {
+  const vision = await FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+  );
+  return await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+      delegate: 'GPU',
+    },
+    outputFaceBlendshapes: true,
+    runningMode: 'VIDEO',
+    numFaces: 2, // Allows detecting a 2nd person in the background
+  });
+}
+
+// 2. Call every ~250ms on your <video ref={videoPreviewRef} />
+export function analyzeFrame(faceLandmarker, videoEl) {
+  if (!faceLandmarker || !videoEl || videoEl.readyState < 2) return null;
+
+  const result = faceLandmarker.detectForVideo(videoEl, performance.now());
+  const faces = result.faceLandmarks || [];
+
+  if (faces.length === 0) return { status: 'violation', reason: 'NO_FACE_DETECTED' };
+  if (faces.length > 1) return { status: 'violation', reason: 'MULTIPLE_FACES_DETECTED' };
+
+  // Head Yaw (Left/Right turn) using Nose (1) vs Left/Right face edges (234, 454)
+  const lm = faces[0];
+  const noseX = lm[1].x;
+  const leftEdgeX = lm[234].x;
+  const rightEdgeX = lm[454].x;
+  const faceWidth = Math.abs(rightEdgeX - leftEdgeX) || 0.001;
+  const yawRatio = (noseX - leftEdgeX) / faceWidth; // ~0.5 is dead-center
+
+  if (yawRatio < 0.28 || yawRatio > 0.72) {
+    return { status: 'warning', reason: 'HEAD_TURNED_AWAY' };
+  }
+
+  // Eye Gaze check via Blendshapes (detects reading off-screen with head still)
+  const shapes = result.faceBlendshapes?.[0]?.categories || [];
+  const getScore = (name) => shapes.find((s) => s.categoryName === name)?.score || 0;
+
+  const lookingSideways =
+    getScore('eyeLookOutLeft') > 0.58 ||
+    getScore('eyeLookInLeft') > 0.58 ||
+    getScore('eyeLookOutRight') > 0.58 ||
+    getScore('eyeLookInRight') > 0.58;
+
+  if (lookingSideways) {
+    return { status: 'warning', reason: 'EYE_GAZE_OFF_SCREEN' };
+  }
+
+  return { status: 'clear', reason: 'FOCUSED' };
+}
 
 const AI_QUESTIONS = [
   { id: 1, category: 'Introduction', prompt: 'Walk us through your technical background and the most complex system you have built at BPUT.' },
@@ -61,6 +123,9 @@ export function StudentAiInterview() {
 
   const [fullRecordingUrl, setFullRecordingUrl] = useState(null);
   const [questionClips, setQuestionClips] = useState([]);
+  const [proctoringEvents, setProctoringEvents] = useState([]);
+  const [liveProctorStatus, setLiveProctorStatus] = useState({ status: 'clear', reason: 'FOCUSED' });
+  const [modelReady, setModelReady] = useState(false);
 
   const videoPreviewRef = useRef(null);
   const streamRef = useRef(null);
@@ -71,6 +136,12 @@ export function StudentAiInterview() {
   const questionClipsRef = useRef([]);
   const answerStartTimestampRef = useRef(0);
   const answerDurationRef = useRef(0);
+
+  // Proctoring References
+  const faceLandmarkerRef = useRef(null);
+  const proctoringEventsRef = useRef([]);
+  const lastEventTimeRef = useRef({});
+  const fullVideoRef = useRef(null);
 
   useEffect(() => {
     if (videoPreviewRef.current && streamRef.current) {
@@ -94,6 +165,88 @@ export function StudentAiInterview() {
     }, 1000);
     return () => clearInterval(timer);
   }, [isAnswering]);
+
+  // Real-time Face & Eye Proctoring Loop (~250ms) + Visibility listeners
+  useEffect(() => {
+    if (step !== 'interview') return;
+
+    // 1. MediaPipe Frame Analysis Loop
+    const proctorInterval = setInterval(() => {
+      if (!faceLandmarkerRef.current || !videoPreviewRef.current) return;
+
+      try {
+        const result = analyzeFrame(faceLandmarkerRef.current, videoPreviewRef.current);
+        if (!result) return;
+
+        setLiveProctorStatus(result);
+
+        if (result.status === 'violation' || result.status === 'warning') {
+          const now = Date.now();
+          const lastLogged = lastEventTimeRef.current[result.reason] || 0;
+
+          // Throttle event logging to at most once per 2.5 seconds per type
+          if (now - lastLogged > 2500) {
+            lastEventTimeRef.current[result.reason] = now;
+            const newEvt = {
+              id: `evt-${now}-${Math.random()}`,
+              timestampSec: masterSeconds,
+              type: result.reason,
+              status: result.status,
+              reason: result.reason.replace(/_/g, ' '),
+            };
+            proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+            setProctoringEvents([...proctoringEventsRef.current]);
+          }
+        }
+      } catch (err) {
+        // Drop frames safely without interrupting stream
+      }
+    }, 250);
+
+    // 2. Tab switch & visibility loss listener
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const now = Date.now();
+        const newEvt = {
+          id: `evt-tab-${now}`,
+          timestampSec: masterSeconds,
+          type: 'TAB_SWITCH_OR_FOCUS_LOSS',
+          status: 'violation',
+          reason: 'Browser tab switched or window minimized',
+        };
+        proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+        setProctoringEvents([...proctoringEventsRef.current]);
+        setLiveProctorStatus({ status: 'violation', reason: 'TAB_SWITCH_OR_FOCUS_LOSS' });
+        toast('Violation: Tab switch or background focus loss detected!', 'brick');
+      }
+    };
+
+    const handleWindowBlur = () => {
+      const now = Date.now();
+      const lastLogged = lastEventTimeRef.current['TAB_SWITCH_OR_FOCUS_LOSS'] || 0;
+      if (now - lastLogged > 3000) {
+        lastEventTimeRef.current['TAB_SWITCH_OR_FOCUS_LOSS'] = now;
+        const newEvt = {
+          id: `evt-blur-${now}`,
+          timestampSec: masterSeconds,
+          type: 'TAB_SWITCH_OR_FOCUS_LOSS',
+          status: 'violation',
+          reason: 'Window lost focus / desktop switch',
+        };
+        proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+        setProctoringEvents([...proctoringEventsRef.current]);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      clearInterval(proctorInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [step, masterSeconds, toast]);
 
   useEffect(() => {
     return () => {
@@ -126,6 +279,18 @@ export function StudentAiInterview() {
       }
       setHasPermission(true);
       toast('Camera and Microphone verified.', 'jade');
+
+      // Initialize FaceLandmarker asynchronously once permissions granted
+      if (!faceLandmarkerRef.current) {
+        initProctoringModel()
+          .then((model) => {
+            faceLandmarkerRef.current = model;
+            setModelReady(true);
+          })
+          .catch((err) => {
+            console.warn('FaceLandmarker GPU init fallback:', err);
+          });
+      }
     } catch {
       toast('Please allow camera and microphone access to proceed.', 'brick');
     }
@@ -210,16 +375,22 @@ export function StudentAiInterview() {
           streamRef.current.getTracks().forEach((t) => t.stop());
         }
 
+        const violationsCount = proctoringEventsRef.current.filter((e) => e.status === 'violation').length;
+        const warningsCount = proctoringEventsRef.current.filter((e) => e.status === 'warning').length;
+        const integrityScore = Math.max(0, 100 - violationsCount * 10 - warningsCount * 3);
+
         saveAiInterviewResult?.({
           studentId: currentStudent.id,
           fullSessionVideoUrl: fullUrl,
           totalDurationSec: masterSeconds,
           questionClips: questionClipsRef.current,
+          proctoringEvents: proctoringEventsRef.current,
+          integrityScore,
           completedAt: new Date().toISOString(),
         });
 
         setStep('completed');
-        toast('AI Interview submitted! Full recording + 10 answer clips archived.', 'jade');
+        toast('AI Interview submitted! Full recording + 10 answer clips + proctoring pins archived.', 'jade');
       };
       masterRecorderRef.current.stop();
     }
@@ -239,7 +410,7 @@ export function StudentAiInterview() {
     <PageTransition className="space-y-6">
       <Masthead
         context="06 · AUTONOMOUS AI VIDEO ASSESSMENT"
-        lede="Dual-stream proctored evaluation: continuous session recording plus isolated question-by-question answer capture."
+        lede="Dual-stream proctored evaluation: continuous session recording plus isolated question-by-question answer capture with MediaPipe facial landmarking."
         title="Live AI Technical Interview."
       />
 
@@ -259,7 +430,7 @@ export function StudentAiInterview() {
                   <Camera className="w-6 h-6 text-indigo-400" />
                 </div>
                 <p className="font-mono text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                  CAMERA & MICROPHONE STREAM INACTIVE
+                  CAMERA &amp; MICROPHONE STREAM INACTIVE
                 </p>
               </div>
             )}
@@ -268,7 +439,7 @@ export function StudentAiInterview() {
           <Card className="lg:col-span-5 space-y-5 p-6 bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
             <div className="space-y-1">
               <span className="font-mono text-[10px] uppercase tracking-widest text-indigo-400 font-bold">
-                STEP 01 OF 03 · HARDWARE DIAGNOSTIC
+                STEP 01 OF 03 · HARDWARE &amp; PROCTORING DIAGNOSTIC
               </span>
               <h3 className="font-display text-xl font-bold text-white">
                 Grant Camera &amp; Microphone Access
@@ -293,6 +464,14 @@ export function StudentAiInterview() {
                 </span>
                 <Stamp tone={hasPermission ? 'jade' : 'ochre'}>
                   {hasPermission ? 'VERIFIED' : 'PENDING'}
+                </Stamp>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/70 flex items-center justify-between">
+                <span className="flex items-center gap-2 text-slate-200">
+                  <Eye className="w-4 h-4 text-indigo-400" /> MediaPipe FaceLandmarker
+                </span>
+                <Stamp tone={modelReady ? 'jade' : 'ochre'}>
+                  {modelReady ? 'ARMED' : 'INITIALIZING'}
                 </Stamp>
               </div>
             </div>
@@ -344,6 +523,13 @@ export function StudentAiInterview() {
                 <div>
                   <strong className="text-white block font-semibold">Per-Question Answer Clips:</strong>
                   <span className="text-slate-300">For each question, read the prompt, click <strong className="text-emerald-400 font-semibold">Start Answer</strong> to record your isolated clip, and click <strong className="text-rose-400 font-semibold">End Answer</strong> when finished.</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                <span className="font-mono text-xs font-bold text-indigo-400 mt-0.5 px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60">04</span>
+                <div>
+                  <strong className="text-white block font-semibold">AI Face &amp; Eye Gaze Proctoring:</strong>
+                  <span className="text-slate-300">MediaPipe detects head yaw turns, eye gaze diversion off-screen, multiple individuals, or tab switches, pinning them on the recruiter timeline.</span>
                 </div>
               </li>
             </ul>
@@ -423,8 +609,37 @@ export function StudentAiInterview() {
 
             <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-800">
               <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+
+              {/* Live MediaPipe Proctoring HUD Overlay Badge */}
+              <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
+                <div
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold flex items-center gap-2 shadow-lg border backdrop-blur-md ${
+                    liveProctorStatus.status === 'violation'
+                      ? 'bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse'
+                      : liveProctorStatus.status === 'warning'
+                      ? 'bg-amber-950/90 border-amber-500 text-amber-300'
+                      : 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      liveProctorStatus.status === 'violation'
+                        ? 'bg-rose-500 animate-ping'
+                        : liveProctorStatus.status === 'warning'
+                        ? 'bg-amber-400'
+                        : 'bg-emerald-400'
+                    }`}
+                  />
+                  <span>
+                    {liveProctorStatus.reason === 'FOCUSED'
+                      ? 'AI PROCTOR: FOCUSED'
+                      : `PROCTOR FLAG: ${liveProctorStatus.reason.replace(/_/g, ' ')}`}
+                  </span>
+                </div>
+              </div>
+
               {isAnswering && (
-                <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/85 border border-emerald-500/60 font-mono text-[11px] text-emerald-300 flex items-center gap-2 shadow-lg">
+                <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/85 border border-emerald-500/60 font-mono text-[11px] text-emerald-300 flex items-center gap-2 shadow-lg z-20">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   Recording isolated clip for Question {currentQIndex + 1}...
                 </div>
@@ -498,18 +713,26 @@ export function StudentAiInterview() {
         <div className="space-y-6">
           <Card className="p-6 border-emerald-500/40 bg-emerald-950/20 text-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
             <div className="space-y-1">
-              <Stamp tone="jade">DUAL RECORDINGS ARCHIVED</Stamp>
+              <Stamp tone="jade">DUAL RECORDINGS &amp; PROCTORING ARCHIVED</Stamp>
               <h3 className="font-display text-xl font-bold text-white pt-1">
                 AI Interview Submitted to Placement &amp; Recruiter Portals
               </h3>
               <p className="text-xs text-slate-300">
-                Full Unbroken Session: <strong className="font-mono text-white">{formatTime(masterSeconds)}</strong> · Segmented Question Clips: <strong className="font-mono text-white">{questionClips.length} / 10</strong>
+                Full Unbroken Session: <strong className="font-mono text-white">{formatTime(masterSeconds)}</strong> · Segmented Question Clips: <strong className="font-mono text-white">{questionClips.length} / 10</strong> · Proctoring Flags: <strong className="font-mono text-rose-300">{proctoringEvents.length}</strong>
               </p>
             </div>
             <Button variant="primary" onClick={handleNavigateOverview} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5">
               View Updated Readiness Score →
             </Button>
           </Card>
+
+          {/* Interactive Timeline Scrubber with Jump-to-Violation Pins */}
+          <InteractiveProctoringTimeline
+            videoRef={fullVideoRef}
+            totalDurationSec={masterSeconds}
+            questionClips={questionClips}
+            proctoringEvents={proctoringEvents}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <Card className="lg:col-span-5 p-5 space-y-3 bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
@@ -523,7 +746,12 @@ export function StudentAiInterview() {
                 Continuous recording across all 10 questions including reading pauses and gaps.
               </p>
               {fullRecordingUrl && (
-                <video src={fullRecordingUrl} controls className="w-full aspect-video bg-black rounded-lg border border-slate-800" />
+                <video
+                  ref={fullVideoRef}
+                  src={fullRecordingUrl}
+                  controls
+                  className="w-full aspect-video bg-black rounded-lg border border-slate-800 shadow-lg"
+                />
               )}
             </Card>
 

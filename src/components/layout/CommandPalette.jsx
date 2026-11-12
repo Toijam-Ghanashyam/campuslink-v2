@@ -99,3 +99,4 @@ export function CommandPalette({ open, onClose }) {
 }
 
 export default CommandPalette;
+
