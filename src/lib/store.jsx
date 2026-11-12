@@ -124,11 +124,102 @@ const SEEDED_INTERVIEWS = [
   },
 ];
 
+const SEEDED_STUDENTS = [
+  {
+    id: 'demo-student-id',
+    name: 'Ananya Sharma',
+    full_name: 'Ananya Sharma',
+    roll_number: 'TU-2023-CS089',
+    rollNumber: 'TU-2023-CS089',
+    branch: 'Computer Science & Engineering',
+    verified_cgpa: 8.94,
+    cgpa: 8.94,
+    mockScore: 78,
+    readinessScore: 82,
+    level: 'Ready',
+    status: 'Ready',
+  },
+  {
+    id: 'b05ca1bd-0a61-430f-a398-57fddab0f3f2',
+    name: 'Meera Kulkarni',
+    full_name: 'Meera Kulkarni',
+    roll_number: 'TU-2024-CS045',
+    rollNumber: 'TU-2024-CS045',
+    branch: 'Computer Science & Engineering',
+    verified_cgpa: 9.18,
+    cgpa: 9.18,
+    mockScore: 75,
+    readinessScore: 70,
+    level: 'Review',
+    status: 'Review',
+  },
+  {
+    id: 's-rohan',
+    name: 'Rohan Verma',
+    full_name: 'Rohan Verma',
+    roll_number: 'TU-2023-EC219',
+    rollNumber: 'TU-2023-EC219',
+    branch: 'Electronics & Communication',
+    verified_cgpa: 7.62,
+    cgpa: 7.62,
+    mockScore: 70,
+    readinessScore: 68,
+    level: 'Review',
+    status: 'Review',
+  },
+];
+
+const SEEDED_PIPELINE = [
+  {
+    id: 'pipe-1',
+    studentId: 'demo-student-id',
+    studentName: 'Ananya Sharma',
+    rollNumber: 'TU-2023-CS089',
+    branch: 'Computer Science & Engineering',
+    cgpa: 8.94,
+    company: 'Infosys Limited',
+    role: 'Data Analyst',
+    driveId: '49d09d96-6803-4c5c-a6e0-5b602b1d472a',
+    aiMatch: 85,
+    pipelineStatus: 'Interview Round 1',
+    appliedAt: '2026-11-12T10:00:00Z',
+  },
+  {
+    id: 'pipe-2',
+    studentId: 'b05ca1bd-0a61-430f-a398-57fddab0f3f2',
+    studentName: 'Meera Kulkarni',
+    rollNumber: 'TU-2024-CS045',
+    branch: 'Computer Science & Engineering',
+    cgpa: 9.18,
+    company: 'Infosys Limited',
+    role: 'Data Analyst',
+    driveId: '49d09d96-6803-4c5c-a6e0-5b602b1d472a',
+    aiMatch: 54,
+    pipelineStatus: 'Applied',
+    appliedAt: '2026-11-12T22:30:00Z',
+  },
+  {
+    id: 'pipe-3',
+    studentId: 's-rohan',
+    studentName: 'Rohan Verma',
+    rollNumber: 'TU-2023-EC219',
+    branch: 'Electronics & Communication',
+    cgpa: 7.62,
+    company: 'TCS / Infosys',
+    role: 'Systems Engineer',
+    driveId: 'cba6a5ca-50d9-4384-8eea-06f7cfcb8304',
+    aiMatch: 50,
+    pipelineStatus: 'Offered',
+    appliedAt: '2026-11-11T14:20:00Z',
+  },
+];
+
 const StoreContext = createContext(null);
 
 export function StoreProvider({ children, initialStudent = null, initialDrives = null, initialApps = null }) {
   const [currentStudent, setCurrentStudent] = useState(initialStudent || {
     id: 'demo-student-id',
+    name: 'Ananya Sharma',
     full_name: 'Ananya Sharma',
     email: 'ananya.sharma@techuniv.edu.in',
     skills: [
@@ -144,6 +235,8 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
     verified_cgpa: 8.94,
     active_backlogs: 0,
     is_locked: true,
+    mockScore: 78,
+    readinessScore: 82,
   });
 
   const [drives, setDrives] = useState(initialDrives || SEEDED_DRIVES);
@@ -161,6 +254,15 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
   const [studentInterviews, setStudentInterviews] = useState(SEEDED_INTERVIEWS);
   const [activeResearchDrive, setActiveResearchDrive] = useState(null);
 
+  // AI Interview Sessions & Recruiter Pipeline State
+  const [aiInterviewSessions, setAiInterviewSessions] = useState({});
+  const [students, setStudents] = useState(SEEDED_STUDENTS);
+  const [pipeline, setPipeline] = useState(SEEDED_PIPELINE);
+  const [notifications, setNotifications] = useState({
+    student: [],
+    recruiter: [],
+  });
+
   // Sync with localStorage if present
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -169,8 +271,74 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
       if (stored) {
         setCurrentStudent((prev) => ({ ...prev, ...JSON.parse(stored) }));
       }
+      const storedSessions = localStorage.getItem('campuslink_ai_interview_sessions');
+      if (storedSessions) {
+        setAiInterviewSessions(JSON.parse(storedSessions));
+      }
     } catch (e) {}
   }, []);
+
+  const addNotification = (role, notif) => {
+    setNotifications((prev) => ({
+      ...prev,
+      [role]: [
+        { id: `notif-${Date.now()}`, timestamp: new Date().toISOString(), ...notif },
+        ...(prev[role] || []),
+      ],
+    }));
+  };
+
+  const saveAiInterviewResult = (payload) => {
+    setAiInterviewSessions((prev) => {
+      const next = {
+        ...prev,
+        [payload.studentId]: payload,
+      };
+      try {
+        if (typeof window !== 'undefined') {
+          // Store minimal metadata in localStorage (exclude huge blob urls if needed)
+          localStorage.setItem('campuslink_ai_interview_sessions', JSON.stringify(next));
+        }
+      } catch (err) {}
+      return next;
+    });
+
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === payload.studentId
+          ? { ...s, mockScore: 88, readinessScore: Math.max(s.readinessScore || 0, 86), level: 'Ready' }
+          : s
+      )
+    );
+
+    setCurrentStudent((prev) =>
+      prev && prev.id === payload.studentId
+        ? {
+            ...prev,
+            mockScore: 88,
+            readiness_score: Math.max(prev.readiness_score || 0, 86),
+            readinessScore: Math.max(prev.readinessScore || 0, 86),
+            readiness_status: 'HIGHLY_READY',
+            aiInterviewCompleted: true,
+          }
+        : prev
+    );
+
+    setPipeline((prev) =>
+      prev.map((p) =>
+        p.studentId === payload.studentId
+          ? { ...p, aiMatch: Math.max(p.aiMatch || 0, 88), pipelineStatus: 'Shortlisted for R2' }
+          : p
+      )
+    );
+
+    const studentName = currentStudent?.name || currentStudent?.full_name || 'Candidate';
+    addNotification('recruiter', {
+      title: 'AI Video Interview Submitted',
+      message: `${studentName} completed the 10-question AI video round (Full recording + 10 answer clips available).`,
+      category: 'Shortlisting',
+    });
+  };
 
   const applyToDrive = (driveId) => {
     const existing = applications.find((a) => a.driveId === driveId || a.drive_id === driveId);
@@ -205,6 +373,15 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
     openCompanyResearch,
     closeCompanyResearch,
     applyToDrive,
+    aiInterviewSessions,
+    setAiInterviewSessions,
+    saveAiInterviewResult,
+    students,
+    setStudents,
+    pipeline,
+    setPipeline,
+    notifications,
+    addNotification,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
@@ -216,7 +393,8 @@ export function useStore() {
     // Return sensible fallback state if accessed outside Provider
     return {
       currentStudent: {
-        id: 'default-student',
+        id: 'demo-student-id',
+        name: 'Student',
         full_name: 'Student',
         skills: [
           'Python',
@@ -230,6 +408,8 @@ export function useStore() {
         verified_cgpa: 8.5,
         active_backlogs: 0,
         is_locked: true,
+        mockScore: 78,
+        readinessScore: 82,
       },
       setCurrentStudent: () => {},
       drives: SEEDED_DRIVES,
@@ -248,6 +428,15 @@ export function useStore() {
         status: 'Applied',
         fitScore: 88,
       }),
+      aiInterviewSessions: {},
+      setAiInterviewSessions: () => {},
+      saveAiInterviewResult: () => {},
+      students: SEEDED_STUDENTS,
+      setStudents: () => {},
+      pipeline: SEEDED_PIPELINE,
+      setPipeline: () => {},
+      notifications: { student: [], recruiter: [] },
+      addNotification: () => {},
     };
   }
   return context;

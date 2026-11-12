@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
@@ -10,10 +11,12 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
         primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-900/30",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        accent: "bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-950/40",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+        danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-sm shadow-rose-950/40",
+        outline:
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
@@ -28,7 +31,7 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         md: "h-8 gap-1.5 px-2.5 text-xs",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        lg: "h-10 gap-2 px-4 text-sm has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
@@ -48,6 +51,7 @@ export interface ButtonProps
   extends ButtonPrimitive.Props,
     VariantProps<typeof buttonVariants> {
   loading?: boolean
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 function Button({
@@ -55,6 +59,7 @@ function Button({
   variant = "default",
   size = "default",
   loading = false,
+  icon: Icon,
   children,
   ...props
 }: ButtonProps) {
@@ -65,7 +70,11 @@ function Button({
       disabled={props.disabled || loading}
       {...props}
     >
-      {loading && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+      {loading ? (
+        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin shrink-0" />
+      ) : Icon ? (
+        <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+      ) : null}
       {children}
     </ButtonPrimitive>
   )

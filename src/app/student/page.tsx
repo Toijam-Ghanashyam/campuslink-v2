@@ -579,13 +579,20 @@ export default function StudentDashboardPage() {
                   </div>
                 </div>
 
-                <Link href="/student/readiness-test">
-                  <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 shadow-lg shadow-indigo-600/30 whitespace-nowrap">
-                    {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
-                      ? 'Retake Readiness Test →'
-                      : 'Take Readiness Test →'}
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <Link href="/student/ai-interview">
+                    <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 shadow-lg shadow-emerald-600/30 whitespace-nowrap">
+                      🎥 AI Video Round →
+                    </Button>
+                  </Link>
+                  <Link href="/student/readiness-test">
+                    <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 shadow-lg shadow-indigo-600/30 whitespace-nowrap">
+                      {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
+                        ? 'Retake Readiness Test →'
+                        : 'Take Readiness Test →'}
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

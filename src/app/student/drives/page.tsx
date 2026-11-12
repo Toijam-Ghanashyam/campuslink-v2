@@ -548,6 +548,11 @@ export default function StudentDrivesPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/student/ai-interview">
+              <Button variant="outline" size="sm" className="border-emerald-600/50 text-emerald-400 hover:bg-emerald-950/40 text-xs font-semibold">
+                🎥 AI Video Round
+              </Button>
+            </Link>
             <Link href="/student/live-status">
               <Button variant="outline" size="sm" className="border-indigo-600/40 text-indigo-400 hover:bg-indigo-950/40 text-xs">
                 Live Dispatch
