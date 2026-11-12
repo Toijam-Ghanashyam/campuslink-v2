@@ -18,11 +18,11 @@ const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
 function RemediationStudioContent() {
   const searchParams = useSearchParams();
-  const urlAppId = searchParams.get('appId');
-  const urlDriveTitle = searchParams.get('driveTitle') || searchParams.get('company');
-  const urlRole = searchParams.get('role');
-  const urlMissingSkills = searchParams.get('missingSkills');
-  const urlAutoGenerate = searchParams.get('autoGenerate');
+  const urlAppId = searchParams?.get('appId');
+  const urlDriveTitle = searchParams?.get('driveTitle') || searchParams?.get('company');
+  const urlRole = searchParams?.get('role');
+  const urlMissingSkills = searchParams?.get('missingSkills');
+  const urlAutoGenerate = searchParams?.get('autoGenerate');
 
   const [activeTab, setActiveTab] = useState<'roadmap' | 'sandbox'>('roadmap');
   const [feedbackHistory, setFeedbackHistory] = useState<any[]>([]);

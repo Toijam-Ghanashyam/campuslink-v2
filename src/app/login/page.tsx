@@ -11,8 +11,8 @@ import { AFFILIATED_COLLEGES } from '@/lib/colleges';
 
 function LoginPageContent() {
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab');
-  const initialRole = searchParams.get('role');
+  const initialTab = searchParams?.get('tab');
+  const initialRole = searchParams?.get('role');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

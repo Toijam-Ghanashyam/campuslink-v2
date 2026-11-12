@@ -21,6 +21,7 @@ const STAGES = [
 export default function RecruiterWarRoom() {
   const [drives, setDrives] = useState<any[]>([]);
   const [selectedDriveId, setSelectedDriveId] = useState<string>('');
+  const [driveAppCounts, setDriveAppCounts] = useState<Record<string, number>>({});
   const [applications, setApplications] = useState<any[]>([]);
   const [panelRoom, setPanelRoom] = useState<string>('Lab 4 - Panel 2');
   const [ctcOffer, setCtcOffer] = useState<number>(12.0);
@@ -28,13 +29,34 @@ export default function RecruiterWarRoom() {
 
   const supabase = createClient();
 
-  // Load drives
+  // Load drives and candidate application counts
   useEffect(() => {
     async function fetchDrives() {
-      const { data } = await supabase.from('placement_drives').select('*');
-      if (data && data.length > 0) {
-        setDrives(data);
-        setSelectedDriveId(data[0].id);
+      const [{ data: driveList }, { data: appList }] = await Promise.all([
+        supabase.from('placement_drives').select('*').order('created_at', { ascending: false }),
+        supabase.from('drive_applications').select('drive_id'),
+      ]);
+
+      const counts: Record<string, number> = {};
+      appList?.forEach((a) => {
+        counts[a.drive_id] = (counts[a.drive_id] || 0) + 1;
+      });
+      setDriveAppCounts(counts);
+
+      if (driveList && driveList.length > 0) {
+        setDrives(driveList);
+
+        // Check URL search params for ?driveId=...
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const requestedDriveId = params?.get('driveId');
+
+        if (requestedDriveId && driveList.some((d) => d.id === requestedDriveId)) {
+          setSelectedDriveId(requestedDriveId);
+        } else {
+          // If no URL drive requested, default to the drive with the most applicants, or the first drive
+          const driveWithApps = driveList.find((d) => (counts[d.id] || 0) > 0);
+          setSelectedDriveId(driveWithApps ? driveWithApps.id : driveList[0].id);
+        }
       }
       setLoading(false);
     }
@@ -118,13 +140,16 @@ export default function RecruiterWarRoom() {
               <select
                 value={selectedDriveId}
                 onChange={(e) => setSelectedDriveId(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm text-slate-100"
+                className="bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm text-slate-100 font-medium"
               >
-                {drives.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.company_name} - {d.role_title} ({d.tier})
-                  </option>
-                ))}
+                {drives.map((d) => {
+                  const count = driveAppCounts[d.id] || 0;
+                  return (
+                    <option key={d.id} value={d.id}>
+                      {d.company_name} - {d.role_title} ({d.tier}) {count > 0 ? `• [${count} ${count === 1 ? 'Candidate' : 'Candidates'}]` : '• (0)'}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -149,6 +174,43 @@ export default function RecruiterWarRoom() {
             </div>
           </div>
         </header>
+
+        {/* Quick Pipeline Switcher Pills */}
+        <div className="flex items-center gap-2 flex-wrap bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider mr-1">
+            Active Pipelines:
+          </span>
+          {drives.map((d) => {
+            const count = driveAppCounts[d.id] || 0;
+            const isSelected = d.id === selectedDriveId;
+            return (
+              <button
+                key={d.id}
+                onClick={() => setSelectedDriveId(d.id)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/50'
+                    : count > 0
+                    ? 'bg-slate-900 text-slate-200 border-indigo-700/60 hover:bg-slate-800 hover:border-indigo-500'
+                    : 'bg-slate-900/60 text-slate-500 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <span>{d.company_name} - {d.role_title}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : count > 0
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
+                      : 'bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Applications List */}
         <div className="space-y-3">
