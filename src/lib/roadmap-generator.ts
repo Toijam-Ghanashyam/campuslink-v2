@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { CandidateRoadmap, RoadmapMilestone } from '../types/roadmap';
+import { SkillDeltaItem } from '../types/pri';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -17,14 +17,35 @@ export async function synthesizeRoadmapAI(params: {
   feedback?: string;
   verifiedCgpa?: number;
   branch?: string;
+  skillGapDelta?: SkillDeltaItem[];
+  priScore?: number;
 }) {
-  const { targetCompany, targetRole, feedback = '', verifiedCgpa = 7.8, branch = 'Computer Science & Engineering' } = params;
+  const {
+    targetCompany,
+    targetRole,
+    feedback = '',
+    verifiedCgpa = 7.8,
+    branch = 'Computer Science & Engineering',
+    skillGapDelta,
+    priScore,
+  } = params;
+
+  let deficitBlock = '';
+  if (skillGapDelta && skillGapDelta.length > 0) {
+    const positiveGaps = skillGapDelta.filter((d) => d.delta > 0);
+    if (positiveGaps.length > 0) {
+      deficitBlock = `\nMATHEMATICAL PRI VECTOR DEFICIT ANALYSIS (Role benchmark V_role vs Candidate V_s):
+${positiveGaps.map((d) => `- ${d.label} (${d.key}): Required ${d.roleScore}/10, Candidate evaluated ${d.studentScore}/10 (Deficit Delta: +${d.delta})`).join('\n')}
+MANDATORY: Prioritize roadmap milestones directly targeting these specific deficits in descending order of delta gap.\n`;
+    }
+  }
 
   const prompt = `You are a Principal Software Architect and Lead Engineering Career Mentor.
-A student candidate was rejected from a campus placement drive at "${targetCompany}" for the role of "${targetRole}".
+A student candidate was evaluated for a campus placement drive at "${targetCompany}" for the role of "${targetRole}".
+${priScore !== undefined ? `Placement Readiness Index (PRI): ${priScore}/100.` : ''}
 Diagnostic Feedback from Screening/Interview: "${feedback || 'Needs stronger proficiency in core algorithmic optimization, system design tradeoffs, and backend database query execution.'}"
 Student verified CGPA: ${verifiedCgpa}, Branch: ${branch}.
-
+${deficitBlock}
 Synthesize a high-velocity, structured Remediation Learning Roadmap with 3 to 4 focused, high-impact milestones to close every technical deficit.
 
 STRICT TIMELINE & DIFFICULTY CALIBRATION:
@@ -92,6 +113,9 @@ Return ONLY valid JSON matching this schema:
   }
 
   if (!parsedResponse || !parsedResponse.milestones) {
+    if (lastError) {
+      console.warn('[Roadmap AI] Upstream models unavailable, engaging algorithmic fallback:', lastError?.message);
+    }
     // Resilient fallback in the rare event of complete upstream AI outage
     parsedResponse = getFallbackRoadmap(targetCompany, targetRole);
   }
@@ -99,7 +123,7 @@ Return ONLY valid JSON matching this schema:
   return parsedResponse;
 }
 
-function getFallbackRoadmap(targetCompany: string, targetRole: string) {
+function getFallbackRoadmap(_targetCompany?: string, _targetRole?: string) {
   return {
     totalDurationWeeks: 8,
     missingSkills: ['Database Query Optimization', 'Asynchronous Systems & Event Loop', 'System Architecture & Caching'],

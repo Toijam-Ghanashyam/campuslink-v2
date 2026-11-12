@@ -17,10 +17,31 @@ async function pregenerateRoadmapOnRejection(applicationId: string) {
 
     if (existing) return;
 
-    // 2. Fetch application with drive and student info
+    // 2. Fetch application with drive, student info, and PRI vector deltas
     const { data: app } = await supabase
       .from('drive_applications')
-      .select('id, student_id, ai_feedback_summary, placement_drives(company_name, role_title), student_profiles(verified_cgpa, branch)')
+      .select(`
+        id,
+        student_id,
+        ai_feedback_summary,
+        pri_score,
+        e_academic,
+        e_practical,
+        e_eval,
+        cosine_similarity,
+        student_skill_vector,
+        skill_gap_delta,
+        placement_drives (
+          company_name,
+          role_title,
+          pri_threshold,
+          role_skill_vector
+        ),
+        student_profiles (
+          verified_cgpa,
+          branch
+        )
+      `)
       .eq('id', applicationId)
       .maybeSingle();
 
@@ -29,17 +50,32 @@ async function pregenerateRoadmapOnRejection(applicationId: string) {
     const drives: any = app.placement_drives;
     const profiles: any = app.student_profiles;
 
-    // 3. Synthesize via ultra-fast Gemini chain (<4s)
+    // 3. Synthesize via ultra-fast Gemini chain (<4s) informed by PRI skill gap vectors
     const parsed = await synthesizeRoadmapAI({
       targetCompany: drives.company_name || 'Enterprise Campus Partner',
       targetRole: drives.role_title || 'Software Development Engineer',
       feedback: app.ai_feedback_summary || 'Screening evaluated core CS fundamentals and practical depth.',
       verifiedCgpa: profiles?.verified_cgpa || 7.5,
       branch: profiles?.branch || 'Computer Science & Engineering',
+      skillGapDelta: app.skill_gap_delta || undefined,
+      priScore: app.pri_score !== undefined && app.pri_score !== null ? Number(app.pri_score) : undefined,
     });
 
     if (parsed && parsed.milestones) {
-      await supabase.from('candidate_roadmaps').insert({
+      const priSnapshot = {
+        priScore: app.pri_score,
+        threshold: drives?.pri_threshold || 70,
+        belowThreshold: (app.pri_score || 0) < (drives?.pri_threshold || 70),
+        eAcademic: app.e_academic,
+        ePractical: app.e_practical,
+        eEval: app.e_eval,
+        cosineSimilarity: app.cosine_similarity,
+        studentVector: app.student_skill_vector,
+        roleVector: drives?.role_skill_vector,
+        vectorDelta: app.skill_gap_delta,
+      };
+
+      const roadmapPayload: Record<string, any> = {
         student_id: app.student_id,
         application_id: applicationId,
         company_name: drives.company_name || 'Enterprise Campus Partner',
@@ -48,7 +84,14 @@ async function pregenerateRoadmapOnRejection(applicationId: string) {
         total_duration_weeks: parsed.totalDurationWeeks || 8,
         missing_skills: parsed.missingSkills || [],
         milestones: parsed.milestones || [],
-      });
+        pri_snapshot: priSnapshot,
+      };
+
+      const { error: insertErr } = await supabase.from('candidate_roadmaps').insert(roadmapPayload);
+      if (insertErr && insertErr.message.includes('pri_snapshot')) {
+        delete roadmapPayload.pri_snapshot;
+        await supabase.from('candidate_roadmaps').insert(roadmapPayload);
+      }
     }
   } catch (err) {
     console.warn('[WarRoom] Background roadmap pre-generation non-critical notice:', err);

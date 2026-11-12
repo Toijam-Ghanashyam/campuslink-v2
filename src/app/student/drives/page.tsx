@@ -183,7 +183,10 @@ export default function StudentDrivesPage() {
                     <Badge variant={drive.tier === 'TIER_1' ? 'destructive' : drive.tier === 'TIER_2' ? 'default' : 'secondary'}>
                       {drive.tier}
                     </Badge>
-                    <span className="text-xs text-slate-400">Cutoff: {drive.cgpa_cutoff} CGPA</span>
+                    <div className="text-right">
+                      <span className="text-xs text-slate-400 block">Cutoff: {drive.cgpa_cutoff} CGPA</span>
+                      <span className="text-[10px] text-indigo-400 font-medium">PRI &ge; {drive.pri_threshold || 70}%</span>
+                    </div>
                   </div>
                   <CardTitle className="text-xl mt-2">{drive.company_name}</CardTitle>
                   <p className="text-xs text-slate-400">{drive.role_title}</p>
@@ -194,19 +197,51 @@ export default function StudentDrivesPage() {
                   </div>
 
                   {application ? (
-                    <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Stage:</span>
-                        <span className="font-semibold text-indigo-400">{application.stage}</span>
+                    <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Application Stage:</span>
+                        <Badge className="bg-indigo-600 text-[10px]">{application.stage}</Badge>
                       </div>
-                      {application.ai_fit_score && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">AI Match Score:</span>
-                          <span className="font-semibold text-emerald-400">{application.ai_fit_score}%</span>
+
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-900">
+                        <span className="text-slate-400">Placement Readiness (PRI):</span>
+                        <span className={`font-bold ${
+                          (application.pri_score ?? application.ai_fit_score ?? 0) >= (drive.pri_threshold || 70)
+                            ? 'text-emerald-400'
+                            : 'text-amber-400'
+                        }`}>
+                          {application.pri_score ?? application.ai_fit_score ?? '--'}%
+                        </span>
+                      </div>
+
+                      {application.e_academic !== undefined && application.e_academic !== null && (
+                        <div className="grid grid-cols-3 gap-1 py-1 text-[10px] text-center text-slate-300 bg-slate-900/60 rounded">
+                          <div>
+                            <span className="text-slate-500 block">Acad (20%)</span>
+                            <span className="font-semibold text-indigo-300">{application.e_academic}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Prac (50%)</span>
+                            <span className="font-semibold text-indigo-300">{application.e_practical}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Eval (30%)</span>
+                            <span className="font-semibold text-indigo-300">{application.e_eval}</span>
+                          </div>
                         </div>
                       )}
+
+                      {application.cosine_similarity !== undefined && application.cosine_similarity !== null && (
+                        <div className="flex justify-between text-[11px] text-slate-400">
+                          <span>Vector Cosine Match:</span>
+                          <span className="font-mono text-slate-200">
+                            {(Number(application.cosine_similarity) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+
                       {application.ai_feedback_summary && (
-                        <p className="text-slate-300 italic pt-1 border-t border-slate-800/80">
+                        <p className="text-slate-300 italic pt-1 border-t border-slate-800/80 line-clamp-2">
                           "{application.ai_feedback_summary}"
                         </p>
                       )}
@@ -258,17 +293,102 @@ export default function StudentDrivesPage() {
             </div>
           ) : (
             <div className="space-y-4 py-2">
-              <div className="rounded-lg border border-emerald-900/40 bg-emerald-950/20 p-4">
-                <p className="text-xs uppercase font-semibold text-emerald-400">AI Fit Score</p>
-                <p className="text-3xl font-bold text-emerald-300">{evalResult.fit_score}%</p>
-                <p className="text-xs text-slate-300 mt-2">{evalResult.summary}</p>
+              <div className="rounded-lg border border-slate-800 bg-slate-950 p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs uppercase font-semibold text-slate-400">Explainable Readiness Index (PRI)</span>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className={`text-3xl font-extrabold ${
+                        (evalResult.pri_score || evalResult.fit_score) >= (evalResult.pri_breakdown?.threshold || selectedDrive?.pri_threshold || 70)
+                          ? 'text-emerald-400'
+                          : 'text-amber-400'
+                      }`}>
+                        {evalResult.pri_score || evalResult.fit_score}%
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        / Threshold: {evalResult.pri_breakdown?.threshold || selectedDrive?.pri_threshold || 70}%
+                      </span>
+                    </div>
+                  </div>
+                  <Badge className={`text-xs ${
+                    (evalResult.pri_score || evalResult.fit_score) >= (evalResult.pri_breakdown?.threshold || selectedDrive?.pri_threshold || 70)
+                      ? 'bg-emerald-600'
+                      : 'bg-amber-600'
+                  }`}>
+                    {(evalResult.pri_score || evalResult.fit_score) >= (evalResult.pri_breakdown?.threshold || selectedDrive?.pri_threshold || 70)
+                      ? 'READINESS MET'
+                      : 'BELOW THRESHOLD'}
+                  </Badge>
+                </div>
+
+                {evalResult.pri_breakdown && (
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-center text-xs">
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-medium">Academic (20%)</span>
+                      <span className="text-sm font-bold text-slate-200">{evalResult.pri_breakdown.e_academic}</span>
+                    </div>
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-medium">Practical (50%)</span>
+                      <span className="text-sm font-bold text-slate-200">{evalResult.pri_breakdown.e_practical}</span>
+                    </div>
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-medium">CS Core (30%)</span>
+                      <span className="text-sm font-bold text-slate-200">{evalResult.pri_breakdown.e_eval}</span>
+                    </div>
+                  </div>
+                )}
+
+                {evalResult.pri_breakdown?.cosine_similarity !== undefined && (
+                  <div className="flex justify-between items-center text-xs text-slate-400 pt-1">
+                    <span>Role Skill Vector Alignment:</span>
+                    <span className="font-mono text-indigo-400 font-semibold">
+                      {(evalResult.pri_breakdown.cosine_similarity * 100).toFixed(1)}% Cosine Match
+                    </span>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-300 italic pt-2 border-t border-slate-800">
+                  "{evalResult.summary}"
+                </p>
+
+                {evalResult.pri_breakdown?.skill_gap_delta && evalResult.pri_breakdown.skill_gap_delta.filter((d: any) => d.delta > 0).length > 0 && (
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                    <span className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Top Skill Deficit Gaps:</span>
+                    <div className="space-y-1 mt-1">
+                      {evalResult.pri_breakdown.skill_gap_delta
+                        .filter((d: any) => d.delta > 0)
+                        .slice(0, 3)
+                        .map((gap: any, i: number) => (
+                          <div key={i} className="flex justify-between items-center text-[11px] bg-rose-950/20 px-2 py-1 rounded border border-rose-900/40">
+                            <span className="text-slate-300">{gap.label}</span>
+                            <span className="font-mono text-rose-400 font-semibold">
+                              Candidate: {gap.studentScore}/10 (Deficit: +{gap.delta})
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <Button
-                onClick={() => setSelectedDrive(null)}
-                className="w-full bg-slate-800 hover:bg-slate-700"
-              >
-                Close
-              </Button>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSelectedDrive(null)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-xs"
+                >
+                  Close
+                </Button>
+                {evalResult.pri_breakdown?.below_threshold && (
+                  <Link
+                    href={`/student/remediation?driveTitle=${encodeURIComponent(selectedDrive?.company_name || 'Drive')}&role=${encodeURIComponent(selectedDrive?.role_title || 'Engineering')}`}
+                    className="flex-1"
+                  >
+                    <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-xs text-white">
+                      View Learning Roadmap &rarr;
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

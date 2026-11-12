@@ -16,6 +16,8 @@ export async function registerNewUser(data: {
   cgpa?: number;
   activeBacklogs?: number;
   resumeUrl?: string;
+  companyName?: string;
+  designation?: string;
 }) {
   const supabase = createAdminClient();
 
@@ -31,12 +33,13 @@ export async function registerNewUser(data: {
     batchYear = 2026,
     cgpa = 7.50,
     activeBacklogs = 0,
-    resumeUrl,
+    companyName,
+    designation,
   } = data;
 
 
   const fName = firstName || email.split('@')[0];
-  const lName = lastName || 'User';
+  const lName = lastName || (role === 'RECRUITER' ? 'Recruiter' : role === 'TPO_ADMIN' ? 'Admin' : 'User');
 
   const cleanEmail = email.trim().toLowerCase();
 
@@ -60,16 +63,27 @@ export async function registerNewUser(data: {
   }
 
   // 2. Create brand new and auto-confirm user in auth.users
+  const userMetadata: Record<string, unknown> = {
+    role,
+    first_name: fName,
+    last_name: lName,
+  };
+
+  if (role !== 'RECRUITER') {
+    userMetadata.college_id = collegeId;
+  }
+  if (companyName) {
+    userMetadata.company_name = companyName;
+  }
+  if (designation) {
+    userMetadata.designation = designation;
+  }
+
   const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
     email: cleanEmail,
     password,
     email_confirm: true,
-    user_metadata: {
-      role,
-      first_name: fName,
-      last_name: lName,
-      college_id: collegeId,
-    },
+    user_metadata: userMetadata,
   });
 
   if (authErr || !authData?.user) {
@@ -88,7 +102,7 @@ export async function registerNewUser(data: {
   try {
     await supabase.from('users').upsert({
       id: userId,
-      tenant_id: collegeId,
+      tenant_id: role === 'RECRUITER' ? null : collegeId,
       email,
       role,
       first_name: fName,

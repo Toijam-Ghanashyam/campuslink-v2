@@ -36,10 +36,19 @@ export default function CandidateLiveStatusPage() {
           ai_feedback_summary,
           offer_ctc,
           offer_status,
+          pri_score,
+          cosine_similarity,
+          e_academic,
+          e_practical,
+          e_eval,
+          skill_gap_delta,
+          student_skill_vector,
           placement_drives (
             company_name,
             role_title,
-            tier
+            tier,
+            pri_threshold,
+            role_skill_vector
           )
         `)
         .eq('student_id', student.id);
@@ -169,18 +178,101 @@ export default function CandidateLiveStatusPage() {
                 )}
 
                 {app.stage === 'REJECTED' && (
-                  <div className="rounded-lg border border-rose-900/60 bg-rose-950/20 p-4 space-y-2">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="rounded-lg border border-amber-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/20 p-4 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/80 pb-3">
                       <div>
-                        <span className="text-xs uppercase font-bold tracking-wider text-rose-400">Application Status</span>
-                        <p className="text-sm font-semibold text-slate-200">Not Selected for this Drive</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Turn this rejection into an actionable learning roadmap with difficulty-calibrated timelines and tutorials.
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs uppercase font-bold tracking-wider text-amber-400">Explainable PRI Matrix Diagnostic</span>
+                          <Badge variant="outline" className="border-rose-800 text-rose-300 text-[10px]">
+                            Not Selected
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-200 mt-1">
+                          Placement Readiness Gap Identified
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Replaced binary rejection with actionable mathematical skill vector comparison.
                         </p>
                       </div>
-                      <Link href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(app.placement_drives?.company_name || 'Drive')}&role=${encodeURIComponent(app.placement_drives?.role_title || 'Engineering')}`}>
-                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white shrink-0 shadow-md shadow-indigo-600/30">
-                          🚀 Generate Skill Roadmap
+
+                      <div className="text-right bg-slate-950 px-3 py-2 rounded-lg border border-slate-800">
+                        <span className="text-[10px] uppercase font-semibold text-slate-400 block">Candidate PRI vs Cutoff</span>
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-xl font-extrabold text-amber-400">
+                            {app.pri_score ?? app.ai_fit_score ?? '--'}%
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            / {app.placement_drives?.pri_threshold ?? 70}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Three Mathematical Pillars */}
+                    {app.e_academic !== undefined && app.e_academic !== null && (
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                          <span className="text-[10px] text-slate-400 uppercase block font-medium">Academic (20%)</span>
+                          <span className="text-sm font-bold text-slate-200">{app.e_academic}</span>
+                          <span className="text-[9px] text-slate-500 block">Verified CGPA</span>
+                        </div>
+                        <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                          <span className="text-[10px] text-slate-400 uppercase block font-medium">Practical (50%)</span>
+                          <span className="text-sm font-bold text-slate-200">{app.e_practical}</span>
+                          <span className="text-[9px] text-slate-500 block">Project Depth</span>
+                        </div>
+                        <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                          <span className="text-[10px] text-slate-400 uppercase block font-medium">CS Core (30%)</span>
+                          <span className="text-sm font-bold text-slate-200">{app.e_eval}</span>
+                          <span className="text-[9px] text-slate-500 block">Fundamentals</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cosine Alignment & Deficit Gap Badges */}
+                    {app.cosine_similarity !== undefined && app.cosine_similarity !== null && (
+                      <div className="flex justify-between items-center text-xs text-slate-400">
+                        <span>Role Vector Cosine Alignment:</span>
+                        <span className="font-mono text-indigo-400 font-semibold">
+                          {(Number(app.cosine_similarity) * 100).toFixed(1)}% Match
+                        </span>
+                      </div>
+                    )}
+
+                    {app.skill_gap_delta && Array.isArray(app.skill_gap_delta) && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                        <span className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
+                          Primary Skill Deficits to Close (Role vs Evaluated):
+                        </span>
+                        <div className="grid sm:grid-cols-3 gap-1.5 mt-1">
+                          {app.skill_gap_delta
+                            .filter((g: any) => g.delta > 0)
+                            .slice(0, 3)
+                            .map((gap: any, i: number) => (
+                              <div
+                                key={i}
+                                className="rounded bg-rose-950/30 border border-rose-900/40 p-2 text-xs flex flex-col justify-between"
+                              >
+                                <span className="font-medium text-slate-200 truncate">{gap.label}</span>
+                                <div className="flex justify-between items-center mt-1 text-[11px]">
+                                  <span className="text-slate-400">Score: {gap.studentScore}/{gap.roleScore}</span>
+                                  <span className="font-bold text-rose-400">+{gap.delta} gap</span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-2 flex justify-end">
+                      <Link
+                        href={`/student/remediation?appId=${app.id}&driveTitle=${encodeURIComponent(app.placement_drives?.company_name || 'Drive')}&role=${encodeURIComponent(app.placement_drives?.role_title || 'Engineering')}`}
+                      >
+                        <Button
+                          size="sm"
+                          className="bg-indigo-600 hover:bg-indigo-500 text-xs text-white shrink-0 shadow-md shadow-indigo-600/30 gap-1.5"
+                        >
+                          <span>🗺️</span> Open Vector Remediation Roadmap &rarr;
                         </Button>
                       </Link>
                     </div>

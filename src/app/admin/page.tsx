@@ -48,6 +48,7 @@ export default function AdminPortalPage() {
     cgpa_cutoff: 7.0,
     status: 'SCHEDULED',
     description: '',
+    pri_threshold: 70.0,
   });
   const [publishingDrive, setPublishingDrive] = useState(false);
 
@@ -171,6 +172,7 @@ export default function AdminPortalPage() {
         cgpa_cutoff: 7.0,
         status: 'SCHEDULED',
         description: '',
+        pri_threshold: 70.0,
       });
       loadData();
     } else {
@@ -439,8 +441,11 @@ export default function AdminPortalPage() {
                   <p className="text-xs text-slate-400">{drive.role_title}</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-sm font-semibold text-emerald-400">
-                    ₹{drive.min_ctc} - ₹{drive.max_ctc} LPA
+                  <div className="flex justify-between items-center text-sm font-semibold text-emerald-400">
+                    <span>₹{drive.min_ctc} - ₹{drive.max_ctc} LPA</span>
+                    <Badge variant="outline" className="border-indigo-800 text-indigo-300 text-[10px]">
+                      PRI Cutoff: {drive.pri_threshold || 70}%
+                    </Badge>
                   </div>
                   <p className="text-xs text-slate-400">{drive.description || 'No description provided.'}</p>
                   <div className="text-xs text-slate-500">Status: {drive.status}</div>
@@ -611,6 +616,23 @@ export default function AdminPortalPage() {
                   className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
                 />
               </div>
+            </div>
+            <div>
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-slate-400">PRI Readiness Threshold (0 - 100%)</label>
+                <span className="text-[10px] text-indigo-400">Default: 70.0%</span>
+              </div>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                max="100"
+                required
+                value={newDrive.pri_threshold}
+                onChange={(e) => setNewDrive({ ...newDrive, pri_threshold: parseFloat(e.target.value) || 70 })}
+                className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
+                placeholder="70.0"
+              />
             </div>
             <Button
               type="submit"

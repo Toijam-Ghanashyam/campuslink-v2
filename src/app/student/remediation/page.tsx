@@ -154,6 +154,8 @@ function RemediationStudioContent() {
           totalDurationWeeks: data.roadmap.total_duration_weeks || data.roadmap.totalDurationWeeks || 8,
           missingSkills: data.roadmap.missing_skills || data.roadmap.missingSkills || [],
           milestones: data.roadmap.milestones || [],
+          pri_snapshot: data.roadmap.pri_snapshot || data.roadmap.priSnapshot,
+          priSnapshot: data.roadmap.pri_snapshot || data.roadmap.priSnapshot,
           createdAt: data.roadmap.created_at || new Date().toISOString(),
         };
 
@@ -448,6 +450,154 @@ function RemediationStudioContent() {
                     </div>
                   )}
                 </Card>
+
+                {/* Skill Vector Gap Matrix (PRI Delta) */}
+                {(() => {
+                  const snapshot: any = activeRoadmap.pri_snapshot || activeRoadmap.priSnapshot;
+                  if (!snapshot) return null;
+
+                  const vectorDeltas = snapshot.vectorDelta || snapshot.vector_delta || [];
+                  const studentVec = snapshot.studentVector || snapshot.student_vector || {};
+                  const roleVec = snapshot.roleVector || snapshot.role_vector || {};
+
+                  return (
+                    <Card className="border-indigo-900/60 bg-slate-900/90 text-slate-100 p-5 space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-indigo-600 text-[10px]">PRI Delta Analysis</Badge>
+                            <h3 className="text-base font-bold text-slate-100">
+                              Candidate Skill Vector vs Role Benchmark
+                            </h3>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Mathematical gap analysis across 8 core engineering dimensions. Positive delta (&Delta;) denotes required upskilling.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="px-3 py-1.5 rounded bg-slate-950 border border-slate-800 text-right">
+                            <span className="text-[10px] text-slate-400 block uppercase font-medium">PRI Score</span>
+                            <span className="text-base font-extrabold text-amber-400">
+                              {snapshot.priScore ?? snapshot.pri_score ?? '--'}%
+                            </span>
+                          </div>
+                          {snapshot.cosineSimilarity !== undefined && (
+                            <div className="px-3 py-1.5 rounded bg-slate-950 border border-slate-800 text-right">
+                              <span className="text-[10px] text-slate-400 block uppercase font-medium">Cosine Match</span>
+                              <span className="text-base font-mono font-bold text-indigo-400">
+                                {(Number(snapshot.cosineSimilarity) * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 3 Pillars Score Strip */}
+                      {(snapshot.eAcademic !== undefined || snapshot.e_academic !== undefined) && (
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="p-2.5 rounded bg-slate-950/70 border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 uppercase block font-semibold">Academic Pillar (20%)</span>
+                            <span className="text-sm font-bold text-indigo-300">
+                              {snapshot.eAcademic ?? snapshot.e_academic} / 100
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded bg-slate-950/70 border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 uppercase block font-semibold">Practical Projects (50%)</span>
+                            <span className="text-sm font-bold text-indigo-300">
+                              {snapshot.ePractical ?? snapshot.e_practical} / 100
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded bg-slate-950/70 border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 uppercase block font-semibold">CS Fundamentals (30%)</span>
+                            <span className="text-sm font-bold text-indigo-300">
+                              {snapshot.eEval ?? snapshot.e_eval} / 100
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 8-Dimension Vector Comparison Bars */}
+                      <div className="space-y-3 pt-2">
+                        <div className="flex justify-between items-center text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                          <span>Skill Dimension</span>
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-slate-500 inline-block" /> Role Benchmark (V_role)
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block" /> Candidate Evaluated (V_s)
+                            </span>
+                            <span>Delta Gap</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          {vectorDeltas.map((item: any, idx: number) => {
+                            const roleVal = Number(item.roleScore ?? roleVec[item.key] ?? 7);
+                            const studentVal = Number(item.studentScore ?? studentVec[item.key] ?? 0);
+                            const delta = Number(item.delta ?? (roleVal - studentVal));
+                            const hasDeficit = delta > 0;
+
+                            return (
+                              <div
+                                key={idx}
+                                className={`p-2.5 rounded-lg border transition-colors ${
+                                  hasDeficit
+                                    ? 'bg-rose-950/15 border-rose-900/40'
+                                    : 'bg-slate-950/60 border-slate-800/80'
+                                }`}
+                              >
+                                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-slate-200">{item.label}</span>
+                                    <span className="text-[10px] font-mono text-slate-500">({item.key})</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-400">
+                                      Candidate: <strong className="text-indigo-300">{studentVal}/10</strong> vs Role: <strong className="text-slate-300">{roleVal}/10</strong>
+                                    </span>
+                                    <Badge
+                                      className={`text-[10px] px-2 py-0.5 font-bold ${
+                                        hasDeficit
+                                          ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                          : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                      }`}
+                                    >
+                                      {hasDeficit ? `+${delta.toFixed(1)} Deficit` : '✓ Benchmark Met'}
+                                    </Badge>
+                                  </div>
+                                </div>
+
+                                {/* Stacked Visual Comparison Track */}
+                                <div className="space-y-1">
+                                  <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden flex">
+                                    <div
+                                      className={`h-full transition-all rounded-full ${hasDeficit ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                      style={{ width: `${Math.min(100, (studentVal / 10) * 100)}%` }}
+                                      title={`Candidate: ${studentVal}/10`}
+                                    />
+                                  </div>
+                                  <div className="w-full bg-slate-950/60 rounded-full h-1 overflow-hidden">
+                                    <div
+                                      className="bg-slate-600 h-full rounded-full"
+                                      style={{ width: `${Math.min(100, (roleVal / 10) * 100)}%` }}
+                                      title={`Target Benchmark: ${roleVal}/10`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-400 italic pt-1 border-t border-slate-800/80">
+                        ⚡ The sequential milestones below have been dynamically prioritized to eliminate the highest deficit gaps first.
+                      </div>
+                    </Card>
+                  );
+                })()}
 
                 {/* Milestones Timeline */}
                 <div className="space-y-4">

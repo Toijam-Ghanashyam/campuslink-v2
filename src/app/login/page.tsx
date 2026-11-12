@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [customCollegeCode, setCustomCollegeCode] = useState('');
   const [useCustomCollege, setUseCustomCollege] = useState(false);
 
+  // Recruiter fields
+  const [companyName, setCompanyName] = useState('');
+  const [designation, setDesignation] = useState('');
+
   // Student academic fields
   const [rollNumber, setRollNumber] = useState('');
   const [branch, setBranch] = useState('Computer Science & Engineering');
@@ -131,30 +135,40 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Register new student through secure server action with college classification & academic details
-        const res = await registerNewUser({
+        const payload: any = {
           email,
           password,
-          role: 'STUDENT',
+          role,
           firstName: firstName || email.split('@')[0],
-          lastName: lastName || 'User',
-          collegeId: targetCollegeId,
-          rollNumber: rollNumber || undefined,
-          branch,
-          batchYear: Number(batchYear) || 2026,
-          cgpa: parseFloat(cgpa) || 7.50,
-          activeBacklogs: parseInt(activeBacklogs, 10) || 0,
-          resumeUrl: resumeFileName || undefined,
-        });
+          lastName: lastName || (role === 'RECRUITER' ? 'Recruiter' : role === 'TPO_ADMIN' ? 'Admin' : 'User'),
+        };
+
+        if (role === 'STUDENT') {
+          payload.collegeId = targetCollegeId;
+          payload.rollNumber = rollNumber || undefined;
+          payload.branch = branch;
+          payload.batchYear = Number(batchYear) || 2026;
+          payload.cgpa = parseFloat(cgpa) || 7.50;
+          payload.activeBacklogs = parseInt(activeBacklogs, 10) || 0;
+          payload.resumeUrl = resumeFileName || undefined;
+        } else if (role === 'RECRUITER') {
+          payload.companyName = companyName.trim() || 'Corporate Partner';
+          payload.designation = designation.trim() || 'Campus Recruiter';
+        } else if (role === 'TPO_ADMIN') {
+          payload.collegeId = targetCollegeId;
+          payload.designation = designation.trim() || 'Head of TPO';
+        }
+
+        const res = await registerNewUser(payload);
 
         if (!res.success) {
-          setErrorMsg(res.error || 'Failed to create student account');
+          setErrorMsg(res.error || 'Failed to create account');
           setLoading(false);
           return;
         }
 
-        // Immediately sign in the new student
-        const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
+        // Immediately sign in the new user
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -165,7 +179,8 @@ export default function LoginPage() {
           return;
         }
 
-        window.location.href = '/student';
+        const destination = role === 'STUDENT' ? '/student' : role === 'RECRUITER' ? '/recruiter' : '/admin';
+        window.location.href = destination;
         return;
       } else {
         // Standard Sign In (Student, Recruiter, or TPO Admin)
@@ -194,22 +209,32 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-slate-100 py-10">
       <Card className={`w-full ${isSignUp ? 'max-w-2xl' : 'max-w-md'} border-slate-800 bg-slate-900 text-slate-100 shadow-2xl transition-all duration-300`}>
         <CardHeader className="text-center pb-3">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-            🏛️
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-2xl">
+            {isSignUp ? (role === 'RECRUITER' ? '💼' : role === 'TPO_ADMIN' ? '🏛️' : '🎓') : '🏛️'}
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight">
-            {isSignUp ? 'New Student Registration' : 'Sign in to CampusLink'}
+            {isSignUp
+              ? role === 'RECRUITER'
+                ? 'Corporate Recruiter Registration'
+                : role === 'TPO_ADMIN'
+                ? 'College TPO Administrator Registration'
+                : 'New Student Registration'
+              : 'Sign in to CampusLink'}
           </CardTitle>
           <p className="text-xs text-slate-400 mt-1">
             {isSignUp
-              ? 'Upload your resume to automatically extract & verify your academic profile'
+              ? role === 'RECRUITER'
+                ? 'Create your recruitment portal account to post placement drives & manage candidates'
+                : role === 'TPO_ADMIN'
+                ? 'Register verified institutional authority credentials for your affiliated college'
+                : 'Upload your resume to automatically extract & verify your academic profile'
               : 'BPUT Central Placement & Multi-College Institutional Recruitment OS'}
           </p>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
-            {/* Account Role Selector (ONLY on Sign In page) */}
+            {/* Account Role Selector on Sign In Page */}
             {!isSignUp && (
               <div>
                 <label className="text-xs font-semibold uppercase text-slate-400">Account Type</label>
@@ -228,8 +253,138 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* REGISTER WITH RESUME FLOW: ONLY FOR NEW STUDENT SIGN UP */}
+            {/* Account Role Selector on Sign Up Page (Pill Switcher) */}
             {isSignUp && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-400">Registering As</label>
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRole('STUDENT');
+                      setErrorMsg('');
+                    }}
+                    className={`py-2 px-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      role === 'STUDENT'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🎓</span>
+                    <span>Student</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRole('RECRUITER');
+                      setErrorMsg('');
+                    }}
+                    className={`py-2 px-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      role === 'RECRUITER'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>💼</span>
+                    <span>Recruiter</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRole('TPO_ADMIN');
+                      setErrorMsg('');
+                    }}
+                    className={`py-2 px-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      role === 'TPO_ADMIN'
+                        ? 'bg-amber-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🏛️</span>
+                    <span>TPO Admin</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===================== RECRUITER SPECIFIC FIELDS ===================== */}
+            {isSignUp && role === 'RECRUITER' && (
+              <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-emerald-900/50 pb-2">
+                  <span className="text-lg">💼</span>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                      Corporate Organization Profile
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      This information appears on your published placement drives, calendar, and candidate interview dispatch boards.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-slate-400">
+                      Company / Organization Name <span className="text-emerald-400">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g. Google, Microsoft, TCS Digital"
+                      className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-slate-400">
+                      Professional Designation
+                    </label>
+                    <Input
+                      type="text"
+                      value={designation}
+                      onChange={(e) => setDesignation(e.target.value)}
+                      placeholder="e.g. Campus Talent Acquisition Lead"
+                      className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===================== TPO ADMIN SPECIFIC FIELDS ===================== */}
+            {isSignUp && role === 'TPO_ADMIN' && (
+              <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-amber-900/50 pb-2">
+                  <span className="text-lg">🏛️</span>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                      Institutional Placement Cell Credentials
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      You will have administrative authority to verify student academic records, approve placement drives, and monitor placement statistics.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-400">
+                    Official Administrative Designation
+                  </label>
+                  <Input
+                    type="text"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    placeholder="e.g. Head of Training &amp; Placement, Placement Officer"
+                    className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ===================== STUDENT RESUME AUTOFILL FLOW ===================== */}
+            {isSignUp && role === 'STUDENT' && (
               <div className="rounded-xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/40 via-slate-900 to-indigo-950/20 p-4 shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -256,9 +411,9 @@ export default function LoginPage() {
                     <div className="flex flex-col items-center gap-2 py-2">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
                       <p className="text-xs font-semibold text-indigo-300 animate-pulse">
-                        Analyzing resume text & extracting academic credentials with Gemini AI...
+                        Analyzing resume text &amp; extracting academic credentials with Gemini AI...
                       </p>
-                      <p className="text-[10px] text-slate-500">Auto-matching BPUT institution, CGPA & graduation batch</p>
+                      <p className="text-[10px] text-slate-500">Auto-matching BPUT institution, CGPA &amp; graduation batch</p>
                     </div>
                   ) : (
                     <>
@@ -290,7 +445,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Basic Info (Student Signup) */}
+            {/* Basic Info: Name fields (All roles during sign up) */}
             {isSignUp && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -301,7 +456,7 @@ export default function LoginPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
-                    placeholder="Aditya"
+                    placeholder="e.g. Rahul"
                   />
                 </div>
                 <div>
@@ -312,7 +467,7 @@ export default function LoginPage() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="mt-1 border-slate-800 bg-slate-950 text-slate-100"
-                    placeholder="Patel"
+                    placeholder="e.g. Sharma"
                   />
                 </div>
               </div>
@@ -344,12 +499,12 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* College Selection (ONLY on Student Signup) */}
-            {isSignUp && (
+            {/* College Selection (Shown for STUDENT and TPO_ADMIN) */}
+            {isSignUp && (role === 'STUDENT' || role === 'TPO_ADMIN') && (
               <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold uppercase text-indigo-400 flex items-center gap-1.5">
-                    <span>🏛️ College / Institution Affiliation</span>
+                    <span>🏛️ {role === 'TPO_ADMIN' ? 'Designated College / Institution' : 'College / Institution Affiliation'}</span>
                   </label>
                   <button
                     type="button"
@@ -371,7 +526,9 @@ export default function LoginPage() {
                       className="border-slate-800 bg-slate-950 text-slate-100 text-xs"
                     />
                     <p className="text-[10px] text-slate-500 mt-1">
-                      Enter the institutional code provided by your College Placement Cell.
+                      {role === 'TPO_ADMIN'
+                        ? 'Enter your institutional tenant code to scope student verifications.'
+                        : 'Enter the institutional code provided by your College Placement Cell.'}
                     </p>
                   </div>
                 ) : (
@@ -388,7 +545,9 @@ export default function LoginPage() {
                       ))}
                     </select>
                     <p className="text-[10px] text-slate-400 mt-1">
-                      Students are classified under this college’s TPO admin portal for verification.
+                      {role === 'TPO_ADMIN'
+                        ? 'You will manage verification queues and approval workflows for students from this college.'
+                        : 'Students are classified under this college’s TPO admin portal for verification.'}
                     </p>
                   </div>
                 )}
@@ -396,7 +555,7 @@ export default function LoginPage() {
             )}
 
             {/* Student-Specific Academic Details (Autofilled via Resume) */}
-            {isSignUp && (
+            {isSignUp && role === 'STUDENT' && (
               <div className="rounded-lg border border-indigo-900/40 bg-indigo-950/20 p-3.5 space-y-3">
                 <div className="border-b border-indigo-900/50 pb-1.5 flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300">
@@ -431,9 +590,9 @@ export default function LoginPage() {
                       onChange={(e) => setBranch(e.target.value)}
                       className="mt-1 w-full rounded-md border border-slate-800 bg-slate-950 p-2 text-xs text-slate-100 focus:outline-none"
                     >
-                      <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                      <option value="Computer Science & Engineering">Computer Science &amp; Engineering</option>
                       <option value="Information Technology">Information Technology</option>
-                      <option value="Electronics & Telecommunication">Electronics & Telecommunication</option>
+                      <option value="Electronics & Telecommunication">Electronics &amp; Telecommunication</option>
                       <option value="Electrical Engineering">Electrical Engineering</option>
                       <option value="Mechanical Engineering">Mechanical Engineering</option>
                       <option value="Civil Engineering">Civil Engineering</option>
@@ -504,7 +663,7 @@ export default function LoginPage() {
                     }}
                     className="mt-2 block text-xs font-semibold text-rose-200 underline hover:text-white"
                   >
-                    Click here to Sign In with this email →
+                    Click here to Sign In with this email &rarr;
                   </button>
                 )}
               </div>
@@ -512,45 +671,74 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={loading || parsingResume}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-2"
+              disabled={loading || (isSignUp && role === 'STUDENT' && parsingResume)}
+              className={`w-full font-semibold py-2 transition-colors ${
+                isSignUp && role === 'RECRUITER'
+                  ? 'bg-emerald-600 hover:bg-emerald-500'
+                  : isSignUp && role === 'TPO_ADMIN'
+                  ? 'bg-amber-600 hover:bg-amber-500'
+                  : 'bg-indigo-600 hover:bg-indigo-500'
+              }`}
             >
               {loading
                 ? 'Processing...'
                 : isSignUp
-                ? 'Submit Registration & Request TPO Verification'
+                ? role === 'RECRUITER'
+                  ? 'Create Recruiter Account & Launch War Room'
+                  : role === 'TPO_ADMIN'
+                  ? 'Register College TPO Administrator'
+                  : 'Submit Registration & Request TPO Verification'
                 : 'Sign In'}
             </Button>
           </form>
 
           {/* Context-Aware Footers */}
           {!isSignUp ? (
-            <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
-              {role === 'STUDENT' ? (
-                <p className="text-xs text-slate-400">
-                  New Student Candidate?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignUp(true);
-                      setErrorMsg('');
-                      setResumeSuccessMsg('');
-                    }}
-                    className="text-indigo-400 font-semibold hover:text-indigo-300 underline inline-flex items-center gap-1"
-                  >
-                    <span>Register with Academic Resume</span>
-                    <span>→</span>
-                  </button>
-                </p>
-              ) : role === 'RECRUITER' ? (
-                <p className="text-[11px] text-slate-500">
-                  💼 Enterprise corporate recruiter credentials are provisioned by your BPUT placement coordinator.
-                </p>
-              ) : (
-                <p className="text-[11px] text-slate-500">
-                  🏛️ College TPO Administrator portal access is restricted to verified institutional authorities.
-                </p>
-              )}
+            <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-3 text-center">
+              <div className="text-xs text-slate-400">
+                New to CampusLink? Select an option below to create an account:
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRole('STUDENT');
+                    setIsSignUp(true);
+                    setErrorMsg('');
+                    setResumeSuccessMsg('');
+                  }}
+                  className="text-xs bg-slate-950 border border-slate-800 hover:border-indigo-500/80 text-indigo-300 py-2 px-1.5 rounded-md transition-colors flex flex-col items-center gap-1 group"
+                >
+                  <span className="text-base group-hover:scale-110 transition-transform">🎓</span>
+                  <span className="font-semibold text-[11px]">Student Sign Up</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRole('RECRUITER');
+                    setIsSignUp(true);
+                    setErrorMsg('');
+                    setResumeSuccessMsg('');
+                  }}
+                  className="text-xs bg-slate-950 border border-slate-800 hover:border-emerald-500/80 text-emerald-300 py-2 px-1.5 rounded-md transition-colors flex flex-col items-center gap-1 group"
+                >
+                  <span className="text-base group-hover:scale-110 transition-transform">💼</span>
+                  <span className="font-semibold text-[11px]">Recruiter Sign Up</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRole('TPO_ADMIN');
+                    setIsSignUp(true);
+                    setErrorMsg('');
+                    setResumeSuccessMsg('');
+                  }}
+                  className="text-xs bg-slate-950 border border-slate-800 hover:border-amber-500/80 text-amber-300 py-2 px-1.5 rounded-md transition-colors flex flex-col items-center gap-1 group"
+                >
+                  <span className="text-base group-hover:scale-110 transition-transform">🏛️</span>
+                  <span className="font-semibold text-[11px]">TPO Admin Sign Up</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="mt-4 text-center">
@@ -563,7 +751,7 @@ export default function LoginPage() {
                 }}
                 className="text-xs text-slate-400 hover:text-slate-200 underline inline-flex items-center gap-1"
               >
-                <span>← Already registered? Back to Sign In</span>
+                <span>&larr; Already have an account? Back to Sign In</span>
               </button>
             </div>
           )}

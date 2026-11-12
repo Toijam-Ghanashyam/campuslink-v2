@@ -99,9 +99,15 @@ CREATE TABLE IF NOT EXISTS public.placement_drives (
   description TEXT,
   drive_date TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days'),
   deadline TIMESTAMPTZ,
+  pri_threshold NUMERIC(5, 2) NOT NULL DEFAULT 70.00,
+  role_skill_vector JSONB NOT NULL DEFAULT '{"dsa":8,"system_design":7,"backend_apis":8,"databases":7,"cloud_devops":6,"frontend_ui":6,"testing_cicd":6,"cs_fundamentals":8}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Ensure PRI columns exist on placement_drives
+ALTER TABLE public.placement_drives ADD COLUMN IF NOT EXISTS pri_threshold NUMERIC(5, 2) NOT NULL DEFAULT 70.00;
+ALTER TABLE public.placement_drives ADD COLUMN IF NOT EXISTS role_skill_vector JSONB NOT NULL DEFAULT '{"dsa":8,"system_design":7,"backend_apis":8,"databases":7,"cloud_devops":6,"frontend_ui":6,"testing_cicd":6,"cs_fundamentals":8}'::jsonb;
 
 -- STEP 4: Create drive_applications table (references student_profiles)
 CREATE TABLE IF NOT EXISTS public.drive_applications (
@@ -115,10 +121,26 @@ CREATE TABLE IF NOT EXISTS public.drive_applications (
   offer_ctc NUMERIC(10, 2),
   ai_fit_score NUMERIC(5, 2),
   ai_feedback_summary TEXT,
+  e_academic NUMERIC(5, 2),
+  e_practical NUMERIC(5, 2),
+  e_eval NUMERIC(5, 2),
+  pri_score NUMERIC(5, 2),
+  cosine_similarity NUMERIC(5, 4),
+  student_skill_vector JSONB,
+  skill_gap_delta JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT unique_student_drive_application UNIQUE (drive_id, student_id)
 );
+
+-- Ensure PRI columns exist on drive_applications
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS e_academic NUMERIC(5, 2);
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS e_practical NUMERIC(5, 2);
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS e_eval NUMERIC(5, 2);
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS pri_score NUMERIC(5, 2);
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS cosine_similarity NUMERIC(5, 4);
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS student_skill_vector JSONB;
+ALTER TABLE public.drive_applications ADD COLUMN IF NOT EXISTS skill_gap_delta JSONB;
 
 -- Add foreign key constraint to student_profiles safely
 DO $$
@@ -153,9 +175,13 @@ CREATE TABLE IF NOT EXISTS public.candidate_roadmaps (
   total_duration_weeks INT NOT NULL DEFAULT 8,
   missing_skills TEXT[] NOT NULL DEFAULT '{}',
   milestones JSONB NOT NULL DEFAULT '[]',
+  pri_snapshot JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure PRI snapshot exists on candidate_roadmaps
+ALTER TABLE public.candidate_roadmaps ADD COLUMN IF NOT EXISTS pri_snapshot JSONB;
 
 -- STEP 6: Seed Starter Placement Drives (if empty)
 INSERT INTO public.placement_drives (company_name, role_title, tier, min_ctc, max_ctc, cgpa_cutoff, status, description, deadline)

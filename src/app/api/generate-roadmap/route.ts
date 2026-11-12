@@ -73,8 +73,37 @@ export async function POST(req: NextRequest) {
     let targetCompany = companyName || 'Technology Enterprise';
     let targetRole = roleTitle || 'Software Development Engineer';
     let feedback = feedbackSummary || '';
+    let skillGapDelta: any = null;
+    let priScore: number | undefined = undefined;
+    let appData: any = null;
 
     // 3. Multi-Level Database Cache Lookup (Instant 0-second hit)
+    if (applicationId) {
+      // Fetch application details if available
+      const { data: fetchedApp } = await supabase
+        .from('drive_applications')
+        .select('*, placement_drives(*)')
+        .eq('id', applicationId)
+        .maybeSingle();
+
+      if (fetchedApp) {
+        appData = fetchedApp;
+        if (fetchedApp.placement_drives) {
+          targetCompany = fetchedApp.placement_drives.company_name || targetCompany;
+          targetRole = fetchedApp.placement_drives.role_title || targetRole;
+        }
+        if (fetchedApp.ai_feedback_summary) {
+          feedback = fetchedApp.ai_feedback_summary;
+        }
+        if (fetchedApp.skill_gap_delta) {
+          skillGapDelta = fetchedApp.skill_gap_delta;
+        }
+        if (fetchedApp.pri_score !== undefined && fetchedApp.pri_score !== null) {
+          priScore = Number(fetchedApp.pri_score);
+        }
+      }
+    }
+
     if (!forceRegenerate) {
       // Level A: Exact Application ID match
       if (applicationId) {
@@ -87,23 +116,6 @@ export async function POST(req: NextRequest) {
 
         if (existingAppRoadmap) {
           return NextResponse.json({ success: true, roadmap: existingAppRoadmap, cached: true });
-        }
-
-        // Fetch application details if not passed explicitly
-        const { data: appData } = await supabase
-          .from('drive_applications')
-          .select('*, placement_drives(*)')
-          .eq('id', applicationId)
-          .maybeSingle();
-
-        if (appData) {
-          if (appData.placement_drives) {
-            targetCompany = appData.placement_drives.company_name;
-            targetRole = appData.placement_drives.role_title;
-          }
-          if (appData.ai_feedback_summary) {
-            feedback = appData.ai_feedback_summary;
-          }
         }
       }
 
@@ -130,27 +142,60 @@ export async function POST(req: NextRequest) {
       feedback,
       verifiedCgpa: student.verified_cgpa || 7.5,
       branch: student.branch || 'Computer Science & Engineering',
+      skillGapDelta: skillGapDelta || undefined,
+      priScore,
     });
 
     if (!parsedResponse || !parsedResponse.milestones) {
       return NextResponse.json({ error: 'Failed to generate roadmap content from AI engine' }, { status: 500 });
     }
 
-    // 5. Persist generated roadmap into candidate_roadmaps table
-    const { data: insertedRoadmap, error: insertErr } = await supabase
+    // 5. Construct PRI snapshot if application data is present
+    const priSnapshot = appData ? {
+      priScore: appData.pri_score,
+      threshold: appData.placement_drives?.pri_threshold || 70,
+      belowThreshold: (appData.pri_score || 0) < (appData.placement_drives?.pri_threshold || 70),
+      eAcademic: appData.e_academic,
+      ePractical: appData.e_practical,
+      eEval: appData.e_eval,
+      cosineSimilarity: appData.cosine_similarity,
+      studentVector: appData.student_skill_vector,
+      roleVector: appData.placement_drives?.role_skill_vector,
+      vectorDelta: appData.skill_gap_delta,
+    } : null;
+
+    // 6. Persist generated roadmap into candidate_roadmaps table
+    const roadmapInsertPayload: Record<string, any> = {
+      student_id: student.id,
+      application_id: applicationId || null,
+      company_name: targetCompany,
+      role_title: targetRole,
+      target_role: targetRole,
+      total_duration_weeks: parsedResponse.totalDurationWeeks || 8,
+      missing_skills: parsedResponse.missingSkills || [],
+      milestones: parsedResponse.milestones || [],
+    };
+
+    if (priSnapshot) {
+      roadmapInsertPayload.pri_snapshot = priSnapshot;
+    }
+
+    let { data: insertedRoadmap, error: insertErr } = await supabase
       .from('candidate_roadmaps')
-      .insert({
-        student_id: student.id,
-        application_id: applicationId || null,
-        company_name: targetCompany,
-        role_title: targetRole,
-        target_role: targetRole,
-        total_duration_weeks: parsedResponse.totalDurationWeeks || 8,
-        missing_skills: parsedResponse.missingSkills || [],
-        milestones: parsedResponse.milestones || [],
-      })
+      .insert(roadmapInsertPayload)
       .select('*')
       .single();
+
+    if (insertErr && insertErr.message.includes('pri_snapshot')) {
+      delete roadmapInsertPayload.pri_snapshot;
+      const retry = await supabase
+        .from('candidate_roadmaps')
+        .insert(roadmapInsertPayload)
+        .select('*')
+        .single();
+      insertedRoadmap = retry.data;
+      insertErr = retry.error;
+    }
 
     if (insertErr) {
       console.error('Failed to persist candidate roadmap:', insertErr);

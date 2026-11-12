@@ -189,6 +189,8 @@ export async function createPlacementDrive(data: {
   drive_date?: string;
   deadline?: string;
   description?: string;
+  pri_threshold?: number;
+  role_skill_vector?: Record<string, number>;
 }) {
   const supabase = createAdminClient();
 
@@ -216,14 +218,21 @@ export async function createPlacementDrive(data: {
     drive_date: parsedDriveDate,
     deadline: parsedDeadline,
     description: data.description || '',
+    pri_threshold: data.pri_threshold !== undefined && data.pri_threshold !== null ? Number(data.pri_threshold) : 70.0,
   };
+
+  if (data.role_skill_vector) {
+    insertPayload.role_skill_vector = data.role_skill_vector;
+  }
 
   let { error } = await supabase.from('placement_drives').insert(insertPayload);
 
   // Graceful fallback for existing databases that have not run the migration yet
-  if (error && (error.message.includes('deadline') || error.message.includes('description') || error.message.includes('schema cache'))) {
+  if (error && (error.message.includes('deadline') || error.message.includes('description') || error.message.includes('pri_threshold') || error.message.includes('role_skill_vector') || error.message.includes('schema cache'))) {
     delete insertPayload.deadline;
     delete insertPayload.description;
+    delete insertPayload.pri_threshold;
+    delete insertPayload.role_skill_vector;
     const retry = await supabase.from('placement_drives').insert(insertPayload);
     error = retry.error;
   }

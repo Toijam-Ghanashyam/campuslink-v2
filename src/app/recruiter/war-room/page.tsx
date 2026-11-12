@@ -52,6 +52,13 @@ export default function RecruiterWarRoom() {
         ai_feedback_summary,
         offer_ctc,
         offer_status,
+        pri_score,
+        e_academic,
+        e_practical,
+        e_eval,
+        cosine_similarity,
+        skill_gap_delta,
+        student_skill_vector,
         student_profiles (
           id,
           roll_number,
@@ -190,12 +197,37 @@ export default function RecruiterWarRoom() {
                         <Badge className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs">
                           CGPA: {student?.verified_cgpa}
                         </Badge>
+                        <Badge
+                          className={`text-xs font-bold ${
+                            (app.pri_score ?? app.ai_fit_score ?? 0) >= 70
+                              ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700'
+                              : 'bg-amber-900/60 text-amber-300 border border-amber-700'
+                          }`}
+                        >
+                          PRI: {app.pri_score ?? app.ai_fit_score ?? 0}%
+                        </Badge>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span>AI Match: <strong className="text-emerald-400">{app.ai_fit_score || 0}%</strong></span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        {app.e_academic !== undefined && app.e_academic !== null ? (
+                          <span className="font-mono text-[11px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                            Acad: <strong className="text-indigo-400">{app.e_academic}</strong> | Prac: <strong className="text-indigo-400">{app.e_practical}</strong> | Eval: <strong className="text-indigo-400">{app.e_eval}</strong>
+                          </span>
+                        ) : (
+                          <span>AI Match: <strong className="text-emerald-400">{app.ai_fit_score || 0}%</strong></span>
+                        )}
+                        {app.cosine_similarity !== undefined && app.cosine_similarity !== null && (
+                          <span className="font-mono text-[11px] text-slate-400">
+                            CosSim: <strong className="text-emerald-400">{(Number(app.cosine_similarity) * 100).toFixed(0)}%</strong>
+                          </span>
+                        )}
+                        {app.skill_gap_delta && Array.isArray(app.skill_gap_delta) && app.skill_gap_delta.length > 0 && app.skill_gap_delta[0].delta > 0 && (
+                          <span className="text-[10px] text-rose-300 bg-rose-950/40 border border-rose-900/50 px-1.5 py-0.5 rounded">
+                            Deficit: +{app.skill_gap_delta[0].delta} {app.skill_gap_delta[0].key}
+                          </span>
+                        )}
                         <span>•</span>
-                        <span className="truncate max-w-md italic text-slate-300">
+                        <span className="truncate max-w-sm italic text-slate-300">
                           {app.ai_feedback_summary || 'Pending evaluation'}
                         </span>
                       </div>

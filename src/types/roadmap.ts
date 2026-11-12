@@ -1,3 +1,5 @@
+import { PRISnapshot } from './pri';
+
 export type SkillDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 export interface ResourceLink {
@@ -35,6 +37,8 @@ export interface CandidateRoadmap {
   totalDurationWeeks: number;
   missingSkills: string[];
   milestones: RoadmapMilestone[];
+  pri_snapshot?: PRISnapshot | Record<string, unknown>;
+  priSnapshot?: PRISnapshot | Record<string, unknown>;
   createdAt: string;
 }
 
