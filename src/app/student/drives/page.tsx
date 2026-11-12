@@ -63,7 +63,15 @@ export default function StudentDrivesPage() {
 
   const handleApplyClick = (drive: any) => {
     if (student && !student.is_locked) {
-      alert('Academic Record Pending Verification: Under PEP Rule 1, your academic record must be verified and locked by your College Placement Cell before submitting drive applications.');
+      if (student.verification_status === 'MISMATCH_LOCKED' || student.rejection_reason) {
+        alert(
+          `Profile Locked (Dataset Mismatch):\n${student.rejection_reason}\n\nPlease go to your Student Dashboard and click "Fix This Data & Re-Verify" to unlock drive applications.`
+        );
+      } else {
+        alert(
+          'Academic Record Pending Verification: Under PEP Rule 1, your academic record must be verified and locked by your College Placement Cell before submitting drive applications.'
+        );
+      }
       return;
     }
     setSelectedDrive(drive);
@@ -161,7 +169,24 @@ export default function StudentDrivesPage() {
           </div>
         </header>
 
-        {student && !student.is_locked && (
+        {student && !student.is_locked && (student.verification_status === 'MISMATCH_LOCKED' || Boolean(student.rejection_reason)) ? (
+          <div className="rounded-lg border-2 border-rose-600/80 bg-rose-950/40 p-4 text-xs text-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">🔒</span>
+              <div>
+                <p className="font-bold text-rose-300 text-sm">PEP Rule 1 Notice: Profile Locked (Dataset Mismatch Detected)</p>
+                <p className="text-rose-200/90 mt-0.5">
+                  Your profile details do not match the official college dataset: <span className="font-semibold text-white">{student.rejection_reason}</span>. Drive applications are locked until you correct your details.
+                </p>
+              </div>
+            </div>
+            <Link href="/student">
+              <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shrink-0">
+                Go to Dashboard &amp; Fix Data
+              </Button>
+            </Link>
+          </div>
+        ) : student && !student.is_locked ? (
           <div className="rounded-lg border border-amber-800/60 bg-amber-950/40 p-4 text-xs text-amber-300 flex items-start gap-3">
             <span className="text-xl">⏳</span>
             <div>
@@ -171,7 +196,7 @@ export default function StudentDrivesPage() {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {drives.map((drive) => {

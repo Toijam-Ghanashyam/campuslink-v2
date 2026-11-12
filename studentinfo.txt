@@ -1,0 +1,162 @@
+================================================================================
+CAMPUSLINK v2: COLLEGE DATASET & STUDENT VERIFICATION TEST DATA
+================================================================================
+File: studentinfo.txt
+Purpose: Ready-to-use mock dataset for TPO Admin upload and 3 distinct student
+         registration scenarios to test automatic verification and mismatch locking.
+
+================================================================================
+PART 1: OFFICIAL COLLEGE DATASET FOR TPO ADMIN (CSV & PDF FORMAT)
+================================================================================
+You can upload either:
+  1. A CSV / JSON file (copy the block below and save as `college_dataset.csv`)
+  2. An official PDF document (e.g. college merit list, result gazette, or roll sheet).
+     Gemini AI automatically parses roll numbers, student names, branches,
+     CGPAs, batch years, and backlogs directly from the PDF!
+
+----------------------------- [START CSV: college_dataset.csv] -----------------------------
+roll_number,full_name,email,branch,batch_year,cgpa,active_backlogs
+2101289001,Aarav Sharma,aarav.sharma@example.com,Computer Science & Engineering,2026,8.75,0
+2101289002,Priya Patel,priya.patel@example.com,Information Technology,2026,8.45,0
+2101289003,Rohan Verma,rohan.verma@example.com,Electronics & Telecommunication,2026,7.20,2
+2101289004,Sneha Mohanty,sneha.mohanty@example.com,Computer Science & Engineering,2026,9.10,0
+2101289005,Vikram Das,vikram.das@example.com,Mechanical Engineering,2026,6.80,1
+------------------------------ [END CSV: college_dataset.csv] ------------------------------
+
+
+================================================================================
+PART 2: THREE STUDENT TEST CASES FOR REGISTRATION (/login)
+================================================================================
+
+--------------------------------------------------------------------------------
+STUDENT 1: 100% CORRECT DATA (PERFECT MATCH -> AUTO-VERIFIED)
+--------------------------------------------------------------------------------
+Test Goal: Tests successful auto-verification when all student details match
+           the official dataset. The student should be unlocked immediately.
+
+Registration Form Values to Enter:
+  - First Name: Aarav
+  - Last Name: Sharma
+    (Full Name computed: Aarav Sharma)
+  - Email: aarav.student@test.com  (or any email)
+  - Password: password123
+  - College: Select your college (e.g., Gandhi Institute for Technological Advancement / GITA)
+  - Roll Number: 2101289001
+  - Branch: Computer Science & Engineering
+  - Graduation Batch Year: 2026
+  - CGPA: 8.75
+  - Active Backlogs: 0
+
+Expected Result:
+  ✅ verification_status: 'VERIFIED'
+  ✅ is_locked: true (Compliant with BPUT PEP Rule 1)
+  ✅ Banner on /student: "✓ Verified against Official Records — AUTO-VERIFIED BY DATASET"
+  ✅ Placement Drives: Student can immediately browse and apply to eligible drives on /student/drives.
+
+
+--------------------------------------------------------------------------------
+STUDENT 2: MISMATCH SCENARIO A (CGPA INFLATION & WRONG BRANCH)
+--------------------------------------------------------------------------------
+Test Goal: Student tries to register with an inflated CGPA and a different branch.
+           The system must detect both mismatches, lock the account, and display
+           the exact differences.
+
+Official Record in Registry:
+  - Roll: 2101289002
+  - Full Name: Priya Patel
+  - Branch: Information Technology
+  - CGPA: 8.45
+  - Backlogs: 0
+
+Registration Form Values to Enter (WITH ERRORS):
+  - First Name: Priya
+  - Last Name: Patel
+  - Email: priya.test@example.com
+  - Password: password123
+  - College: Select your college
+  - Roll Number: 2101289002
+  - Branch: Computer Science & Engineering   <-- [WRONG: Official is Information Technology]
+  - Graduation Batch Year: 2026
+  - CGPA: 9.20                                <-- [WRONG: Official is 8.45]
+  - Active Backlogs: 0
+
+Expected Result:
+  🔒 verification_status: 'MISMATCH_LOCKED'
+  🔒 is_locked: false (Applications blocked)
+  🔒 Red Banner on /student:
+     "Account Status: Locked — Dataset Mismatch Detected"
+     Mismatches to Fix:
+       1. CGPA Mismatch: You entered 9.20, but official college record shows 8.45.
+       2. Branch Mismatch: You entered 'Computer Science & Engineering', but official college record shows 'Information Technology'.
+  🔒 If student goes to /student/drives and clicks Apply, they get an alert blocking them.
+
+How to Fix (Student Self-Correction Flow):
+  1. On /student, click "🛠️ Fix This Data & Re-Verify".
+  2. Change Branch to: Information Technology
+  3. Change CGPA to: 8.45
+  4. Click "Submit Fixes & Re-Verify Now".
+  5. The modal displays "✓ All details match official college dataset! Account unlocked."
+  6. The banner turns green and drives are unlocked!
+
+
+--------------------------------------------------------------------------------
+STUDENT 3: MISMATCH SCENARIO B (NAME TYPO, HIDDEN BACKLOGS, WRONG BATCH)
+--------------------------------------------------------------------------------
+Test Goal: Student enters a mismatched name, claims 0 backlogs when they have 2,
+           and enters a wrong graduation year.
+
+Official Record in Registry:
+  - Roll: 2101289003
+  - Full Name: Rohan Verma
+  - Branch: Electronics & Telecommunication
+  - Batch Year: 2026
+  - CGPA: 7.20
+  - Backlogs: 2
+
+Registration Form Values to Enter (WITH ERRORS):
+  - First Name: Rohit                          <-- [WRONG: Official is Rohan Verma]
+  - Last Name: Kumar
+  - Email: rohit.kumar@example.com
+  - Password: password123
+  - College: Select your college
+  - Roll Number: 2101289003
+  - Branch: Electronics & Telecommunication
+  - Graduation Batch Year: 2027               <-- [WRONG: Official is 2026]
+  - CGPA: 7.20
+  - Active Backlogs: 0                         <-- [WRONG: Official has 2 backlogs]
+
+Expected Result:
+  🔒 verification_status: 'MISMATCH_LOCKED'
+  🔒 is_locked: false (Applications blocked)
+  🔒 Red Banner on /student:
+     "Account Status: Locked — Dataset Mismatch Detected"
+     Mismatches to Fix:
+       1. Name Mismatch: You entered 'Rohit Kumar', but official college record shows 'Rohan Verma'.
+       2. Batch Year Mismatch: You entered 2027, but official college record shows 2026.
+       3. Active Backlogs Mismatch: You entered 0, but official college record shows 2.
+
+How to Fix:
+  1. Click "🛠️ Fix This Data & Re-Verify".
+  2. Fix Full Name to: Rohan Verma
+  3. Fix Batch Year to: 2026
+  4. Fix Active Backlogs to: 2
+  5. Click "Submit Fixes & Re-Verify Now" -> Instantly auto-verified and unlocked!
+
+
+================================================================================
+PART 3: STEP-BY-STEP TESTING CHEAT SHEET
+================================================================================
+1. Make sure you have executed `supabase/dataset_verification_migration.sql`
+   in your Supabase SQL Editor (https://dfpeiyhtzqlrwxxlcvom.supabase.co).
+2. Log in as TPO Admin at `/admin`.
+3. Click "📂 Upload College Dataset (CSV/JSON)".
+4. Upload `college_dataset.csv` (Part 1 above).
+5. Go to the "📂 Official College Dataset" tab to confirm all 5 rows are visible.
+6. Open an Incognito/Private window and go to `/login` -> "Sign Up".
+7. Test Student 1 -> Confirm instant green AUTO-VERIFIED status.
+8. Test Student 2 -> Confirm red LOCKED banner with CGPA & Branch mismatch,
+   then use the Fix dialog to correct it and watch it unlock in real-time.
+9. Test Student 3 -> Confirm red LOCKED banner with Name, Batch, and Backlogs
+   mismatch, then use the Fix dialog to re-verify.
+================================================================================
+

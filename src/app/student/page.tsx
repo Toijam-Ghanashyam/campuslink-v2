@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { acceptOffer } from '@/app/actions/placement';
-import { ensureStudentProfile } from '@/app/actions/auth';
+import { ensureStudentProfile, updateAndReverifyStudentProfile } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getCollegeById } from '@/lib/colleges';
 import {
   Table,
@@ -24,6 +26,18 @@ export default function StudentDashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  // Fix Mismatch Modal State
+  const [showFixModal, setShowFixModal] = useState(false);
+  const [fixFullName, setFixFullName] = useState('');
+  const [fixRollNumber, setFixRollNumber] = useState('');
+  const [fixBranch, setFixBranch] = useState('Computer Science & Engineering');
+  const [fixBatchYear, setFixBatchYear] = useState(2026);
+  const [fixCgpa, setFixCgpa] = useState(7.5);
+  const [fixBacklogs, setFixBacklogs] = useState(0);
+  const [reverifying, setReverifying] = useState(false);
+  const [reverifyFeedback, setReverifyFeedback] = useState<{ matched?: boolean; message?: string } | null>(null);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -35,7 +49,6 @@ export default function StudentDashboardPage() {
       return;
     }
 
-    // 1. Fetch Student Profile
     let { data: profile } = await supabase
       .from('student_profiles')
       .select('*')
@@ -58,8 +71,14 @@ export default function StudentDashboardPage() {
 
     setStudent(profile);
 
-    // 2. Fetch Student Applications with Drive Details
     if (profile) {
+      setFixFullName(profile.full_name || '');
+      setFixRollNumber(profile.roll_number || '');
+      setFixBranch(profile.branch || 'Computer Science & Engineering');
+      setFixBatchYear(profile.batch_year || 2026);
+      setFixCgpa(Number(profile.verified_cgpa) || 0);
+      setFixBacklogs(Number(profile.active_backlogs) || 0);
+
       const { data: apps } = await supabase
         .from('drive_applications')
         .select(`
@@ -90,6 +109,41 @@ export default function StudentDashboardPage() {
     loadData();
   }, []);
 
+  const handleFixAndReverify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReverifying(true);
+    setReverifyFeedback(null);
+
+    const res = await updateAndReverifyStudentProfile({
+      full_name: fixFullName,
+      roll_number: fixRollNumber,
+      branch: fixBranch,
+      batch_year: Number(fixBatchYear),
+      verified_cgpa: Number(fixCgpa),
+      active_backlogs: Number(fixBacklogs),
+    });
+
+    setReverifying(false);
+
+    if (!res.success) {
+      alert(`Error updating profile: ${res.error}`);
+      return;
+    }
+
+    setReverifyFeedback({
+      matched: res.matched,
+      message: res.message,
+    });
+
+    await loadData();
+    if (res.matched) {
+      setTimeout(() => {
+        setShowFixModal(false);
+        setReverifyFeedback(null);
+      }, 1200);
+    }
+  };
+
   const handleAcceptOffer = async (applicationId: string) => {
     if (!confirm('Are you sure you want to accept this offer? Accepting an offer upgrades your placement status and may auto-revoke other active applications based on the PEP tier policy.')) {
       return;
@@ -114,10 +168,22 @@ export default function StudentDashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
-        <p className="text-sm text-slate-400">Loading student profile & applications...</p>
+        <p className="text-sm text-slate-400">Loading student profile &amp; verification status...</p>
       </div>
     );
   }
+
+  const isMismatchLocked =
+    student &&
+    !student.is_locked &&
+    (student.verification_status === 'MISMATCH_LOCKED' || Boolean(student.rejection_reason));
+
+  const mismatchList: string[] = student?.rejection_reason
+    ? String(student.rejection_reason)
+        .split('|')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -158,7 +224,7 @@ export default function StudentDashboardPage() {
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-100">Student Placement Portal</h1>
-            <p className="text-xs text-slate-400">Institutional Placement Eligibility & Policy Tracking</p>
+            <p className="text-xs text-slate-400">Institutional Placement Eligibility &amp; Dataset Verification</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/student/drives">
@@ -186,35 +252,98 @@ export default function StudentDashboardPage() {
           </div>
         </header>
 
-        {/* Institutional Verification Status Banner */}
-        {student && !student.is_locked && (
-          <div className="rounded-lg border border-amber-800/60 bg-amber-950/40 p-4 text-xs text-amber-300 flex items-start gap-3">
-            <span className="text-xl">⏳</span>
-            <div>
-              <p className="font-semibold text-amber-200 text-sm">Academic Record Pending College TPO Verification</p>
-              <p className="mt-0.5 text-amber-300/90 leading-relaxed">
-                Your profile is submitted under <span className="font-bold text-white">{getCollegeById(student.tenant_id).name}</span>. Under BPUT Placement Eligibility Policy (PEP) Rule 1, you can browse placement drives, but drive applications will unlock once your College Placement Cell verifies and locks your record.
+        {/* 1. MISMATCH LOCKED BANNER WITH EXACT REASONS & "FIX THIS" CTA */}
+        {isMismatchLocked && (
+          <div className="rounded-xl border-2 border-rose-600/80 bg-rose-950/40 p-5 text-xs text-rose-200 space-y-3 shadow-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🔒</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-extrabold text-rose-300 uppercase tracking-wide">
+                      Account Status: Locked — Dataset Mismatch Detected
+                    </h2>
+                    <Badge variant="destructive" className="text-[10px]">
+                      ACTION REQUIRED
+                    </Badge>
+                  </div>
+                  <p className="text-rose-300/90 mt-0.5">
+                    Your registration details did not match the official dataset uploaded by{' '}
+                    <span className="font-bold text-white">{getCollegeById(student.tenant_id).name}</span>.
+                    Drive applications are locked until you fix the mismatched data below:
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => {
+                  setReverifyFeedback(null);
+                  setShowFixModal(true);
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 shadow-md"
+              >
+                🛠️ Fix This Data &amp; Re-Verify
+              </Button>
+            </div>
+
+            <div className="rounded-lg border border-rose-800/80 bg-slate-950/80 p-3.5 space-y-1.5">
+              <p className="font-bold text-rose-400 uppercase tracking-wider text-[11px]">
+                Fix the following mismatched field(s):
               </p>
+              <ul className="list-disc list-inside space-y-1 text-slate-200 text-xs">
+                {mismatchList.map((item, idx) => (
+                  <li key={idx} className="leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}
 
+        {/* 2. STANDARD PENDING VERIFICATION BANNER (When Admin hasn't uploaded dataset yet) */}
+        {student && !student.is_locked && !isMismatchLocked && (
+          <div className="rounded-lg border border-amber-800/60 bg-amber-950/40 p-4 text-xs text-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⏳</span>
+              <div>
+                <p className="font-semibold text-amber-200 text-sm">Academic Record Pending College TPO Dataset Verification</p>
+                <p className="mt-0.5 text-amber-300/90 leading-relaxed">
+                  Your profile is submitted under <span className="font-bold text-white">{getCollegeById(student.tenant_id).name}</span>. Once your TPO uploads the official college dataset or approves your record, your profile will automatically verify.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setReverifyFeedback(null);
+                setShowFixModal(true);
+              }}
+              className="border-amber-700 text-amber-200 hover:bg-amber-900/40 text-xs shrink-0"
+            >
+              Edit / Re-Check Details
+            </Button>
+          </div>
+        )}
+
+        {/* 3. VERIFIED & UNLOCKED FOR DRIVES BANNER */}
         {student && student.is_locked && (
           <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/30 p-3 text-xs text-emerald-300 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-emerald-400 font-bold">✓</span>
               <span>
-                Verified &amp; Locked by <span className="font-semibold text-white">{getCollegeById(student.tenant_id).name}</span> — Fully eligible for PEP Placement Drives.
+                Verified against <span className="font-semibold text-white">{getCollegeById(student.tenant_id).name}</span> Official Records — Fully eligible for PEP Placement Drives.
               </span>
             </div>
             <Badge className="bg-emerald-950 text-emerald-400 border border-emerald-700/50 text-[10px]">
-              PEP RULE 1 COMPLIANT
+              {student.verification_source === 'DATASET_AUTO' ? 'AUTO-VERIFIED BY DATASET' : 'PEP RULE 1 COMPLIANT'}
             </Badge>
           </div>
         )}
 
         {/* Academic & Verification Profile Overview */}
-        {student ? (
+        {student && (
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="border-slate-800 bg-slate-900 text-slate-100">
               <CardHeader className="pb-2">
@@ -224,6 +353,7 @@ export default function StudentDashboardPage() {
               <CardContent className="text-xs text-slate-400 space-y-1">
                 <p>Roll: <span className="text-slate-200 font-mono">{student.roll_number || 'N/A'}</span></p>
                 <p>Branch: <span className="text-slate-200">{student.branch || 'Engineering'}</span></p>
+                <p>Batch: <span className="text-slate-200">{student.batch_year || 2026}</span></p>
                 <p>College: <span className="text-indigo-300 font-medium">{getCollegeById(student.tenant_id).code}</span></p>
               </CardContent>
             </Card>
@@ -243,9 +373,9 @@ export default function StudentDashboardPage() {
                   </span>
                 </p>
                 <p className="mt-1">
-                  Record Status:{' '}
-                  <span className={student.is_locked ? 'text-emerald-400' : 'text-amber-400'}>
-                    {student.is_locked ? 'Verified & Locked' : 'Pending Verification'}
+                  Account Status:{' '}
+                  <span className={student.is_locked ? 'text-emerald-400 font-semibold' : isMismatchLocked ? 'text-rose-400 font-semibold' : 'text-amber-400'}>
+                    {student.is_locked ? '✓ Verified' : isMismatchLocked ? '🔒 Locked (Fix Required)' : '⏳ Pending'}
                   </span>
                 </p>
               </CardContent>
@@ -274,16 +404,9 @@ export default function StudentDashboardPage() {
               </CardContent>
             </Card>
           </div>
-        ) : (
-          <Card className="border-slate-800 bg-slate-900 text-slate-100 p-6">
-            <h2 className="text-lg font-semibold text-amber-400">Student Profile Pending</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Your student profile has not been initialized yet. If you just registered, your record will be linked shortly by the TPO Administrator.
-            </p>
-          </Card>
         )}
 
-        {/* Application History & Offer Acceptance */}
+        {/* Application History */}
         <Card className="border-slate-800 bg-slate-900 text-slate-100">
           <CardHeader className="flex flex-row justify-between items-center pb-2">
             <div>
@@ -308,7 +431,7 @@ export default function StudentDashboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-slate-800 hover:bg-transparent">
-                    <TableHead className="text-slate-400">Company & Role</TableHead>
+                    <TableHead className="text-slate-400">Company &amp; Role</TableHead>
                     <TableHead className="text-slate-400">Tier</TableHead>
                     <TableHead className="text-slate-400">Package Range</TableHead>
                     <TableHead className="text-slate-400">Stage</TableHead>
@@ -382,7 +505,127 @@ export default function StudentDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Fix Mismatched Data & Re-Verify Dialog */}
+      <Dialog open={showFixModal} onOpenChange={setShowFixModal}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Fix Mismatched Profile Details &amp; Re-Verify</DialogTitle>
+            <DialogDescription className="text-slate-400 text-xs">
+              Correct the fields below so they match your official college placement dataset. Once matched, your account will automatically unlock.
+            </DialogDescription>
+          </DialogHeader>
+
+          {mismatchList.length > 0 && (
+            <div className="rounded-lg border border-rose-800/80 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-1">
+              <p className="font-bold text-rose-400 uppercase text-[10px]">Mismatches to Fix:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {mismatchList.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <form onSubmit={handleFixAndReverify} className="space-y-3 py-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-slate-400">Full Name (As per College Record)</label>
+                <Input
+                  required
+                  value={fixFullName}
+                  onChange={(e) => setFixFullName(e.target.value)}
+                  className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400">Roll / Registration Number</label>
+                <Input
+                  required
+                  value={fixRollNumber}
+                  onChange={(e) => setFixRollNumber(e.target.value)}
+                  className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-slate-400">Branch / Department</label>
+                <select
+                  value={fixBranch}
+                  onChange={(e) => setFixBranch(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-800 bg-slate-950 p-2 text-xs text-slate-100"
+                >
+                  <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                  <option value="Information Technology">Information Technology</option>
+                  <option value="Electronics & Telecommunication">Electronics & Telecommunication</option>
+                  <option value="Electrical Engineering">Electrical Engineering</option>
+                  <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  <option value="Civil Engineering">Civil Engineering</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400">Graduation Batch Year</label>
+                <Input
+                  type="number"
+                  required
+                  value={fixBatchYear}
+                  onChange={(e) => setFixBatchYear(parseInt(e.target.value, 10) || 2026)}
+                  className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-slate-400">Official CGPA</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="10"
+                  required
+                  value={fixCgpa}
+                  onChange={(e) => setFixCgpa(parseFloat(e.target.value) || 0)}
+                  className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400">Active Backlogs</label>
+                <Input
+                  type="number"
+                  min="0"
+                  required
+                  value={fixBacklogs}
+                  onChange={(e) => setFixBacklogs(parseInt(e.target.value, 10) || 0)}
+                  className="mt-1 border-slate-800 bg-slate-950 text-slate-100 text-xs"
+                />
+              </div>
+            </div>
+
+            {reverifyFeedback && (
+              <div
+                className={`rounded-lg border p-3 text-xs ${
+                  reverifyFeedback.matched
+                    ? 'border-emerald-800 bg-emerald-950/40 text-emerald-300'
+                    : 'border-rose-800 bg-rose-950/40 text-rose-300'
+                }`}
+              >
+                {reverifyFeedback.message}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={reverifying}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs"
+            >
+              {reverifying ? 'Checking Against College Dataset...' : 'Submit Fixes & Re-Verify Now'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
