@@ -78,7 +78,7 @@ function LoginPageContent() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 18000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const formData = new FormData();

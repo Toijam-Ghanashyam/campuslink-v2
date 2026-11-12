@@ -53,11 +53,7 @@ export default function RecruiterWarRoom() {
         offer_ctc,
         offer_status,
         student_profiles (
-          id,
-          roll_number,
-          branch,
-          verified_cgpa,
-          placement_status
+          *
         )
       `)
       .eq('drive_id', driveId)
@@ -198,6 +194,50 @@ export default function RecruiterWarRoom() {
                         <span className="truncate max-w-md italic text-slate-300">
                           {app.ai_feedback_summary || 'Pending evaluation'}
                         </span>
+                      </div>
+
+                      {/* Proctored Student Readiness & Integrity Badges */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-indigo-950/70 border border-indigo-700/60 text-indigo-300">
+                          🎯 Readiness:{' '}
+                          <span className="text-white font-bold">
+                            {(student as any)?.readiness_score !== undefined && (student as any)?.readiness_score !== null && (student as any)?.readiness_score > 0
+                              ? `${(student as any).readiness_score}/100`
+                              : 'Not Tested'}
+                          </span>
+                        </span>
+
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] border ${
+                            ((student as any)?.readiness_integrity_score ?? 100) >= 80
+                              ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300'
+                              : 'bg-rose-950/70 border-rose-700/60 text-rose-300'
+                          }`}
+                        >
+                          🛡️ Integrity:{' '}
+                          <span className="font-bold">
+                            {(student as any)?.readiness_score
+                              ? `${(student as any)?.readiness_integrity_score ?? 100}%`
+                              : '100%'}
+                          </span>
+                          {((student as any)?.readiness_integrity_score ?? 100) < 80 && (
+                            <span className="text-[10px] text-rose-400 font-bold ml-1">⚠️ Flags</span>
+                          )}
+                        </span>
+
+                        {(student as any)?.readiness_status && (student as any)?.readiness_status !== 'NOT_TESTED' && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                              (student as any).readiness_status === 'HIGHLY_READY'
+                                ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50'
+                                : (student as any).readiness_status === 'INTERVIEW_READY'
+                                ? 'bg-indigo-900/60 text-indigo-300 border border-indigo-700/50'
+                                : 'bg-amber-900/60 text-amber-300 border border-amber-700/50'
+                            }`}
+                          >
+                            {(student as any).readiness_status.replace('_', ' ')}
+                          </span>
+                        )}
                       </div>
                     </div>
 

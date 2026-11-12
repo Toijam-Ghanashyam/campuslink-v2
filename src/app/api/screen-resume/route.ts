@@ -55,10 +55,10 @@ Respond ONLY with a valid JSON object matching this schema without markdown fenc
 
     // Try working Gemini models with timeout
     const geminiModels = [
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.6-flash',
       'gemini-3.8-flash',
     ];
     let response: any = null;

@@ -5,14 +5,14 @@ import { normalizeBranchName, normalizeRoll, DatasetStudentRow } from '@/lib/dat
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const GEMINI_MODELS = [
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
   'gemini-3.8-flash',
 ];
 
-async function generateWithTimeout(model: string, contents: any, timeoutMs = 15000) {
+async function generateWithTimeout(model: string, contents: any, timeoutMs = 8000) {
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model ${model}`)), timeoutMs)
   );

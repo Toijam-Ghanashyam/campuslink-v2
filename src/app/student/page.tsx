@@ -445,6 +445,77 @@ export default function StudentDashboardPage() {
           </Card>
         )}
 
+        {/* PROCTORED STUDENT READINESS ASSESSMENT CARD */}
+        {student && (
+          <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/30 p-5 shadow-xl transition-all hover:border-indigo-500/60">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="flex items-start gap-3.5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 text-2xl">
+                  🛡️
+                </div>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-bold text-white">
+                      AI Proctored Student Readiness Assessment
+                    </h3>
+                    <Badge
+                      className={`text-[10px] font-bold ${
+                        (student.readiness_status || 'NOT_TESTED') === 'HIGHLY_READY'
+                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                          : (student.readiness_status || 'NOT_TESTED') === 'INTERVIEW_READY'
+                          ? 'bg-indigo-950 text-indigo-300 border border-indigo-700'
+                          : (student.readiness_status || 'NOT_TESTED') === 'NEEDS_IMPROVEMENT'
+                          ? 'bg-amber-950 text-amber-300 border border-amber-700'
+                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      }`}
+                    >
+                      {(student.readiness_status || 'NOT_TESTED') === 'HIGHLY_READY'
+                        ? '🌟 HIGHLY INTERVIEW READY'
+                        : (student.readiness_status || 'NOT_TESTED') === 'INTERVIEW_READY'
+                        ? '🎯 INTERVIEW READY'
+                        : (student.readiness_status || 'NOT_TESTED') === 'NEEDS_IMPROVEMENT'
+                        ? '⏳ NEEDS IMPROVEMENT'
+                        : '📝 NOT TESTED'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-300/90 leading-relaxed max-w-2xl">
+                    Dynamic technical evaluation tailored to your resume skills with 8 technical MCQs (80 pts) + 2 deep-dive architectural scenario questions (20 pts). Features client-side webcam face verification, voice monitoring, and keystroke anti-copy/paste telemetry.
+                  </p>
+                </div>
+              </div>
+
+              {/* Score Badges & CTA */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl border border-indigo-500/30 bg-slate-950/80 px-3.5 py-2 text-center min-w-[90px]">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Readiness</span>
+                    <span className="text-lg font-black text-white">
+                      {student.readiness_score !== undefined && student.readiness_score !== null && student.readiness_score > 0
+                        ? `${student.readiness_score}/100`
+                        : '--'}
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-500/30 bg-slate-950/80 px-3.5 py-2 text-center min-w-[90px]">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Integrity</span>
+                    <span className={`text-lg font-black ${
+                      (student.readiness_integrity_score ?? 100) >= 80 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {student.readiness_score ? `${student.readiness_integrity_score ?? 100}%` : '100%'}
+                    </span>
+                  </div>
+                </div>
+
+                <Link href="/student/readiness-test">
+                  <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 shadow-lg shadow-indigo-600/30 whitespace-nowrap">
+                    {student.readiness_score ? 'Retake Readiness Test →' : 'Take Readiness Test →'}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI SKILL COMPATIBILITY: TOP RECOMMENDED DRIVES */}
         {topDrives.length > 0 && (
           <Card className="border-slate-800 bg-slate-900/90 text-slate-100 shadow-lg">

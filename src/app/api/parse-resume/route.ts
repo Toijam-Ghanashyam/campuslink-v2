@@ -4,13 +4,14 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const FAST_MODELS = [
-  'gemini-3.5-flash',
-  'gemini-3.6-flash',
   'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash',
 ];
 
-async function generateWithTimeout(model: string, contents: any, timeoutMs = 9000) {
+async function generateWithTimeout(model: string, contents: any, timeoutMs = 8000) {
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model ${model}`)), timeoutMs)
   );
