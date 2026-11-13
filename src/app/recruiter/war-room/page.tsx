@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { advanceCandidateStage } from '@/app/actions/war-room';
 import { Button } from '@/components/ui/button';
@@ -172,6 +173,15 @@ export default function RecruiterWarRoom() {
                 className="h-8 bg-slate-900 border-slate-800 text-xs w-24"
               />
             </div>
+
+            <div className="flex items-end">
+              <Link
+                href="/recruiter/pipeline"
+                className="h-8 inline-flex items-center gap-1.5 px-3 rounded-md text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all whitespace-nowrap"
+              >
+                📹 Video Vault &amp; Transcripts &rarr;
+              </Link>
+            </div>
           </div>
         </header>
 
@@ -300,6 +310,14 @@ export default function RecruiterWarRoom() {
                             {(student as any).readiness_status.replace('_', ' ')}
                           </span>
                         )}
+
+                        <Link
+                          href="/recruiter/pipeline"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 hover:text-white hover:bg-indigo-900 transition-colors"
+                          title="Inspect candidate dual-stream video footage and Groq Whisper transcriptions"
+                        >
+                          📹 AI Video &amp; Whisper Transcripts &rarr;
+                        </Link>
                       </div>
                     </div>
 

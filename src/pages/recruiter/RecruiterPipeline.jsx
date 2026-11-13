@@ -14,6 +14,10 @@ import {
   XCircle,
   PlayCircle,
   ExternalLink,
+  Bot,
+  FileText,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
@@ -30,7 +34,24 @@ export function RecruiterPipeline() {
   const [selectedBioCandidate, setSelectedBioCandidate] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [streamViewMode, setStreamViewMode] = useState('both'); // 'both' | 'transcripts_only'
+  const [copiedAll, setCopiedAll] = useState(false);
   const masterVideoRef = useRef(null);
+
+  const handleCopyAllTranscripts = (clips) => {
+    const fullText = (clips || [])
+      .map(
+        (c) =>
+          `[Question ${c.questionNumber} - ${c.category}]\nQuestion: "${c.prompt}"\n\nCandidate Spoken Answer (Transcribed by whisper-large-v3-turbo via Groq API):\n"${c.transcript || 'N/A'}"\n`
+      )
+      .join('\n========================================\n\n');
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(fullText);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    }
+  };
 
   const handleOpenCandidate = (candidate) => {
     setSelectedBioCandidate(candidate);
@@ -296,40 +317,118 @@ export function RecruiterPipeline() {
                   )}
                 </div>
 
-                {/* Stream 2: 10 Individual Question Answer Clips */}
+                {/* Stream 2: Per-Question Answer Clips with Groq Whisper Transcripts */}
                 <div className="space-y-3 pt-3 border-t border-line">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span className="font-mono font-bold text-fg flex items-center gap-1.5">
                       <Video className="w-3.5 h-3.5 text-emerald-400" />
-                      02 · Isolated Per-Question Answer Clips ({currentSession.questionClips?.length || 0})
+                      02 · Isolated Question Clips &amp; Transcripts ({currentSession.questionClips?.length || 0})
                     </span>
-                    <span className="font-mono text-[11px] text-emerald-400 font-semibold">
-                      Segmented Answers
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded border border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setStreamViewMode('both')}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
+                            streamViewMode === 'both'
+                              ? 'bg-indigo-600 text-white'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          Video &amp; Q&amp;A
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStreamViewMode('transcripts_only')}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
+                            streamViewMode === 'transcripts_only'
+                              ? 'bg-indigo-600 text-white'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          Full Transcript
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAllTranscripts(currentSession.questionClips)}
+                        className="flex items-center gap-1 text-[10px] font-mono font-semibold text-indigo-300 hover:text-white bg-indigo-950/80 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-700/60 transition-colors"
+                        title="Copy all questions and transcribed answers to clipboard"
+                      >
+                        {copiedAll ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedAll ? 'Copied!' : 'Copy Q&A'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* STT Model Banner */}
+                  <div className="p-2 rounded-lg bg-indigo-950/40 border border-indigo-800/40 flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1.5 font-mono text-indigo-300 font-medium">
+                      <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                      Voice-to-Text Model: <strong className="text-white">whisper-large-v3-turbo</strong>
+                    </span>
+                    <span className="font-mono text-[10px] text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800/80">
+                      Powered by Groq API
                     </span>
                   </div>
 
-                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 divide-y divide-line">
+                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1 divide-y divide-slate-800/80">
                     {(currentSession.questionClips || []).map((clip) => (
-                      <div key={clip.questionId} className="pt-3 first:pt-0 space-y-2">
+                      <div key={clip.questionId} className="pt-4 first:pt-0 space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2 font-mono">
-                            <span className="font-bold text-indigo-400">Q{clip.questionNumber}</span>
-                            <span className="text-fg-soft">· {clip.category}</span>
+                            <span className="font-bold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800/60">
+                              Question {clip.questionNumber}
+                            </span>
+                            <span className="text-fg-soft font-semibold">· {clip.category}</span>
                           </div>
-                          <span className="font-mono text-[11px] text-emerald-400">
-                            {formatTime(clip.durationSec)}
+                          <span className="font-mono text-[11px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
+                            Duration: {formatTime(clip.durationSec)}
                           </span>
                         </div>
-                        <p className="text-xs text-fg leading-relaxed">
+
+                        <p className="text-xs text-white font-medium leading-relaxed bg-slate-900/60 p-2.5 rounded border border-slate-800">
+                          <strong className="text-indigo-300 font-mono text-[11px] block mb-0.5">Prompt:</strong>
                           "{clip.prompt}"
                         </p>
-                        {clip.blobUrl && (
+
+                        {streamViewMode === 'both' && clip.blobUrl && (
                           <video
                             controls
                             src={clip.blobUrl}
-                            className="w-full aspect-video bg-black rounded-lg border border-line"
+                            className="w-full aspect-video bg-black rounded-lg border border-line shadow-md"
                           />
                         )}
+
+                        {/* Transcribed Q&A Section */}
+                        <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[10px] uppercase font-bold text-indigo-400 flex items-center gap-1.5">
+                              <Sparkles className="w-3 h-3 text-indigo-400" />
+                              Transcribed Candidate Response
+                            </span>
+                            <span className="font-mono text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/80 flex items-center gap-1">
+                              <Bot className="w-2.5 h-2.5 text-emerald-400" />
+                              whisper-large-v3-turbo
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded bg-slate-900/90 border-l-2 border-indigo-500 text-slate-200 leading-relaxed text-xs">
+                            {clip.transcript ? (
+                              <p className="text-slate-100 italic whitespace-pre-wrap font-sans">
+                                "{clip.transcript}"
+                              </p>
+                            ) : (
+                              <p className="text-slate-500 italic">
+                                {clip.isTranscribing
+                                  ? 'Transcribing spoken audio with Whisper Large v3 Turbo via Groq API...'
+                                  : 'Transcription pending.'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
