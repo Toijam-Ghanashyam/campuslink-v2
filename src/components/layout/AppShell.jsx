@@ -27,7 +27,7 @@ export const roleNavItems = {
     { num: '03', to: '/student/interviews', label: 'Interviews & Prep', icon: Calendar },
     { num: '04', to: '/student/live-status', label: 'Live Status', icon: Radio },
     { num: '05', to: '/student/remediation', label: 'Skill Remediation', icon: Sparkles },
-    { num: '06', to: '/student/ai-interview', label: 'AI Video Round', icon: Video, badge: 'Live AI' },
+    { num: '06', to: '/student/ai-interview', label: 'AI Video Round', icon: Video },
   ],
   recruiter: [
     { num: '01', to: '/recruiter/pipeline', label: 'Candidate Pipeline', icon: Users },

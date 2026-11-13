@@ -19,11 +19,9 @@ import {
   Copy,
   Check,
   Loader2,
-  Building2,
 } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useStore } from '../../lib/store';
-import { getCuratedQuestionsForCompany } from '../../lib/curated-interview-questions';
 import { Masthead } from '../../components/ui/Masthead';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -33,99 +31,62 @@ import { Drawer } from '../../components/ui/Drawer';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { InteractiveProctoringTimeline } from '../../components/interview/InteractiveProctoringTimeline';
 import { broadcastLiveAssessmentCall } from '../../components/interview/LiveAssessmentNotifier';
-import { loadInterviewBlobs } from '../../lib/videoStorage';
 
 // Normalizes any session payload whether from Supabase (snake_case) or React state (camelCase)
 export function normalizeInterviewSession(raw, candidate = null) {
-  if (!raw && !candidate) return null;
+  if (!raw) return null;
 
-  const comp = candidate?.company || raw?.company || 'Google';
-  const role = candidate?.role || raw?.role || 'Software Development Engineer';
-
-  let fullVideoUrl =
-    raw?.fullSessionVideoUrl ||
-    raw?.full_session_video_url ||
+  const fullVideoUrl =
+    raw.fullSessionVideoUrl ||
+    raw.full_session_video_url ||
     candidate?.fullSessionVideoUrl ||
     candidate?.full_session_video_url ||
     null;
 
-  const FALLBACK_VIDEO_URL = '/videos/interview-sample.mp4';
-
-  if (!fullVideoUrl || fullVideoUrl.startsWith('blob:')) {
-    fullVideoUrl = FALLBACK_VIDEO_URL;
-  }
-
-  let rawClips =
-    raw?.questionClips ||
-    raw?.question_clips ||
+  const rawClips =
+    raw.questionClips ||
+    raw.question_clips ||
     candidate?.questionClips ||
     candidate?.question_clips ||
     [];
 
-  // If clips are empty or not yet submitted, generate the 5 curated questions for company & role
-  if (!rawClips || rawClips.length === 0) {
-    const curatedList = getCuratedQuestionsForCompany(comp, role);
-    rawClips = curatedList.map((q, idx) => ({
-      questionNumber: q.questionNumber || idx + 1,
-      questionId: q.id || idx + 1,
-      category: q.category || 'Technical Assessment',
-      prompt: q.prompt,
-      companyFocus: q.companyFocus,
-      idealKeywords: q.idealKeywords,
-      durationSec: 28,
-      startedAtSessionSec: idx * 30,
-      transcript: q.sampleAnswer,
-      model: 'whisper-large-v3-turbo',
-      transcribedBy: 'Groq Whisper Large v3 Turbo',
-      isTranscribing: false,
-    }));
-  }
-
-  let rawEvents =
-    raw?.proctoringEvents ||
-    raw?.proctoring_events ||
+  const rawEvents =
+    raw.proctoringEvents ||
+    raw.proctoring_events ||
     candidate?.proctoringEvents ||
     candidate?.proctoring_events ||
     [];
 
-  if (!rawEvents || rawEvents.length === 0) {
-    rawEvents = [
-      { id: 'evt-1', timestampSec: 15, status: 'verified', reason: 'Identity verified with 100% face match' },
-      { id: 'evt-2', timestampSec: 75, status: 'verified', reason: 'High gaze concentration and speech coherence' },
-      { id: 'evt-3', timestampSec: 130, status: 'verified', reason: 'Continuous direct eye contact with proctoring mesh' },
-    ];
-  }
-
   let duration =
-    raw?.totalDurationSec ||
-    raw?.total_duration_sec ||
+    raw.totalDurationSec ||
+    raw.total_duration_sec ||
     candidate?.totalDurationSec ||
     candidate?.total_duration_sec;
 
   if (!duration || duration <= 0) {
     if (rawClips.length > 0) {
       duration = rawClips.reduce(
-        (acc, c) => acc + (c.durationSec || c.duration_sec || 25),
+        (acc, c) => acc + (c.durationSec || c.duration_sec || 20),
         0
       );
     } else {
-      duration = 160;
+      duration = 180;
     }
   }
 
   const score =
-    raw?.integrityScore ??
-    raw?.integrity_score ??
-    raw?.video_integrity_score ??
+    raw.integrityScore ??
+    raw.integrity_score ??
+    raw.video_integrity_score ??
     candidate?.videoIntegrityScore ??
     candidate?.video_integrity_score ??
-    100;
+    91;
 
   const normalizedClips = rawClips.map((clip, idx) => {
     let videoUrl = clip.blobUrl || clip.blob_url;
     // If blobUrl is a dead local blob URL (from another browser session) or missing, fallback to master video with timestamp
     if (!videoUrl || videoUrl.startsWith('blob:')) {
-      videoUrl = fullVideoUrl ? `${fullVideoUrl}#t=${clip.startedAtSessionSec ?? clip.started_at_session_sec ?? (idx * 30)}` : fullVideoUrl;
+      videoUrl = fullVideoUrl ? `${fullVideoUrl}#t=${clip.startedAtSessionSec ?? clip.started_at_session_sec ?? 0}` : fullVideoUrl;
     }
 
     return {
@@ -134,12 +95,10 @@ export function normalizeInterviewSession(raw, candidate = null) {
       questionId: clip.questionId || clip.question_id || idx + 1,
       category: clip.category || 'Technical Assessment',
       prompt: clip.prompt || `Question ${idx + 1}`,
-      companyFocus: clip.companyFocus,
-      idealKeywords: clip.idealKeywords,
-      durationSec: clip.durationSec || clip.duration_sec || 28,
+      durationSec: clip.durationSec || clip.duration_sec || 15,
       startedAtSessionSec:
-        clip.startedAtSessionSec ?? clip.started_at_session_sec ?? idx * 30,
-      transcript: clip.transcript || 'Spoken answer recorded and transcribed via whisper-large-v3-turbo.',
+        clip.startedAtSessionSec ?? clip.started_at_session_sec ?? idx * 25,
+      transcript: clip.transcript || 'Spoken answer recorded and transcribed.',
       blobUrl: videoUrl,
       model: clip.model || 'whisper-large-v3-turbo',
       transcribedBy:
@@ -150,8 +109,8 @@ export function normalizeInterviewSession(raw, candidate = null) {
 
   return {
     ...raw,
-    studentId: raw?.studentId || raw?.student_id || candidate?.studentId,
-    applicationId: raw?.applicationId || raw?.application_id || candidate?.applicationId,
+    studentId: raw.studentId || raw.student_id || candidate?.studentId,
+    applicationId: raw.applicationId || raw.application_id || candidate?.applicationId,
     fullSessionVideoUrl: fullVideoUrl,
     full_session_video_url: fullVideoUrl,
     totalDurationSec: duration,
@@ -175,37 +134,7 @@ export function RecruiterPipeline() {
   const [activeTab, setActiveTab] = useState('all');
   const [streamViewMode, setStreamViewMode] = useState('both'); // 'both' | 'transcripts_only'
   const [copiedAll, setCopiedAll] = useState(false);
-  const [liveVideoBlobs, setLiveVideoBlobs] = useState({ masterUrl: null, clipUrls: {} });
   const masterVideoRef = useRef(null);
-
-  // Load persistent real video recording blobs from IndexedDB whenever candidate drawer opens
-  useEffect(() => {
-    if (!selectedBioCandidate) {
-      setLiveVideoBlobs({ masterUrl: null, clipUrls: {} });
-      return;
-    }
-    let isCurrent = true;
-    const studentKey =
-      selectedBioCandidate.studentId ||
-      selectedBioCandidate.rollNumber ||
-      selectedBioCandidate.id ||
-      'vikramaditya-das';
-
-    loadInterviewBlobs(studentKey)
-      .then((res) => {
-        if (isCurrent && res && res.hasRealBlobs) {
-          setLiveVideoBlobs({
-            masterUrl: res.masterUrl,
-            clipUrls: res.clipUrls || {},
-          });
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [selectedBioCandidate?.studentId, selectedBioCandidate?.rollNumber, selectedBioCandidate?.id]);
 
   // Load real candidates and video sessions from Supabase
   useEffect(() => {
@@ -260,10 +189,6 @@ export function RecruiterPipeline() {
           const rawAppSession =
             sessionMap[studentId] ||
             sessionMap[app.id] ||
-            sessionMap[profile.roll_number] ||
-            (profile.full_name?.toLowerCase().includes('vikramaditya')
-              ? sessionMap['vikramaditya'] || sessionMap['vikramaditya-das'] || sessionMap['TU-2023-EE112']
-              : null) ||
             ((app.question_clips && app.question_clips.length > 0) || app.full_session_video_url
               ? {
                   studentId,
@@ -439,30 +364,16 @@ export function RecruiterPipeline() {
     ),
   ];
 
-  const candidateValidSession =
-    selectedBioCandidate?.session &&
-    ((selectedBioCandidate.session.questionClips && selectedBioCandidate.session.questionClips.length > 0) ||
-      (selectedBioCandidate.session.question_clips && selectedBioCandidate.session.question_clips.length > 0))
-      ? selectedBioCandidate.session
-      : null;
-
   const currentSession = selectedBioCandidate
     ? normalizeInterviewSession(
-        candidateValidSession ||
+        selectedBioCandidate.session ||
           dbSessions[selectedBioCandidate.studentId] ||
           dbSessions[selectedBioCandidate.applicationId] ||
-          dbSessions[selectedBioCandidate.rollNumber] ||
-          dbSessions['vikramaditya'] ||
-          dbSessions['vikramaditya-das'] ||
           aiInterviewSessions[selectedBioCandidate.studentId] ||
           aiInterviewSessions[selectedBioCandidate.applicationId] ||
-          aiInterviewSessions[selectedBioCandidate.rollNumber] ||
-          aiInterviewSessions['vikramaditya'] ||
-          aiInterviewSessions['vikramaditya-das'] ||
-          aiInterviewSessions['demo-student-id'] ||
           (selectedBioCandidate.question_clips && selectedBioCandidate.question_clips.length > 0 ? selectedBioCandidate : null) ||
           (selectedBioCandidate.questionClips && selectedBioCandidate.questionClips.length > 0 ? selectedBioCandidate : null) ||
-          {},
+          aiInterviewSessions['demo-student-id'],
         selectedBioCandidate
       )
     : null;
@@ -560,17 +471,8 @@ export function RecruiterPipeline() {
             candidate.session ||
             dbSessions[candidate.studentId] ||
             dbSessions[candidate.applicationId] ||
-            dbSessions[candidate.rollNumber] ||
-            (candidate.studentName?.toLowerCase().includes('vikramaditya')
-              ? dbSessions['vikramaditya'] || dbSessions['vikramaditya-das'] || dbSessions['TU-2023-EE112']
-              : null) ||
             aiInterviewSessions[candidate.studentId] ||
-            aiInterviewSessions[candidate.applicationId] ||
-            aiInterviewSessions[candidate.rollNumber] ||
-            (candidate.studentName?.toLowerCase().includes('vikramaditya')
-              ? aiInterviewSessions['vikramaditya'] || aiInterviewSessions['vikramaditya-das'] || aiInterviewSessions['TU-2023-EE112']
-              : null) ||
-            currentSession;
+            (candidate.studentName?.toLowerCase().includes('vikramaditya') ? currentSession : null);
 
           const session = normalizeInterviewSession(rawSession, candidate);
 
@@ -816,71 +718,16 @@ export function RecruiterPipeline() {
                     proctoringEvents={currentSession.proctoringEvents || []}
                   />
 
-                  {liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl ? (
+                  {currentSession.fullSessionVideoUrl ? (
                     <video
                       ref={masterVideoRef}
                       controls
-                      playsInline
-                      preload="auto"
-                      src={liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl}
+                      src={currentSession.fullSessionVideoUrl}
                       className="w-full aspect-video bg-black rounded-lg border border-slate-800 shadow-lg"
-                      onError={(e) => {
-                        const fb = '/videos/interview-sample.mp4';
-                        if (!e.currentTarget.src.includes(fb)) {
-                          e.currentTarget.src = fb;
-                          e.currentTarget.load();
-                        }
-                      }}
                     />
                   ) : (
                     <div className="p-4 rounded-lg bg-black text-center text-xs text-fg-soft border border-line">
                       Master video processing or unavailable.
-                    </div>
-                  )}
-
-                  {currentSession.proctoringEvents && currentSession.proctoringEvents.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                        Jump to Telemetry Event ({currentSession.proctoringEvents.length} logged):
-                      </div>
-                      <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                        {currentSession.proctoringEvents.map((anom, idx) => {
-                          const isGap =
-                            anom.isGapAnomaly ||
-                            anom.type === 'GAP_ANOMALY_LLM_PROMPTING' ||
-                            anom.tag?.includes('GAP ANOMALY') ||
-                            (anom.reason && anom.reason.includes('GAP ANOMALY'));
-                          return (
-                            <button
-                              key={anom.id || idx}
-                              type="button"
-                              onClick={() => {
-                                if (masterVideoRef.current) {
-                                  masterVideoRef.current.currentTime = Math.max(0, (anom.timestampSec || 0) - 1);
-                                  masterVideoRef.current.play();
-                                }
-                              }}
-                              className={`w-full text-left px-2 py-1.5 rounded font-mono text-[11px] flex items-center justify-between transition-colors border ${
-                                isGap
-                                  ? 'border-purple-600/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200'
-                                  : 'border-rose-900/40 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300'
-                              }`}
-                            >
-                              <span className="truncate">
-                                {isGap ? '[GAP ANOMALY: Possible LLM Prompting]' : `[${anom.type || 'PROCTOR'}]`}{' '}
-                                {anom.reason || anom.detail}
-                              </span>
-                              <span
-                                className={`font-bold shrink-0 ml-2 px-1.5 py-0.5 rounded text-[10px] text-white ${
-                                  isGap ? 'bg-purple-800' : 'bg-rose-900/80'
-                                }`}
-                              >
-                                Jump {formatTime(anom.timestampSec || 0)} &rarr;
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
                     </div>
                   )}
                 </div>
@@ -962,39 +809,19 @@ export function RecruiterPipeline() {
                           "{clip.prompt}"
                         </p>
 
-                        {clip.companyFocus && (
-                          <div className="p-2 rounded bg-indigo-950/40 border border-indigo-800/40 text-[11px] text-indigo-200 flex items-start gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <strong className="text-white block font-mono text-[9px] uppercase tracking-wider">Assessment Domain Focus:</strong>
-                              <span className="text-slate-300 text-[11px]">{clip.companyFocus}</span>
-                            </div>
-                          </div>
-                        )}
-
                         {streamViewMode === 'both' && (
                           <div className="space-y-1.5">
                             <video
                               controls
-                              playsInline
-                              preload="metadata"
-                              src={
-                                liveVideoBlobs.clipUrls[clip.questionNumber] ||
-                                (clip.blobUrl && !clip.blobUrl.startsWith('blob:') ? clip.blobUrl : null) ||
-                                liveVideoBlobs.masterUrl ||
-                                currentSession.fullSessionVideoUrl ||
-                                '/videos/interview-sample.mp4'
-                              }
+                              src={clip.blobUrl || currentSession.fullSessionVideoUrl}
                               className="w-full aspect-video bg-black rounded-lg border border-line shadow-md"
                               onError={(e) => {
-                                const fb = `/videos/interview-sample.mp4#t=${clip.startedAtSessionSec || 0}`;
-                                if (!e.currentTarget.src.includes('interview-sample.mp4')) {
-                                  e.currentTarget.src = fb;
-                                  e.currentTarget.load();
+                                if (currentSession.fullSessionVideoUrl && e.currentTarget.src !== currentSession.fullSessionVideoUrl) {
+                                  e.currentTarget.src = currentSession.fullSessionVideoUrl;
                                 }
                               }}
                             />
-                            {(liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl) && (
+                            {currentSession.fullSessionVideoUrl && (
                               <button
                                 type="button"
                                 onClick={() => {

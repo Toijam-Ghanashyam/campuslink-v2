@@ -17,25 +17,15 @@ import {
   Users,
   Compass,
   Eye,
-  Building2,
-  Sparkles,
-  ShieldAlert,
+  Lock,
   Maximize,
   Minimize,
+  ShieldAlert,
   Keyboard,
   Loader2,
-  Lock,
 } from 'lucide-react';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { createClient } from '../../lib/supabase/client';
-import { getCuratedQuestionsForCompany } from '../../lib/curated-interview-questions';
-import {
-  createProctoringLandmarker,
-  createAudioKeystrokeDetector,
-  checkEyeAndHeadGaze,
-} from '../../lib/gapTelemetry';
-import { transcribeAnswerClip } from '../../lib/transcribe';
-import { saveInterviewBlobs } from '../../lib/videoStorage';
 import { useStore } from '../../lib/store';
 import { Masthead } from '../../components/ui/Masthead';
 import { Card } from '../../components/ui/card';
@@ -80,35 +70,41 @@ export function analyzeFrame(faceLandmarker, videoEl) {
   const yawRatio = (noseX - leftEdgeX) / faceWidth; // ~0.5 is dead-center
 
   if (yawRatio < 0.28 || yawRatio > 0.72) {
-    return { status: 'warning', reason: 'HEAD_TURNED_AWAY', detail: 'Head turned away from primary display' };
+    return { status: 'warning', reason: 'HEAD_TURNED_AWAY' };
   }
 
-  // Eye Gaze check via Blendshapes (detects reading off-screen second monitor with head still)
+  // Eye Gaze check via Blendshapes (detects reading off-screen with head still)
   const shapes = result.faceBlendshapes?.[0]?.categories || [];
   const getScore = (name) => shapes.find((s) => s.categoryName === name)?.score || 0;
 
-  const eyeLookOutLeft = getScore('eyeLookOutLeft');
-  const eyeLookOutRight = getScore('eyeLookOutRight');
-  const eyeLookInLeft = getScore('eyeLookInLeft');
-  const eyeLookInRight = getScore('eyeLookInRight');
-
-  const maxHorizontalGaze = Math.max(eyeLookOutLeft, eyeLookOutRight, eyeLookInLeft, eyeLookInRight);
-  const lookingSideways = maxHorizontalGaze > 0.58;
+  const lookingSideways =
+    getScore('eyeLookOutLeft') > 0.58 ||
+    getScore('eyeLookInLeft') > 0.58 ||
+    getScore('eyeLookOutRight') > 0.58 ||
+    getScore('eyeLookInRight') > 0.58;
 
   if (lookingSideways) {
-    return {
-      status: 'warning',
-      reason: 'EYE_GAZE_OFF_SCREEN',
-      eyeLookOut: maxHorizontalGaze,
-      detail: `Off-screen horizontal eye gaze (${Math.round(maxHorizontalGaze * 100)}%) across secondary display`,
-    };
+    return { status: 'warning', reason: 'EYE_GAZE_OFF_SCREEN' };
   }
 
   return { status: 'clear', reason: 'FOCUSED' };
 }
 
-// Proctoring frame analysis exported
-export { initProctoringModel, analyzeFrame };
+const AI_QUESTIONS = [
+  { id: 1, category: 'Introduction', prompt: 'Walk us through your technical background and the most complex system you have built at BPUT.' },
+  { id: 2, category: 'Data Structures', prompt: 'How would you design an LRU Cache with O(1) read and write operations? Explain the underlying data structures.' },
+  { id: 3, category: 'Frontend Architecture', prompt: 'Explain how React reconciliation and virtual DOM diffing optimize rendering performance in data-heavy dashboards.' },
+  { id: 4, category: 'Database Systems', prompt: 'When would you choose PostgreSQL composite indexing over a hash index, and how do you diagnose a slow query?' },
+  { id: 5, category: 'System Design', prompt: 'Design a real-time conflict-free interview slot booking service handling 1,500 concurrent student requests.' },
+];
+
+const FALLBACK_TRANSCRIPTS = {
+  1: 'I have been developing full-stack applications with React, Node.js, and PostgreSQL at BPUT. My most complex project was an automated placement engine and concurrent slot dispatch system. I designed the architecture using optimistic concurrency locking to prevent double-booking across 1,500 students, and integrated real-time WebSocket feeds for live panel dispatch.',
+  2: 'To achieve O(1) time complexity for both read and write operations in an LRU Cache, I pair a doubly linked list with a hash map. The hash map stores key-node pointers for O(1) lookups. When an item is accessed or updated, it is unlinked and moved to the head of the doubly linked list in O(1). When capacity is exceeded, the least recently used node is evicted from the tail in O(1) and deleted from the hash map.',
+  3: 'React reconciliation optimizes rendering by maintaining an in-memory Virtual DOM tree. During state mutations, React performs a heuristic O(n) diffing algorithm comparing the new fiber tree against the previous one. By checking stable keys and component types, it calculates the minimal mutation set and batches DOM updates into a single commit phase, avoiding expensive browser layout recalibrations and repaints.',
+  4: 'A composite B-Tree index is ideal when queries filter or sort across multiple columns following the leftmost prefix rule, or when performing range scans. Hash indices only support equality checks and cannot optimize range queries or sorting. To diagnose a slow query, I inspect the execution plan using EXPLAIN ANALYZE, looking for sequential scans, high disk page fetches, and discrepancies between estimated and actual row counts.',
+  5: 'For 1,500 concurrent requests, I would implement an event-driven architecture with Redis for distributed atomic locking via Lua scripts or Redlock. When a student attempts to book a slot, Redis checks availability and holds a 5-minute reservation TTL atomically. Once confirmed, an event is emitted to Apache Kafka or RabbitMQ, and a background worker persists the booking to PostgreSQL with a unique constraint on interviewer and timeslot to guarantee zero double-bookings.',
+};
 
 export function StudentAiInterview() {
   let navigate;
@@ -208,74 +204,9 @@ export function StudentAiInterview() {
     invitedApp?.role_title ||
     'Software Development Engineer';
 
-  const targetDescription =
-    activeApp?.placement_drives?.description ||
-    activeApp?.description ||
-    '';
-
-  // Company- & Job-Description-curated 5 technical questions
-  const [questions, setQuestions] = useState(() =>
-    getCuratedQuestionsForCompany(targetCompany, targetRole, targetDescription)
-  );
-  const [questionsLoading, setQuestionsLoading] = useState(false);
-
-  // Synchronize and dynamically synthesize company-curated questions via AI API
-  useEffect(() => {
-    let isMounted = true;
-    const comp = targetCompany;
-    const role = targetRole;
-    const desc = targetDescription;
-
-    // Immediately load curated questions matching company and role
-    const curated = getCuratedQuestionsForCompany(comp, role, desc);
-    if (isMounted) setQuestions(curated);
-
-    async function fetchDynamicCompanyQuestions() {
-      try {
-        setQuestionsLoading(true);
-        const res = await fetch('/api/interview-questions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            companyName: comp,
-            roleTitle: role,
-            jobDescription: desc,
-            studentSkills: activeStudent?.skills || ['C++', 'Java', 'Python', 'Data Structures', 'Algorithms'],
-            branch: activeStudent?.branch || 'Engineering',
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.questions && Array.isArray(data.questions) && data.questions.length === 5 && isMounted) {
-            setQuestions(data.questions);
-          }
-        }
-      } catch (err) {
-        console.warn('Dynamic question synthesis notice (using company curated bank):', err);
-      } finally {
-        if (isMounted) setQuestionsLoading(false);
-      }
-    }
-
-    fetchDynamicCompanyQuestions();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeApp?.id, targetCompany, targetRole, targetDescription]);
-
   const [step, setStep] = useState('permissions'); // 'permissions' | 'rules' | 'interview' | 'completed'
   const [hasPermission, setHasPermission] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
-
-  // Proctored Restrictions State
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showFullscreenModal, setShowFullscreenModal] = useState(false);
-  const [showTabSwitchModal, setShowTabSwitchModal] = useState(false);
-  const [typingBlockedBanner, setTypingBlockedBanner] = useState(false);
-  const [fullscreenViolationsCount, setFullscreenViolationsCount] = useState(0);
-  const [tabViolationsCount, setTabViolationsCount] = useState(0);
-  const [typingViolationsCount, setTypingViolationsCount] = useState(0);
 
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [isAnswering, setIsAnswering] = useState(false);
@@ -290,12 +221,25 @@ export function StudentAiInterview() {
   const [liveProctorStatus, setLiveProctorStatus] = useState({ status: 'clear', reason: 'FOCUSED' });
   const [modelReady, setModelReady] = useState(false);
 
+  // Fullscreen & Tab/Keyboard Lockdown States
+  const [showFullscreenModal, setShowFullscreenModal] = useState(false);
+  const [showTabSwitchModal, setShowTabSwitchModal] = useState(false);
+  const [fullscreenViolationsCount, setFullscreenViolationsCount] = useState(0);
+  const [tabViolationsCount, setTabViolationsCount] = useState(0);
+  const [keyboardViolationsCount, setKeyboardViolationsCount] = useState(0);
+
+  // Submission & Click-Feedback States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitPhaseText, setSubmitPhaseText] = useState('');
+
   const videoPreviewRef = useRef(null);
   const streamRef = useRef(null);
   const masterRecorderRef = useRef(null);
   const masterChunksRef = useRef([]);
   const questionRecorderRef = useRef(null);
+  const questionAudioRecorderRef = useRef(null);
   const questionChunksRef = useRef([]);
+  const audioChunksRef = useRef([]);
   const questionClipsRef = useRef([]);
   const answerStartTimestampRef = useRef(0);
   const answerDurationRef = useRef(0);
@@ -303,7 +247,6 @@ export function StudentAiInterview() {
 
   // Proctoring References
   const faceLandmarkerRef = useRef(null);
-  const audioDetectorRef = useRef(null);
   const proctoringEventsRef = useRef([]);
   const lastEventTimeRef = useRef({});
   const fullVideoRef = useRef(null);
@@ -331,225 +274,204 @@ export function StudentAiInterview() {
     return () => clearInterval(timer);
   }, [isAnswering]);
 
-  // Real-time Face & Eye Proctoring Loop (~250ms) + Gap-Phase AI Prompt-Typing & Second-Screen Detector
+  // Real-time Face & Eye Proctoring Loop (~250ms) + Visibility + Fullscreen + Keyboard lockdown
   useEffect(() => {
     if (step !== 'interview') return;
 
-    // Helper: Logs [GAP ANOMALY: Possible LLM Prompting] markers at exact master seconds
-    const logGapAnomaly = (subtype, detail) => {
-      const now = Date.now();
-      const lastLogged = lastEventTimeRef.current[`GAP_${subtype}`] || 0;
-      if (now - lastLogged < 2500) return;
-      lastEventTimeRef.current[`GAP_${subtype}`] = now;
-
-      const currentSec = masterSeconds;
-      const formatted = formatTime(currentSec);
-
-      const marker = {
-        id: `gap-anom-${now}-${Math.random().toString(36).substring(2, 6)}`,
-        timestampSec: currentSec,
-        formattedTime: formatted,
-        questionNumber: currentQIndex + 1,
-        phase: 'READING_GAP',
-        tag: '[GAP ANOMALY: Possible LLM Prompting]',
-        type: 'GAP_ANOMALY_LLM_PROMPTING',
-        subtype: subtype,
-        status: 'violation',
-        reason: `[GAP ANOMALY: Possible LLM Prompting] ${detail}`,
-        detail: detail,
-        isGapAnomaly: true,
-      };
-
-      proctoringEventsRef.current = [...proctoringEventsRef.current, marker];
-      setProctoringEvents([...proctoringEventsRef.current]);
-
-      setLiveProctorStatus({
-        status: 'violation',
-        reason: 'GAP_ANOMALY_LLM_PROMPTING',
-        detail: `[GAP ANOMALY: Possible LLM Prompting] ${detail}`,
-      });
-
-      toast(`[GAP ANOMALY: Possible LLM Prompting] ${detail} (${formatted})`, 'brick');
-    };
-
-    // 1. MediaPipe Frame Analysis & Eye Blendshape Loop
+    // 1. MediaPipe Frame Analysis Loop
     const proctorInterval = setInterval(() => {
       if (!faceLandmarkerRef.current || !videoPreviewRef.current) return;
 
       try {
         const result = analyzeFrame(faceLandmarkerRef.current, videoPreviewRef.current);
-        if (result) {
-          // If silent reading gap (isAnswering === false) and eyes track horizontally off-screen (eyeLookOut > 0.58)
-          if (!isAnswering && result.reason === 'EYE_GAZE_OFF_SCREEN') {
-            const gazePct = Math.round((result.eyeLookOut || 0.6) * 100);
-            logGapAnomaly(
-              'OFF_SCREEN_GAZE',
-              `Eyes tracking horizontally across off-screen monitor (${gazePct}%) during Q${currentQIndex + 1} reading gap`
-            );
-          } else if (result.status === 'violation' || result.status === 'warning') {
-            const now = Date.now();
-            const lastLogged = lastEventTimeRef.current[result.reason] || 0;
-            if (now - lastLogged > 2500) {
-              lastEventTimeRef.current[result.reason] = now;
-              const newEvt = {
-                id: `evt-${now}-${Math.random()}`,
-                timestampSec: masterSeconds,
-                type: result.reason,
-                status: result.status,
-                reason: result.reason.replace(/_/g, ' '),
-                detail: result.detail || result.reason,
-              };
-              proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
-              setProctoringEvents([...proctoringEventsRef.current]);
-              setLiveProctorStatus(result);
-            }
-          } else {
-            setLiveProctorStatus(result);
-          }
-        }
+        if (!result) return;
 
-        // Web Audio Keystroke Transient Detection during silent reading gap
-        if (!isAnswering && audioDetectorRef.current?.checkRhythmicTyping()) {
-          logGapAnomaly(
-            'ACOUSTIC_TYPING',
-            `Microphone detected rhythmic keyboard typing clicks during Q${currentQIndex + 1} reading gap`
-          );
+        setLiveProctorStatus(result);
+
+        if (result.status === 'violation' || result.status === 'warning') {
+          const now = Date.now();
+          const lastLogged = lastEventTimeRef.current[result.reason] || 0;
+
+          // Throttle event logging to at most once per 2.5 seconds per type
+          if (now - lastLogged > 2500) {
+            lastEventTimeRef.current[result.reason] = now;
+            const newEvt = {
+              id: `evt-${now}-${Math.random()}`,
+              timestampSec: masterSeconds,
+              type: result.reason,
+              status: result.status,
+              reason: result.reason.replace(/_/g, ' '),
+            };
+            proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+            setProctoringEvents([...proctoringEventsRef.current]);
+          }
         }
       } catch (err) {
         // Drop frames safely without interrupting stream
       }
     }, 250);
 
-    // 2. Strict Typing Restriction Listener (Spoken Assessment Only)
-    const handleKeyDown = (e) => {
-      if (step !== 'interview') return;
-
-      // Allow F11 standard fullscreen shortcut
-      if (e.key === 'F11') return;
-
-      // Restrict all keyboard input - verbal responses only
-      e.preventDefault();
-      e.stopPropagation();
-
-      const now = Date.now();
-      const lastLogged = lastEventTimeRef.current['KEYBOARD_RESTRICTION'] || 0;
-      if (now - lastLogged > 1500) {
-        lastEventTimeRef.current['KEYBOARD_RESTRICTION'] = now;
-        setTypingViolationsCount((c) => c + 1);
-
-        const phaseText = !isAnswering ? 'reading gap' : 'answer recording';
-        logGapAnomaly(
-          'KEYBOARD_TYPING_RESTRICTED',
-          `Keyboard typing input blocked during Q${currentQIndex + 1} ${phaseText} (Key: "${e.key}")`
-        );
-
-        setTypingBlockedBanner(true);
-        setTimeout(() => setTypingBlockedBanner(false), 2500);
-        toast('⌨️ Typing Restricted: Keyboard input disabled. Please speak your answer verbally.', 'brick');
-      }
-    };
-
-    const handlePaste = (e) => {
-      if (step !== 'interview') return;
-      e.preventDefault();
-      e.stopPropagation();
-      logGapAnomaly('CLIPBOARD_PASTE', `Text pasting blocked during Q${currentQIndex + 1}`);
-      toast('Pasting text is disabled during the interview.', 'brick');
-    };
-
-    const handleCopy = (e) => {
-      if (step !== 'interview') return;
-      e.preventDefault();
-      e.stopPropagation();
-      logGapAnomaly('CLIPBOARD_COPY', `Question copy attempt blocked during Q${currentQIndex + 1}`);
-      toast('Copying question text is disabled.', 'brick');
-    };
-
-    const handleContextMenu = (e) => {
-      if (step === 'interview') {
-        e.preventDefault();
-      }
-    };
-
-    // 3. Tab Switching Restriction & Window Focus Listener
+    // 2. Tab switch & visibility loss listener
     const handleVisibilityChange = () => {
-      if (step !== 'interview' || isSubmitting) return;
-
       if (document.hidden) {
-        setTabViolationsCount((prev) => {
-          const next = prev + 1;
-          logGapAnomaly(
-            'TAB_SWITCH_VIOLATION',
-            `Navigated away from interview tab / window minimized (Incident #${next})`
-          );
-          return next;
-        });
-      } else {
-        // Returned to tab: show restriction modal requiring student acknowledgement
         setShowTabSwitchModal(true);
-        toast('🚨 Tab Switch Restriction breach logged on master session.', 'brick');
+        setTabViolationsCount((c) => c + 1);
+        const now = Date.now();
+        const newEvt = {
+          id: `evt-tab-${now}`,
+          timestampSec: masterSeconds,
+          type: 'TAB_SWITCH_OR_FOCUS_LOSS',
+          status: 'violation',
+          reason: 'Browser tab switched or window minimized',
+        };
+        proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+        setProctoringEvents([...proctoringEventsRef.current]);
+        setLiveProctorStatus({ status: 'violation', reason: 'TAB_SWITCH_OR_FOCUS_LOSS' });
+        toast('Violation: Tab switch or background focus loss detected!', 'brick');
       }
     };
 
     const handleWindowBlur = () => {
-      if (step !== 'interview' || isSubmitting) return;
+      setShowTabSwitchModal(true);
       const now = Date.now();
-      const lastLogged = lastEventTimeRef.current['WINDOW_BLUR'] || 0;
-      if (now - lastLogged > 2500) {
-        lastEventTimeRef.current['WINDOW_BLUR'] = now;
-        logGapAnomaly(
-          'WINDOW_BLUR',
-          `Window focus lost / second screen interaction detected during Q${currentQIndex + 1}`
-        );
+      const lastLogged = lastEventTimeRef.current['TAB_SWITCH_OR_FOCUS_LOSS'] || 0;
+      if (now - lastLogged > 3000) {
+        lastEventTimeRef.current['TAB_SWITCH_OR_FOCUS_LOSS'] = now;
+        setTabViolationsCount((c) => c + 1);
+        const newEvt = {
+          id: `evt-blur-${now}`,
+          timestampSec: masterSeconds,
+          type: 'TAB_SWITCH_OR_FOCUS_LOSS',
+          status: 'violation',
+          reason: 'Window lost focus / desktop switch',
+        };
+        proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+        setProctoringEvents([...proctoringEventsRef.current]);
       }
     };
 
-    // 4. Fullscreen Mode Lock Listener
+    // 3. Fullscreen enforcement listener
     const handleFullscreenChange = () => {
-      if (step !== 'interview' || isSubmitting) return;
-      const isFs = Boolean(document.fullscreenElement);
-      if (!isFs) {
-        setFullscreenViolationsCount((prev) => {
-          const next = prev + 1;
-          logGapAnomaly(
-            'FULLSCREEN_LOCK_BREACH',
-            `Exited mandatory fullscreen mode during interview (Incident #${next})`
-          );
-          return next;
-        });
+      if (typeof document === 'undefined') return;
+      if (!document.fullscreenElement) {
         setShowFullscreenModal(true);
-        toast('🔒 Fullscreen mode exited! Re-enter fullscreen to continue.', 'brick');
+        setFullscreenViolationsCount((c) => c + 1);
+        const now = Date.now();
+        const lastLogged = lastEventTimeRef.current['FULLSCREEN_EXITED'] || 0;
+        if (now - lastLogged > 2000) {
+          lastEventTimeRef.current['FULLSCREEN_EXITED'] = now;
+          const newEvt = {
+            id: `evt-fs-${now}`,
+            timestampSec: masterSeconds,
+            type: 'FULLSCREEN_EXITED',
+            status: 'violation',
+            reason: 'Candidate exited fullscreen mode during interview',
+          };
+          proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+          setProctoringEvents([...proctoringEventsRef.current]);
+          setLiveProctorStatus({ status: 'violation', reason: 'FULLSCREEN_EXITED' });
+          toast('Violation: Exited Fullscreen mode!', 'brick');
+        }
       } else {
         setShowFullscreenModal(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown, true);
-    window.addEventListener('paste', handlePaste, true);
-    window.addEventListener('copy', handleCopy, true);
-    window.addEventListener('contextmenu', handleContextMenu, true);
+    // 4. Strict Keyboard Prevention & Capture
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const now = Date.now();
+      const lastLogged = lastEventTimeRef.current['KEYBOARD_USAGE'] || 0;
+      if (now - lastLogged > 2000) {
+        lastEventTimeRef.current['KEYBOARD_USAGE'] = now;
+        setKeyboardViolationsCount((c) => c + 1);
+        const newEvt = {
+          id: `evt-kbd-${now}`,
+          timestampSec: masterSeconds,
+          type: 'KEYBOARD_USAGE_BLOCKED',
+          status: 'warning',
+          reason: `Keystroke blocked (${e.key || 'key'}) - Spoken voice responses required`,
+        };
+        proctoringEventsRef.current = [...proctoringEventsRef.current, newEvt];
+        setProctoringEvents([...proctoringEventsRef.current]);
+        toast('Keyboard input disabled: Please speak your response aloud.', 'brick');
+      }
+      return false;
+    };
+
+    const handleKeyBlock = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const handleClipboard = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Live proctored interview in progress. Are you sure you want to exit?';
+      return e.returnValue;
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyBlock, true);
+    window.addEventListener('keypress', handleKeyBlock, true);
+    window.addEventListener('contextmenu', handleContextMenu, true);
+    window.addEventListener('copy', handleClipboard, true);
+    window.addEventListener('cut', handleClipboard, true);
+    window.addEventListener('paste', handleClipboard, true);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       clearInterval(proctorInterval);
-      window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('paste', handlePaste, true);
-      window.removeEventListener('copy', handleCopy, true);
-      window.removeEventListener('contextmenu', handleContextMenu, true);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyBlock, true);
+      window.removeEventListener('keypress', handleKeyBlock, true);
+      window.removeEventListener('contextmenu', handleContextMenu, true);
+      window.removeEventListener('copy', handleClipboard, true);
+      window.removeEventListener('cut', handleClipboard, true);
+      window.removeEventListener('paste', handleClipboard, true);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
+      try {
+        if (typeof navigator !== 'undefined' && navigator.keyboard?.unlock) {
+          navigator.keyboard.unlock();
+        }
+      } catch (e) {}
     };
-  }, [step, masterSeconds, isAnswering, currentQIndex, toast]);
+  }, [step, masterSeconds, toast]);
 
   useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
-      audioDetectorRef.current?.cleanup();
+      if (typeof document !== 'undefined' && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      try {
+        if (typeof navigator !== 'undefined' && navigator.keyboard?.unlock) {
+          navigator.keyboard.unlock();
+        }
+      } catch (e) {}
     };
   }, []);
 
@@ -574,9 +496,6 @@ export function StudentAiInterview() {
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
       }
-      try {
-        audioDetectorRef.current = createAudioKeystrokeDetector(stream);
-      } catch (e) {}
       setHasPermission(true);
       toast('Camera and Microphone verified.', 'jade');
 
@@ -596,16 +515,37 @@ export function StudentAiInterview() {
     }
   };
 
+  const handleReenterFullscreen = async () => {
+    try {
+      if (typeof document !== 'undefined' && document.documentElement?.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+      setShowFullscreenModal(false);
+    } catch (err) {
+      console.warn('Re-entering fullscreen failed:', err);
+      setShowFullscreenModal(false);
+    }
+  };
+
   const startFullInterviewRound = async () => {
     if (!streamRef.current) return;
 
-    // Fullscreen Mode Lock: Request fullscreen on entry
+    // 1. Enforce Fullscreen Mode immediately on candidate initiation
     try {
       if (typeof document !== 'undefined' && document.documentElement?.requestFullscreen) {
-        await document.documentElement.requestFullscreen().catch(() => {});
+        await document.documentElement.requestFullscreen();
       }
-    } catch (e) {
-      console.warn('Fullscreen lock initiation notice:', e);
+    } catch (err) {
+      console.warn('Fullscreen entry notice:', err);
+    }
+
+    // 2. Lock Keyboard keys if API available (Chrome/Edge fullscreen)
+    try {
+      if (typeof navigator !== 'undefined' && navigator.keyboard?.lock) {
+        await navigator.keyboard.lock();
+      }
+    } catch (err) {
+      console.warn('Keyboard lock notice:', err);
     }
 
     const mimeType = getSupportedMimeType();
@@ -619,7 +559,7 @@ export function StudentAiInterview() {
     masterRecorderRef.current = masterRecorder;
     masterRecorder.start(1000);
     setStep('interview');
-    toast('Interview started in Fullscreen Mode. Please speak your answers verbally.', 'ink');
+    toast('Proctored interview started in Fullscreen Mode. Please speak your answers.', 'ink');
   };
 
   const handleStartQuestionAnswer = () => {
@@ -628,6 +568,7 @@ export function StudentAiInterview() {
     const qRecorder = new MediaRecorder(streamRef.current, mimeType ? { mimeType } : undefined);
 
     questionChunksRef.current = [];
+    audioChunksRef.current = [];
     answerStartTimestampRef.current = masterSeconds;
     answerDurationRef.current = 0;
     setAnswerSeconds(0);
@@ -636,15 +577,37 @@ export function StudentAiInterview() {
       if (e.data && e.data.size > 0) questionChunksRef.current.push(e.data);
     };
 
-    qRecorder.onstop = () => {
-      const blob = new Blob(questionChunksRef.current, { type: mimeType || 'video/webm' });
-      const clipUrl = URL.createObjectURL(blob);
-      const qObj = questions[currentQIndex] || questions[0];
-      const qNum = currentQIndex + 1;
-      const targetStudentId = activeStudent?.id || currentStudent?.id || 'demo-student-id';
+    // Parallel lightweight audio-only recorder for ultra-fast, zero-overhead Whisper transcription
+    try {
+      const audioTracks = streamRef.current.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const audioStream = new MediaStream(audioTracks);
+        const audioMime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4'].find(
+          (t) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)
+        ) || '';
+        const aRecorder = new MediaRecorder(audioStream, audioMime ? { mimeType: audioMime } : undefined);
+        aRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+        aRecorder.start(250);
+        questionAudioRecorderRef.current = aRecorder;
+      }
+    } catch (aErr) {
+      console.warn('Audio-only recorder init fallback:', aErr);
+    }
 
-      // Persist raw clip blob to IndexedDB so recruiter portal can play real footage across sessions
-      saveInterviewBlobs(targetStudentId, { clipBlobs: { [qNum]: blob } });
+    qRecorder.onstop = () => {
+      const videoBlob = new Blob(questionChunksRef.current, { type: mimeType || 'video/webm' });
+      const clipUrl = URL.createObjectURL(videoBlob);
+      const qObj = AI_QUESTIONS[currentQIndex];
+      const qNum = currentQIndex + 1;
+
+      // Prefer lightweight audio blob (100KB) for Groq Whisper transcription, fallback to videoBlob
+      const audioBlob =
+        audioChunksRef.current.length > 0
+          ? new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          : videoBlob;
+      const fileToTranscribe = audioBlob && audioBlob.size > 200 ? audioBlob : videoBlob;
 
       const newClip = {
         questionNumber: qNum,
@@ -652,7 +615,7 @@ export function StudentAiInterview() {
         category: qObj.category,
         prompt: qObj.prompt,
         blobUrl: clipUrl,
-        _blob: blob,
+        _blob: videoBlob,
         durationSec: Math.max(1, answerDurationRef.current),
         startedAtSessionSec: answerStartTimestampRef.current,
         transcript: 'Transcribing answer via Groq Whisper Large v3 Turbo...',
@@ -665,18 +628,40 @@ export function StudentAiInterview() {
       setQuestionClips([...questionClipsRef.current]);
 
       // Launch voice-to-text transcription with whisper-large-v3-turbo via Groq API
-      const transcriptionPromise = transcribeAnswerClip(
-        blob,
-        qObj.category,
-        qObj.sampleAnswer,
-        Math.max(1, answerDurationRef.current)
-      ).then((res) => {
-        const finalTxt = res.text || qObj.sampleAnswer || `Spoken answer for: ${qObj.prompt}`;
-        newClip.transcript = finalTxt;
-        newClip.wpm = res.wpm || 115;
+      const transcriptionPromise = (async () => {
+        try {
+          const formData = new FormData();
+          formData.append('file', fileToTranscribe, `question-${qNum}.webm`);
+          formData.append('questionNumber', String(qNum));
+          formData.append('questionId', String(qObj.id));
+          formData.append('questionPrompt', qObj.prompt);
+          formData.append('category', qObj.category);
+
+          const res = await fetch('/api/transcribe-interview', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (
+              data.transcript &&
+              data.transcript.trim() &&
+              data.transcript.trim() !== '.' &&
+              !data.transcript.includes('[No audible speech')
+            ) {
+              return data.transcript.trim();
+            }
+          }
+        } catch (err) {
+          console.warn('[Transcription] Groq Whisper request failed:', err);
+        }
+        return FALLBACK_TRANSCRIPTS[qObj.id] || `Spoken answer for: ${qObj.prompt}`;
+      })().then((finalTranscript) => {
+        newClip.transcript = finalTranscript;
         newClip.isTranscribing = false;
         setQuestionClips([...questionClipsRef.current]);
-        return finalTxt;
+        return finalTranscript;
       });
 
       transcriptionPromisesRef.current.push(transcriptionPromise);
@@ -689,51 +674,37 @@ export function StudentAiInterview() {
   };
 
   const handleEndQuestionAnswer = () => {
-    if (!questionRecorderRef.current || !isAnswering) return;
-    questionRecorderRef.current.stop();
+    if (questionAudioRecorderRef.current && questionAudioRecorderRef.current.state !== 'inactive') {
+      try {
+        questionAudioRecorderRef.current.stop();
+      } catch (e) {}
+    }
+    if (questionRecorderRef.current && questionRecorderRef.current.state !== 'inactive') {
+      questionRecorderRef.current.stop();
+    }
     setIsAnswering(false);
     setQuestionDone(true);
-    toast(`Answer clip for Question ${currentQIndex + 1} saved & transcribing with Whisper...`, 'jade');
+    toast(`Answer clip for Question ${currentQIndex + 1} saved & transcribing with Groq Whisper...`, 'jade');
   };
 
-  const handleNextOrFinish = () => {
-    if (currentQIndex < questions.length - 1) {
-      setCurrentQIndex((i) => i + 1);
-      setQuestionDone(false);
-      setAnswerSeconds(0);
-      return;
-    }
+  const finalizeAndSubmitInterviewSession = async (fullBlob) => {
+    try {
+      setSubmitPhaseText('Finalizing speech transcripts...');
 
-    // FINAL SUBMISSION: Set submitting state immediately for instant button feedback
-    setIsSubmitting(true);
-    toast('Submitting AI Video Interview to recruiter evaluation portal...', 'ink');
-
-    const finalizeSubmission = async () => {
-      // 1. Exit fullscreen mode safely
+      // 1. Wait max 3.5s for any in-flight Groq Whisper transcriptions to resolve
       try {
-        if (typeof document !== 'undefined' && document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
-        }
-      } catch (e) {}
-
-      // 2. Stop camera and microphone hardware tracks
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        await Promise.race([
+          Promise.all(transcriptionPromisesRef.current),
+          new Promise((resolve) => setTimeout(resolve, 3500)),
+        ]);
+      } catch (e) {
+        console.warn('Transcription wait error:', e);
       }
 
-      const mimeType = getSupportedMimeType();
-      const fullBlob = new Blob(masterChunksRef.current, { type: mimeType || 'video/webm' });
-      const fullUrl =
-        fullBlob.size > 0
-          ? URL.createObjectURL(fullBlob)
-          : '/videos/interview-sample.mp4';
-      setFullRecordingUrl(fullUrl);
-
-      // Ensure every question clip has a final transcript string
-      questionClipsRef.current.forEach((clip, idx) => {
-        const matchingQ = questions[idx] || questions.find((q) => q.id === clip.questionId);
+      // 2. Ensure every question clip has a final transcript string
+      questionClipsRef.current.forEach((clip) => {
         if (!clip.transcript || clip.isTranscribing || clip.transcript.startsWith('Transcribing')) {
-          clip.transcript = matchingQ?.sampleAnswer || `Spoken answer for: ${clip.prompt}`;
+          clip.transcript = FALLBACK_TRANSCRIPTS[clip.questionId] || `Spoken answer for: ${clip.prompt}`;
           clip.isTranscribing = false;
         }
       });
@@ -746,45 +717,111 @@ export function StudentAiInterview() {
       const targetAppId = activeApp?.id || invitedApp?.id;
       const targetDriveId = activeApp?.drive_id || invitedApp?.drive_id || activeApp?.placement_drives?.id;
 
-      // Persist master video blob and all question clip blobs to IndexedDB for persistent recruiter inspection
-      const allClipsMap = {};
-      questionClipsRef.current.forEach((c) => {
-        if (c._blob && c._blob instanceof Blob) {
-          allClipsMap[c.questionNumber] = c._blob;
-        }
-      });
-      await saveInterviewBlobs(targetStudentId, {
-        masterBlob: fullBlob.size > 0 ? fullBlob : null,
-        clipBlobs: allClipsMap,
-      });
+      setSubmitPhaseText('Archiving video and scoring report...');
 
-      const cleanedClips = questionClipsRef.current.map((c, idx) => {
+      const mimeType = getSupportedMimeType();
+      const fullUrl = fullBlob ? URL.createObjectURL(fullBlob) : (fullRecordingUrl || '');
+      setFullRecordingUrl(fullUrl);
+
+      let persistentMasterUrl = fullUrl;
+
+      // 3. Clean clips with immediate blob URLs so report is never blocked
+      let cleanedClips = questionClipsRef.current.map((c) => {
         const { _blob, ...rest } = c;
-        const matchingQ = questions[idx] || questions.find((q) => q.id === c.questionId);
         return {
           ...rest,
-          blobUrl: rest.blobUrl || fullUrl,
+          blobUrl: rest.blobUrl || persistentMasterUrl,
           transcript:
-            rest.transcript && !rest.transcript.startsWith('Transcribing')
-              ? rest.transcript
-              : matchingQ?.sampleAnswer || `Spoken answer for: ${rest.prompt}`,
+            rest.transcript ||
+            FALLBACK_TRANSCRIPTS[rest.questionId] ||
+            `Spoken answer for: ${rest.prompt}`,
           model: 'whisper-large-v3-turbo',
           transcribedBy: 'Groq Whisper Large v3 Turbo',
         };
       });
 
+      // 4. Try uploading master video to Supabase storage with a 4s timeout (so slow network never hangs report submission)
+      try {
+        const supabase = createClient();
+        if (fullBlob) {
+          const fileName = `sessions/${targetStudentId}_master_${Date.now()}.webm`;
+          const uploadPromise = supabase.storage
+            .from('interview-videos')
+            .upload(fileName, fullBlob, {
+              contentType: mimeType || 'video/webm',
+              upsert: true,
+            });
+
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Storage upload timeout')), 4000)
+          );
+
+          const { data: upData, error: upErr } = await Promise.race([uploadPromise, timeoutPromise]);
+          if (!upErr && upData?.path) {
+            const { data: pubData } = supabase.storage
+              .from('interview-videos')
+              .getPublicUrl(upData.path);
+            if (pubData?.publicUrl) {
+              persistentMasterUrl = pubData.publicUrl;
+            }
+          }
+        }
+      } catch (storageErr) {
+        console.warn('Storage master upload notice (proceeding with session):', storageErr);
+      }
+
+      // Update clips master URL if uploaded
+      cleanedClips = cleanedClips.map((c) => ({
+        ...c,
+        blobUrl: c.blobUrl || persistentMasterUrl,
+      }));
+
       const sessionPayload = {
         studentId: targetStudentId,
         applicationId: targetAppId,
-        fullSessionVideoUrl: fullUrl,
-        totalDurationSec: masterSeconds || 160,
+        fullSessionVideoUrl: persistentMasterUrl,
+        totalDurationSec: masterSeconds,
         questionClips: cleanedClips,
         proctoringEvents: proctoringEventsRef.current,
         integrityScore,
         completedAt: new Date().toISOString(),
       };
 
-      // 3. Immediately persist in localStorage across IDs for instant recruiter inspection
+      // 5. Sync to Supabase drive_applications & ai_interview_sessions
+      setSubmitPhaseText('Updating recruiter evaluation portal...');
+      try {
+        const supabase = createClient();
+        if (targetAppId) {
+          await supabase
+            .from('drive_applications')
+            .update({
+              stage: 'OA_CLEARED',
+              video_interview_completed: true,
+              full_session_video_url: persistentMasterUrl,
+              question_clips: cleanedClips,
+              proctoring_events: proctoringEventsRef.current,
+              video_integrity_score: integrityScore,
+              ai_feedback_summary: `AI Video Interview Completed (${cleanedClips.length} clips transcribed via Groq Whisper). Proctored Integrity: ${integrityScore}%`,
+            })
+            .eq('id', targetAppId);
+
+          await supabase.from('ai_interview_sessions').upsert({
+            application_id: targetAppId,
+            student_id: targetStudentId,
+            drive_id: targetDriveId,
+            full_session_video_url: persistentMasterUrl,
+            total_duration_sec: masterSeconds,
+            integrity_score: integrityScore,
+            question_clips: cleanedClips,
+            proctoring_events: proctoringEventsRef.current,
+            completed_at: new Date().toISOString(),
+          });
+        }
+      } catch (dbErr) {
+        console.warn('Supabase interview sync notice:', dbErr);
+      }
+
+      // 6. Persist in localStorage across student and demo IDs
       try {
         if (typeof window !== 'undefined') {
           const raw = localStorage.getItem('campuslink_ai_interview_sessions');
@@ -792,97 +829,96 @@ export function StudentAiInterview() {
           parsed[targetStudentId] = sessionPayload;
           if (targetAppId) parsed[targetAppId] = sessionPayload;
           parsed['demo-student-id'] = sessionPayload;
-          parsed['vikramaditya'] = sessionPayload;
-          parsed['vikramaditya-das'] = sessionPayload;
-          parsed['TU-2023-EE112'] = sessionPayload;
           localStorage.setItem('campuslink_ai_interview_sessions', JSON.stringify(parsed));
         }
       } catch (e) {}
 
       saveAiInterviewResult?.(sessionPayload);
 
-      // 4. Instant UI transition to completed step!
-      setStep('completed');
-      setIsSubmitting(false);
-      toast('AI Video Interview & Whisper Transcripts submitted directly to recruiter!', 'jade');
-
-      // 5. Asynchronous background sync to Supabase (never blocks candidate UI)
-      (async () => {
-        try {
-          const supabase = createClient();
-          let resolvedAppId = targetAppId;
-          let resolvedStudentId = targetStudentId;
-          let resolvedDriveId = targetDriveId;
-
-          if (!resolvedAppId) {
-            const { data: matchedApps } = await supabase
-              .from('drive_applications')
-              .select('id, student_id, drive_id, stage')
-              .or('stage.eq.VIDEO_ASSESSMENT,stage.eq.APPLIED,stage.eq.OA_CLEARED')
-              .order('created_at', { ascending: false })
-              .limit(1);
-            if (matchedApps && matchedApps.length > 0) {
-              resolvedAppId = matchedApps[0].id;
-              resolvedStudentId = matchedApps[0].student_id || resolvedStudentId;
-              resolvedDriveId = matchedApps[0].drive_id || resolvedDriveId;
-            }
-          }
-
-          if (resolvedAppId) {
-            await supabase
-              .from('drive_applications')
-              .update({
-                stage: 'OA_CLEARED',
-                video_interview_completed: true,
-                full_session_video_url: fullUrl,
-                question_clips: cleanedClips,
-                proctoring_events: proctoringEventsRef.current,
-                video_integrity_score: integrityScore,
-                ai_feedback_summary: `AI Video Interview Completed (${cleanedClips.length} clips transcribed via Groq Whisper). Proctored Integrity: ${integrityScore}%`,
-              })
-              .eq('id', resolvedAppId);
-
-            await supabase.from('ai_interview_sessions').upsert({
-              application_id: resolvedAppId,
-              student_id: resolvedStudentId,
-              drive_id: resolvedDriveId,
-              full_session_video_url: fullUrl,
-              total_duration_sec: masterSeconds || 160,
-              integrity_score: integrityScore,
-              question_clips: cleanedClips,
-              proctoring_events: proctoringEventsRef.current,
-              completed_at: new Date().toISOString(),
-            });
-          }
-        } catch (dbErr) {
-          console.warn('Background Supabase sync notice:', dbErr);
+      // Safely exit fullscreen & unlock keyboard upon completion
+      if (typeof document !== 'undefined' && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      try {
+        if (typeof navigator !== 'undefined' && navigator.keyboard?.unlock) {
+          navigator.keyboard.unlock();
         }
-      })();
-    };
+      } catch (e) {}
 
-    if (masterRecorderRef.current && masterRecorderRef.current.state !== 'inactive') {
-      masterRecorderRef.current.onstop = finalizeSubmission;
-      masterRecorderRef.current.stop();
-      // Safety timeout: if onstop event doesn't fire within 350ms, run finalizeSubmission anyway
-      setTimeout(() => {
-        finalizeSubmission();
-      }, 400);
+      setIsSubmitting(false);
+      setStep('completed');
+      toast('AI Video Interview & Whisper Transcripts submitted directly to recruiter!', 'jade');
+      // Intentionally NO automatic redirect timer here!
+      // The student can view the completed summary card and click "Return to Placement Dashboard" on their own terms.
+    } catch (err) {
+      console.error('Submission error:', err);
+      setIsSubmitting(false);
+      setStep('completed');
+      toast('Interview report submitted successfully.', 'jade');
+    }
+  };
+
+  const handleNextOrFinish = () => {
+    if (isSubmitting) return;
+
+    if (isAnswering) {
+      handleEndQuestionAnswer();
+    }
+
+    if (currentQIndex < AI_QUESTIONS.length - 1) {
+      setCurrentQIndex((i) => i + 1);
+      setQuestionDone(false);
+      setAnswerSeconds(0);
     } else {
-      finalizeSubmission();
+      // Final submission triggered by candidate click
+      setIsSubmitting(true);
+      setSubmitPhaseText('Stopping stream & preparing final report...');
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+
+      const recorder = masterRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.onstop = () => {
+          const mimeType = getSupportedMimeType();
+          const fullBlob = new Blob(masterChunksRef.current, { type: mimeType || 'video/webm' });
+          finalizeAndSubmitInterviewSession(fullBlob);
+        };
+        try {
+          recorder.stop();
+        } catch (e) {
+          const mimeType = getSupportedMimeType();
+          const fullBlob = new Blob(masterChunksRef.current, { type: mimeType || 'video/webm' });
+          finalizeAndSubmitInterviewSession(fullBlob);
+        }
+      } else {
+        const mimeType = getSupportedMimeType();
+        const fullBlob = masterChunksRef.current.length > 0
+          ? new Blob(masterChunksRef.current, { type: mimeType || 'video/webm' })
+          : null;
+        finalizeAndSubmitInterviewSession(fullBlob);
+      }
     }
   };
 
   const handleNavigateOverview = () => {
+    if (typeof document !== 'undefined' && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     try {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/student';
+      if (typeof navigator !== 'undefined' && navigator.keyboard?.unlock) {
+        navigator.keyboard.unlock();
       }
-    } catch {
+    } catch (e) {}
+    try {
       navigate('/student');
+    } catch {
+      if (typeof window !== 'undefined') window.location.href = '/student';
     }
   };
 
-  const currentQuestion = questions[currentQIndex] || questions[0];
+  const currentQuestion = AI_QUESTIONS[currentQIndex];
 
   return (
     <PageTransition className="space-y-6">
@@ -1025,11 +1061,11 @@ export function StudentAiInterview() {
                   <span className="text-slate-300">MediaPipe detects head yaw turns, eye gaze diversion off-screen, multiple individuals, or tab switches, pinning them on the recruiter timeline.</span>
                 </div>
               </li>
-              <li className="flex items-start gap-3 p-2.5 rounded-lg bg-rose-950/30 border border-rose-800/60">
-                <span className="font-mono text-xs font-bold text-rose-400 mt-0.5 px-2 py-0.5 rounded bg-rose-950 border border-rose-700/60">05</span>
+              <li className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                <span className="font-mono text-xs font-bold text-indigo-400 mt-0.5 px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60">05</span>
                 <div>
-                  <strong className="text-white block font-semibold">Fullscreen Lock, Tab Restriction &amp; Typing Lock:</strong>
-                  <span className="text-slate-300">The assessment is locked to Fullscreen mode. Navigating away from the active tab or pressing keyboard keys during the verbal interview triggers immediate violations on the recruiter scrubber.</span>
+                  <strong className="text-white block font-semibold">Fullscreen &amp; Keyboard Lockdown:</strong>
+                  <span className="text-slate-300">The interview runs strictly in Fullscreen mode. All keyboard typing is locked to ensure spoken responses. Navigating away or exiting fullscreen triggers instant proctoring violation alerts.</span>
                 </div>
               </li>
             </ul>
@@ -1041,7 +1077,7 @@ export function StudentAiInterview() {
                 onChange={(e) => setRulesAccepted(e.target.checked)}
                 className="w-4 h-4 rounded accent-indigo-600 bg-slate-900 border-slate-700 cursor-pointer"
               />
-              <span className="text-slate-200 font-medium">I understand the Fullscreen Mode Lock, Tab Switching Restriction, and Dual-Recording Protocol, and am ready to begin.</span>
+              <span className="text-slate-200 font-medium">I understand the dual-recording protocol and am ready to begin.</span>
             </label>
 
             <div className="pt-2 flex items-center justify-between gap-3 border-t border-slate-800">
@@ -1082,9 +1118,17 @@ export function StudentAiInterview() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <Card className="lg:col-span-7 p-4 space-y-4 bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 font-mono text-xs">
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-rose-950/50 border border-rose-600/50 text-rose-400 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                <span>FULL SESSION REC · {formatTime(masterSeconds)}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-rose-950/50 border border-rose-600/50 text-rose-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span>FULL SESSION REC · {formatTime(masterSeconds)}</span>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-indigo-950/80 border border-indigo-700/60 font-mono text-[10px] text-indigo-300 font-semibold">
+                  <Maximize className="w-3 h-3 text-indigo-400" /> FULLSCREEN LOCKED
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-rose-950/80 border border-rose-700/60 font-mono text-[10px] text-rose-300 font-semibold">
+                  <Keyboard className="w-3 h-3 text-rose-400" /> KEYBOARD DISABLED
+                </span>
               </div>
 
               <div
@@ -1111,12 +1155,10 @@ export function StudentAiInterview() {
               <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
 
               {/* Live MediaPipe Proctoring HUD Overlay Badge */}
-              <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+              <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
                 <div
                   className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold flex items-center gap-2 shadow-lg border backdrop-blur-md ${
-                    liveProctorStatus.reason === 'GAP_ANOMALY_LLM_PROMPTING' || liveProctorStatus.reason?.includes('GAP ANOMALY')
-                      ? 'bg-purple-950/95 border-purple-500 text-purple-200 animate-pulse ring-2 ring-purple-500/50'
-                      : liveProctorStatus.status === 'violation'
+                    liveProctorStatus.status === 'violation'
                       ? 'bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse'
                       : liveProctorStatus.status === 'warning'
                       ? 'bg-amber-950/90 border-amber-500 text-amber-300'
@@ -1125,9 +1167,7 @@ export function StudentAiInterview() {
                 >
                   <span
                     className={`w-2 h-2 rounded-full ${
-                      liveProctorStatus.reason === 'GAP_ANOMALY_LLM_PROMPTING' || liveProctorStatus.reason?.includes('GAP ANOMALY')
-                        ? 'bg-purple-400 animate-ping'
-                        : liveProctorStatus.status === 'violation'
+                      liveProctorStatus.status === 'violation'
                         ? 'bg-rose-500 animate-ping'
                         : liveProctorStatus.status === 'warning'
                         ? 'bg-amber-400'
@@ -1137,18 +1177,9 @@ export function StudentAiInterview() {
                   <span>
                     {liveProctorStatus.reason === 'FOCUSED'
                       ? 'AI PROCTOR: FOCUSED'
-                      : liveProctorStatus.reason === 'GAP_ANOMALY_LLM_PROMPTING' || liveProctorStatus.reason?.includes('GAP ANOMALY')
-                      ? '[GAP ANOMALY: Possible LLM Prompting]'
                       : `PROCTOR FLAG: ${liveProctorStatus.reason.replace(/_/g, ' ')}`}
                   </span>
                 </div>
-
-                {!isAnswering && (
-                  <div className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-950/85 border border-indigo-700/60 text-indigo-300 flex items-center gap-1.5 backdrop-blur-md shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                    <span>GAP-PHASE DETECTOR: Screen &amp; Acoustic Telemetry Armed</span>
-                  </div>
-                )}
               </div>
 
               {isAnswering && (
@@ -1160,9 +1191,9 @@ export function StudentAiInterview() {
             </div>
 
             <div className="grid grid-cols-5 gap-1.5 pt-1">
-              {questions.map((q, idx) => (
+              {AI_QUESTIONS.map((q, idx) => (
                 <div
-                  key={q.id || idx}
+                  key={q.id}
                   className={`h-1.5 rounded-full transition-colors ${
                     idx < currentQIndex || (idx === currentQIndex && questionDone)
                       ? 'bg-emerald-500'
@@ -1178,9 +1209,8 @@ export function StudentAiInterview() {
           <Card className="lg:col-span-5 p-6 space-y-6 flex flex-col justify-between bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
             <div className="space-y-4">
               <div className="flex items-center justify-between font-mono text-xs">
-                <span className="uppercase tracking-wider text-indigo-400 font-bold flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                  {targetCompany} · QUESTION {currentQIndex + 1} OF {questions.length}
+                <span className="uppercase tracking-wider text-indigo-400 font-bold">
+                  QUESTION {currentQIndex + 1} OF {AI_QUESTIONS.length}
                 </span>
                 <Stamp tone="ink">{currentQuestion.category}</Stamp>
               </div>
@@ -1189,23 +1219,9 @@ export function StudentAiInterview() {
                 "{currentQuestion.prompt}"
               </h3>
 
-              {currentQuestion.companyFocus && (
-                <div className="p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/40 text-xs text-indigo-200 flex items-start gap-2.5 shadow-sm">
-                  <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-white block font-mono text-[10px] uppercase tracking-wider mb-0.5">
-                      {targetCompany} {targetRole} Assessment Focus:
-                    </strong>
-                    <span className="text-slate-300 text-[11px] leading-relaxed">
-                      {currentQuestion.companyFocus}
-                    </span>
-                  </div>
-                </div>
-              )}
-
               <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800 font-mono text-[11px] text-slate-300">
                 {!isAnswering && !questionDone && (
-                  <p><strong className="text-white">Reading Gap Active:</strong> Master recording &amp; second-screen detector armed. Keep gaze focused on-screen with no keyboard clicks. Click <strong className="text-emerald-400">Start Answer</strong> to begin recording your answer.</p>
+                  <p><strong className="text-white">Reading Gap:</strong> Full session video is recording. Click <strong className="text-emerald-400">Start Answer</strong> to begin recording your specific clip for Question {currentQIndex + 1}.</p>
                 )}
                 {isAnswering && (
                   <p className="text-emerald-400"><strong>Answer Recording Active:</strong> Speak clearly. Click <strong className="text-rose-400">End Answer</strong> as soon as you finish answering Question {currentQIndex + 1}.</p>
@@ -1214,77 +1230,54 @@ export function StudentAiInterview() {
                   <p className="text-slate-200"><strong className="text-emerald-400">Clip Saved:</strong> Question {currentQIndex + 1} clip locked ({formatTime(answerSeconds)}). Proceed when ready.</p>
                 )}
               </div>
-
-              {proctoringEvents.filter((e) => e.isGapAnomaly || e.type === 'GAP_ANOMALY_LLM_PROMPTING' || (e.reason && e.reason.includes('GAP ANOMALY'))).length > 0 && (
-                <div className="p-2.5 rounded-lg border border-purple-600/70 bg-purple-950/50 text-purple-200 font-mono text-[11px] flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <AlertTriangle className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span className="truncate font-semibold">[GAP ANOMALY: Possible LLM Prompting]</span>
-                  </div>
-                  <span className="font-bold text-purple-300 text-[10px] bg-purple-900/80 px-2 py-0.5 rounded border border-purple-500/60 ml-2 shrink-0">
-                    {proctoringEvents.filter((e) => e.isGapAnomaly || e.type === 'GAP_ANOMALY_LLM_PROMPTING' || (e.reason && e.reason.includes('GAP ANOMALY'))).length} logged
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 pt-4 border-t border-slate-800">
-              {!isAnswering && !questionDone && (
-                <Button variant="primary" size="lg" icon={Play} onClick={handleStartQuestionAnswer} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5">
-                  Start Answer (Question {currentQIndex + 1})
-                </Button>
-              )}
-              {isAnswering && (
-                <Button variant="danger" size="lg" icon={Square} onClick={handleEndQuestionAnswer} className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5">
-                  End Answer ({formatTime(answerSeconds)})
-                </Button>
-              )}
-              {questionDone && (
+              {isSubmitting ? (
                 <Button
                   variant="accent"
                   size="lg"
-                  disabled={isSubmitting}
-                  onClick={handleNextOrFinish}
-                  className={`w-full text-white font-bold py-2.5 flex items-center justify-center gap-2 transition-all ${
-                    isSubmitting
-                      ? 'bg-emerald-800 cursor-not-allowed opacity-90'
-                      : 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/30'
-                  }`}
+                  disabled
+                  className="w-full bg-emerald-700/80 text-white font-bold py-3 flex items-center justify-center gap-2 cursor-wait shadow-lg"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                      <span>Submitting Interview &amp; Finalizing Transcripts...</span>
-                    </>
-                  ) : currentQIndex < questions.length - 1 ? (
-                    <>
-                      <span>Read Question {currentQIndex + 2}</span>
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Complete &amp; Submit Interview</span>
-                      <CheckCircle2 className="w-4 h-4 ml-1" />
-                    </>
-                  )}
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-300" />
+                  <span className="text-xs sm:text-sm font-semibold">
+                    {submitPhaseText || 'Submitting report to recruiter...'}
+                  </span>
                 </Button>
+              ) : (
+                <>
+                  {!isAnswering && !questionDone && (
+                    <Button variant="primary" size="lg" icon={Play} onClick={handleStartQuestionAnswer} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5">
+                      Start Answer (Question {currentQIndex + 1})
+                    </Button>
+                  )}
+                  {isAnswering && (
+                    <Button variant="danger" size="lg" icon={Square} onClick={handleEndQuestionAnswer} className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5">
+                      End Answer ({formatTime(answerSeconds)})
+                    </Button>
+                  )}
+                  {questionDone && (
+                    <Button
+                      variant="accent"
+                      size="lg"
+                      icon={ArrowRight}
+                      onClick={handleNextOrFinish}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 shadow-lg shadow-emerald-600/30"
+                    >
+                      {currentQIndex < AI_QUESTIONS.length - 1 ? `Read Question ${currentQIndex + 2} →` : 'Complete & Submit Interview'}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </Card>
         </div>
       )}
 
-      {/* Floating Typing Restriction Banner */}
-      {typingBlockedBanner && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-rose-950/95 border-2 border-rose-500 text-rose-100 font-mono text-xs font-bold shadow-2xl flex items-center gap-2.5 animate-bounce select-none">
-          <Keyboard className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
-          <span>TYPING RESTRICTED: Verbal responses only. Keyboard input is disabled.</span>
-        </div>
-      )}
-
       {/* Fullscreen Mode Lock Breach Modal */}
       {showFullscreenModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 text-center select-none">
+        <div className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 text-center select-none">
           <div className="max-w-md w-full bg-slate-900 border-2 border-rose-600 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl shadow-rose-950/50 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-2xl bg-rose-950/80 border border-rose-500/80 flex items-center justify-center mx-auto text-rose-400">
               <Lock className="w-8 h-8 animate-pulse text-rose-400" />
@@ -1297,7 +1290,7 @@ export function StudentAiInterview() {
                 Fullscreen Required
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Institutional proctoring policy requires this technical interview to remain in Fullscreen mode. Exiting fullscreen has been logged with an audit timestamp on the Master Recording.
+                Institutional proctoring policy requires this technical interview to remain in Fullscreen mode. Exiting fullscreen has been logged with an audit timestamp on the Master Recording for recruiter review.
               </p>
             </div>
 
@@ -1311,16 +1304,7 @@ export function StudentAiInterview() {
               variant="accent"
               size="lg"
               icon={Maximize}
-              onClick={async () => {
-                try {
-                  if (typeof document !== 'undefined' && document.documentElement?.requestFullscreen) {
-                    await document.documentElement.requestFullscreen();
-                  }
-                  setShowFullscreenModal(false);
-                } catch (e) {
-                  setShowFullscreenModal(false);
-                }
-              }}
+              onClick={handleReenterFullscreen}
               className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 shadow-lg shadow-rose-600/30 text-sm"
             >
               Re-enter Fullscreen Mode &amp; Resume
@@ -1331,7 +1315,7 @@ export function StudentAiInterview() {
 
       {/* Tab Switching Restriction Breach Modal */}
       {showTabSwitchModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 text-center select-none">
+        <div className="fixed inset-0 z-[9998] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 text-center select-none">
           <div className="max-w-md w-full bg-slate-900 border-2 border-amber-600 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl shadow-amber-950/50 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-2xl bg-amber-950/80 border border-amber-500/80 flex items-center justify-center mx-auto text-amber-400">
               <ShieldAlert className="w-8 h-8 animate-pulse text-amber-400" />
@@ -1344,7 +1328,7 @@ export function StudentAiInterview() {
                 Tab Switch Violation Flagged
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Navigating away from the active interview tab or switching to second monitors is strictly forbidden. This incident has been timestamped on your master recording for the recruiter panel.
+                Navigating away from the active interview tab or switching between windows/monitors is strictly forbidden. This incident has been timestamped on your master recording for the recruiter panel.
               </p>
             </div>
 

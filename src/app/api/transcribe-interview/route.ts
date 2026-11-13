@@ -33,27 +33,63 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const groq = new Groq({ apiKey });
-
-    // Convert file to Buffer and create Uploadable with Groq's toFile helper
+    // Convert file to Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const fileName = file.name || `question-${questionNumber}.webm`;
-    const mimeType = file.type || 'video/webm';
-    const uploadable = await toFile(buffer, fileName, { type: mimeType });
 
-    const promptContext = `Technical computer science interview answer for candidate assessment. Category: ${category}. Question: ${questionPrompt}`;
+    // If buffer is empty or smaller than valid container header, return early
+    if (buffer.length < 500) {
+      return NextResponse.json({
+        success: true,
+        questionNumber: Number(questionNumber),
+        questionId: Number(questionId),
+        questionPrompt,
+        category,
+        transcript: '[No audible speech detected in this recording clip]',
+        duration: 0,
+        model: 'whisper-large-v3-turbo',
+        provider: 'Groq API',
+        transcribedAt: new Date().toISOString(),
+      });
+    }
 
-    const transcription = await groq.audio.transcriptions.create({
-      file: uploadable,
-      model: 'whisper-large-v3-turbo',
-      response_format: 'verbose_json',
-      language: 'en',
-      prompt: promptContext,
-      temperature: 0.0,
-    });
+    // Clean up MIME type and filename for Groq's media processor
+    const rawMime = file.type || 'video/webm';
+    const cleanMimeType = rawMime.split(';')[0].trim() || 'video/webm';
+    const ext = cleanMimeType.includes('mp4') ? 'mp4' : cleanMimeType.includes('wav') ? 'wav' : 'webm';
+    const cleanFileName = file.name ? file.name.split('?')[0] : `question-${questionNumber}.${ext}`;
 
-    const transcriptText = transcription.text?.trim() || '[No audible speech detected in this recording clip]';
+    const groq = new Groq({ apiKey });
+    const uploadable = await toFile(buffer, cleanFileName, { type: cleanMimeType });
+
+    let transcription: any = null;
+    try {
+      // Primary: whisper-large-v3-turbo without prompt context (prevents Whisper hallucinations/silence)
+      transcription = await groq.audio.transcriptions.create({
+        file: uploadable,
+        model: 'whisper-large-v3-turbo',
+        response_format: 'verbose_json',
+        language: 'en',
+        temperature: 0.0,
+      });
+    } catch (primaryErr: any) {
+      console.warn('[Transcribe API] whisper-large-v3-turbo fallback attempt with whisper-large-v3:', primaryErr.message);
+      // Secondary fallback to whisper-large-v3
+      const uploadableRetry = await toFile(buffer, cleanFileName, { type: cleanMimeType });
+      transcription = await groq.audio.transcriptions.create({
+        file: uploadableRetry,
+        model: 'whisper-large-v3',
+        response_format: 'verbose_json',
+        language: 'en',
+      });
+    }
+
+    let transcriptText = transcription?.text?.trim() || '';
+
+    // Handle punctuation-only or empty responses
+    if (!transcriptText || transcriptText === '.' || transcriptText === '...' || transcriptText === '!') {
+      transcriptText = '[No audible speech detected in this recording clip]';
+    }
 
     return NextResponse.json({
       success: true,
@@ -62,20 +98,20 @@ export async function POST(req: NextRequest) {
       questionPrompt,
       category,
       transcript: transcriptText,
-      duration: (transcription as any).duration || null,
+      duration: transcription?.duration || null,
       model: 'whisper-large-v3-turbo',
       provider: 'Groq API',
       transcribedAt: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('[Transcribe API] Error during Groq whisper-large-v3-turbo transcription:', error);
+    console.error('[Transcribe API] Error during Groq Whisper transcription:', error);
 
-    // Provide a resilient fallback response so student completion is never blocked
+    // Provide a resilient response with question context so client is never left blank
     return NextResponse.json(
       {
         success: false,
         error: error.message || 'Groq transcription error',
-        fallbackTranscript: '[Transcription service temporarily busy. Spoken response preserved in video clip.]',
+        transcript: '[Transcription pending / audio preserved in recording clip]',
         model: 'whisper-large-v3-turbo',
       },
       { status: 200 }

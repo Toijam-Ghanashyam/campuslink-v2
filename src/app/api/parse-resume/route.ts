@@ -73,6 +73,7 @@ MATCHING RULES:
    - "Electrical Engineering"
    - "Mechanical Engineering"
    - "Civil Engineering"
+   - "Chemical Engineering"
    Map to the closest matching branch name above.
 
 3. CGPA / Percentage: Extract their current/graduation CGPA as a number out of 10.0 (e.g. 8.42). If given in percentage, convert to 10-point scale (divide by 10 or 9.5).
