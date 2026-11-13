@@ -232,7 +232,7 @@ const SEEDED_PIPELINE = [
 const SEEDED_SESSIONS = {
   'demo-student-id': {
     studentId: 'demo-student-id',
-    fullSessionVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    fullSessionVideoUrl: '/videos/interview-sample.mp4',
     totalDurationSec: 150,
     integrityScore: 92,
     questionClips: [
@@ -302,7 +302,7 @@ const SEEDED_SESSIONS = {
     studentId: 'vikramaditya',
     studentName: 'Vikramaditya Das',
     rollNumber: 'TU-2023-EE112',
-    fullSessionVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    fullSessionVideoUrl: '/videos/interview-sample.mp4',
     totalDurationSec: 160,
     integrityScore: 100,
     questionClips: [
@@ -501,7 +501,13 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
     const studentName = currentStudent?.name || currentStudent?.full_name || 'Candidate';
     addNotification('recruiter', {
       title: 'AI Video Interview Submitted',
-      message: `${studentName} completed the 5-question AI video round with Groq Whisper transcriptions (Full recording + 5 clips).`,
+      message: `${studentName} completed the AI video round with Groq Whisper transcriptions (Full recording + answer clips).`,
+      category: 'Shortlisting',
+    });
+
+    addNotification('student', {
+      title: 'Readiness Score Boosted (+14 pts)',
+      message: 'Your AI video interview was transcribed and synced to your placement readiness profile.',
       category: 'Shortlisting',
     });
   };

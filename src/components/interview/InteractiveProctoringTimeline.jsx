@@ -11,6 +11,8 @@ import {
   Users,
   Compass,
   ExternalLink,
+  Bot,
+  Keyboard,
 } from 'lucide-react';
 
 export function InteractiveProctoringTimeline({
@@ -42,7 +44,7 @@ export function InteractiveProctoringTimeline({
 
   const formatTime = (sec = 0) => {
     const m = String(Math.floor(sec / 60)).padStart(2, '0');
-    const s = String(Math.floor(sec % 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
     return `${m}:${s}`;
   };
 
@@ -63,10 +65,22 @@ export function InteractiveProctoringTimeline({
     handleJumpTo(targetSec);
   };
 
-  const violations = proctoringEvents.filter((e) => e.status === 'violation');
-  const warnings = proctoringEvents.filter((e) => e.status === 'warning');
+  const gapAnomalies = proctoringEvents.filter(
+    (e) =>
+      e.isGapAnomaly ||
+      e.type === 'GAP_ANOMALY_LLM_PROMPTING' ||
+      e.tag?.includes('GAP ANOMALY') ||
+      (e.reason && e.reason.includes('GAP ANOMALY'))
+  );
+  const violations = proctoringEvents.filter(
+    (e) => e.status === 'violation' && !gapAnomalies.includes(e)
+  );
+  const warnings = proctoringEvents.filter(
+    (e) => e.status === 'warning' && !gapAnomalies.includes(e)
+  );
 
-  const getEventIcon = (type) => {
+  const getEventIcon = (type, isGap = false) => {
+    if (isGap || type === 'GAP_ANOMALY_LLM_PROMPTING') return Bot;
     switch (type) {
       case 'MULTIPLE_FACES_DETECTED':
         return Users;
@@ -74,6 +88,8 @@ export function InteractiveProctoringTimeline({
         return Compass;
       case 'EYE_GAZE_OFF_SCREEN':
         return Eye;
+      case 'KEYSTROKE_DETECTED':
+        return Keyboard;
       case 'NO_FACE_DETECTED':
       case 'TAB_SWITCH_OR_FOCUS_LOSS':
       default:
@@ -103,7 +119,13 @@ export function InteractiveProctoringTimeline({
         </div>
 
         {/* Violations Count Badges */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          {gapAnomalies.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-950/90 border border-purple-500/80 font-mono text-[11px] font-bold text-purple-300 shadow-sm shadow-purple-500/20">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
+              {gapAnomalies.length} LLM Prompt Flags
+            </span>
+          )}
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950/80 border border-rose-600/60 font-mono text-[11px] font-bold text-rose-300">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             {violations.length} Violations
@@ -130,7 +152,7 @@ export function InteractiveProctoringTimeline({
             </span>
           </div>
 
-          {/* Jade Blocks (Answer Recording active for Q1 - Q10) */}
+          {/* Jade Blocks (Answer Recording active for Q1 - Q5) */}
           {questionClips.map((clip) => {
             const startSec = clip.startedAtSessionSec || 0;
             const clipDur = clip.durationSec || 1;
@@ -163,9 +185,14 @@ export function InteractiveProctoringTimeline({
             <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-white rounded-full shadow" />
           </div>
 
-          {/* Brick-Red & Amber Pins (Jump-to-Violation) */}
+          {/* Telemetry Pins: Purple Diamonds for Gap Anomaly, Brick-Red & Amber Pins for Violations */}
           {proctoringEvents.map((event, idx) => {
             const pinPct = Math.min(Math.max((event.timestampSec / duration) * 100, 0), 99.5);
+            const isGap =
+              event.isGapAnomaly ||
+              event.type === 'GAP_ANOMALY_LLM_PROMPTING' ||
+              event.tag?.includes('GAP ANOMALY') ||
+              (event.reason && event.reason.includes('GAP ANOMALY'));
             const isViolation = event.status === 'violation';
 
             return (
@@ -177,20 +204,30 @@ export function InteractiveProctoringTimeline({
                 }}
                 style={{ left: `${pinPct}%` }}
                 className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 group/pin p-1 transition-transform hover:scale-135 focus:outline-hidden`}
-                title={`[${formatTime(event.timestampSec)}] ${event.type}: ${event.reason || event.type} (Click to jump)`}
+                title={`${isGap ? '[GAP ANOMALY: Possible LLM Prompting]' : `[${event.type}]`} at ${formatTime(event.timestampSec)}: ${event.reason || event.detail || event.type} (Click to jump)`}
               >
                 <span
-                  className={`block rounded-full border-2 border-white shadow-md ${
-                    isViolation
-                      ? 'w-3.5 h-3.5 bg-rose-500 animate-pulse shadow-rose-900/80'
-                      : 'w-3 h-3 bg-amber-400 shadow-amber-900/80'
+                  className={`block border-2 border-white shadow-md ${
+                    isGap
+                      ? 'w-3.5 h-3.5 rotate-45 bg-purple-500 shadow-purple-900/90 animate-pulse'
+                      : isViolation
+                      ? 'w-3.5 h-3.5 rounded-full bg-rose-500 animate-pulse shadow-rose-900/80'
+                      : 'w-3 h-3 rounded-full bg-amber-400 shadow-amber-900/80'
                   }`}
                 />
                 {/* Pin Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/pin:flex flex-col items-center pointer-events-none z-50">
                   <div className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-white font-mono text-[10px] whitespace-nowrap shadow-xl">
-                    <span className={isViolation ? 'text-rose-400 font-bold' : 'text-amber-400 font-bold'}>
-                      {formatTime(event.timestampSec)} · {event.type}
+                    <span
+                      className={
+                        isGap
+                          ? 'text-purple-300 font-bold'
+                          : isViolation
+                          ? 'text-rose-400 font-bold'
+                          : 'text-amber-400 font-bold'
+                      }
+                    >
+                      {formatTime(event.timestampSec)} · {isGap ? '[GAP ANOMALY: Possible LLM Prompting]' : event.type}
                     </span>
                     <span className="block text-[9px] text-slate-400">Click to jump in video</span>
                   </div>
@@ -223,6 +260,10 @@ export function InteractiveProctoringTimeline({
             <span className="text-slate-400">Neutral:</span> Reading &amp; Thinking Gaps
           </span>
           <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rotate-45 bg-purple-500 border border-white" />
+            <span className="text-purple-400 font-semibold">Purple Diamonds:</span> [GAP ANOMALY: Possible LLM Prompting]
+          </span>
+          <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-white animate-pulse" />
             <span className="text-rose-400 font-semibold">Red Pins:</span> Violations (Face / Tab Loss)
           </span>
@@ -248,8 +289,13 @@ export function InteractiveProctoringTimeline({
 
           <div className="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto pr-1">
             {proctoringEvents.map((evt, idx) => {
+              const isGap =
+                evt.isGapAnomaly ||
+                evt.type === 'GAP_ANOMALY_LLM_PROMPTING' ||
+                evt.tag?.includes('GAP ANOMALY') ||
+                (evt.reason && evt.reason.includes('GAP ANOMALY'));
               const isViolation = evt.status === 'violation';
-              const Icon = getEventIcon(evt.type);
+              const Icon = getEventIcon(evt.type, isGap);
               const isActive = Math.abs(currentTime - evt.timestampSec) < 2.5;
 
               return (
@@ -259,16 +305,24 @@ export function InteractiveProctoringTimeline({
                   className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
                     isActive
                       ? 'ring-2 ring-indigo-400 bg-slate-800 text-white border-indigo-500 scale-102'
+                      : isGap
+                      ? 'bg-purple-950/70 border-purple-600/70 text-purple-200 hover:bg-purple-900/80 hover:border-purple-400'
                       : isViolation
                       ? 'bg-rose-950/60 border-rose-700/60 text-rose-300 hover:bg-rose-900/60 hover:border-rose-500'
                       : 'bg-amber-950/60 border-amber-700/60 text-amber-300 hover:bg-amber-900/60 hover:border-amber-500'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isViolation ? 'text-rose-400' : 'text-amber-400'}`} />
+                  <Icon
+                    className={`w-3.5 h-3.5 ${
+                      isGap ? 'text-purple-300' : isViolation ? 'text-rose-400' : 'text-amber-400'
+                    }`}
+                  />
                   <span className="font-bold underline decoration-dotted underline-offset-2">
                     {formatTime(evt.timestampSec)}
                   </span>
-                  <span className="text-[11px]">{evt.type}</span>
+                  <span className="text-[11px] truncate max-w-[200px]">
+                    {isGap ? '[GAP ANOMALY: Possible LLM Prompting]' : evt.type}
+                  </span>
                   <Play className="w-3 h-3 text-white/80 shrink-0 ml-0.5" />
                 </button>
               );
@@ -286,4 +340,3 @@ export function InteractiveProctoringTimeline({
 }
 
 export default InteractiveProctoringTimeline;
-

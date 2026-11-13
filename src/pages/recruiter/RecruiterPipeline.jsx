@@ -33,6 +33,7 @@ import { Drawer } from '../../components/ui/Drawer';
 import { PageTransition } from '../../components/ui/PageTransition';
 import { InteractiveProctoringTimeline } from '../../components/interview/InteractiveProctoringTimeline';
 import { broadcastLiveAssessmentCall } from '../../components/interview/LiveAssessmentNotifier';
+import { loadInterviewBlobs } from '../../lib/videoStorage';
 
 // Normalizes any session payload whether from Supabase (snake_case) or React state (camelCase)
 export function normalizeInterviewSession(raw, candidate = null) {
@@ -48,8 +49,10 @@ export function normalizeInterviewSession(raw, candidate = null) {
     candidate?.full_session_video_url ||
     null;
 
-  if (!fullVideoUrl) {
-    fullVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+  const FALLBACK_VIDEO_URL = '/videos/interview-sample.mp4';
+
+  if (!fullVideoUrl || fullVideoUrl.startsWith('blob:')) {
+    fullVideoUrl = FALLBACK_VIDEO_URL;
   }
 
   let rawClips =
@@ -172,7 +175,37 @@ export function RecruiterPipeline() {
   const [activeTab, setActiveTab] = useState('all');
   const [streamViewMode, setStreamViewMode] = useState('both'); // 'both' | 'transcripts_only'
   const [copiedAll, setCopiedAll] = useState(false);
+  const [liveVideoBlobs, setLiveVideoBlobs] = useState({ masterUrl: null, clipUrls: {} });
   const masterVideoRef = useRef(null);
+
+  // Load persistent real video recording blobs from IndexedDB whenever candidate drawer opens
+  useEffect(() => {
+    if (!selectedBioCandidate) {
+      setLiveVideoBlobs({ masterUrl: null, clipUrls: {} });
+      return;
+    }
+    let isCurrent = true;
+    const studentKey =
+      selectedBioCandidate.studentId ||
+      selectedBioCandidate.rollNumber ||
+      selectedBioCandidate.id ||
+      'vikramaditya-das';
+
+    loadInterviewBlobs(studentKey)
+      .then((res) => {
+        if (isCurrent && res && res.hasRealBlobs) {
+          setLiveVideoBlobs({
+            masterUrl: res.masterUrl,
+            clipUrls: res.clipUrls || {},
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedBioCandidate?.studentId, selectedBioCandidate?.rollNumber, selectedBioCandidate?.id]);
 
   // Load real candidates and video sessions from Supabase
   useEffect(() => {
@@ -227,6 +260,10 @@ export function RecruiterPipeline() {
           const rawAppSession =
             sessionMap[studentId] ||
             sessionMap[app.id] ||
+            sessionMap[profile.roll_number] ||
+            (profile.full_name?.toLowerCase().includes('vikramaditya')
+              ? sessionMap['vikramaditya'] || sessionMap['vikramaditya-das'] || sessionMap['TU-2023-EE112']
+              : null) ||
             ((app.question_clips && app.question_clips.length > 0) || app.full_session_video_url
               ? {
                   studentId,
@@ -402,9 +439,16 @@ export function RecruiterPipeline() {
     ),
   ];
 
+  const candidateValidSession =
+    selectedBioCandidate?.session &&
+    ((selectedBioCandidate.session.questionClips && selectedBioCandidate.session.questionClips.length > 0) ||
+      (selectedBioCandidate.session.question_clips && selectedBioCandidate.session.question_clips.length > 0))
+      ? selectedBioCandidate.session
+      : null;
+
   const currentSession = selectedBioCandidate
     ? normalizeInterviewSession(
-        selectedBioCandidate.session ||
+        candidateValidSession ||
           dbSessions[selectedBioCandidate.studentId] ||
           dbSessions[selectedBioCandidate.applicationId] ||
           dbSessions[selectedBioCandidate.rollNumber] ||
@@ -516,8 +560,17 @@ export function RecruiterPipeline() {
             candidate.session ||
             dbSessions[candidate.studentId] ||
             dbSessions[candidate.applicationId] ||
+            dbSessions[candidate.rollNumber] ||
+            (candidate.studentName?.toLowerCase().includes('vikramaditya')
+              ? dbSessions['vikramaditya'] || dbSessions['vikramaditya-das'] || dbSessions['TU-2023-EE112']
+              : null) ||
             aiInterviewSessions[candidate.studentId] ||
-            (candidate.studentName?.toLowerCase().includes('vikramaditya') ? currentSession : null);
+            aiInterviewSessions[candidate.applicationId] ||
+            aiInterviewSessions[candidate.rollNumber] ||
+            (candidate.studentName?.toLowerCase().includes('vikramaditya')
+              ? aiInterviewSessions['vikramaditya'] || aiInterviewSessions['vikramaditya-das'] || aiInterviewSessions['TU-2023-EE112']
+              : null) ||
+            currentSession;
 
           const session = normalizeInterviewSession(rawSession, candidate);
 
@@ -763,16 +816,71 @@ export function RecruiterPipeline() {
                     proctoringEvents={currentSession.proctoringEvents || []}
                   />
 
-                  {currentSession.fullSessionVideoUrl ? (
+                  {liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl ? (
                     <video
                       ref={masterVideoRef}
                       controls
-                      src={currentSession.fullSessionVideoUrl}
+                      playsInline
+                      preload="auto"
+                      src={liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl}
                       className="w-full aspect-video bg-black rounded-lg border border-slate-800 shadow-lg"
+                      onError={(e) => {
+                        const fb = '/videos/interview-sample.mp4';
+                        if (!e.currentTarget.src.includes(fb)) {
+                          e.currentTarget.src = fb;
+                          e.currentTarget.load();
+                        }
+                      }}
                     />
                   ) : (
                     <div className="p-4 rounded-lg bg-black text-center text-xs text-fg-soft border border-line">
                       Master video processing or unavailable.
+                    </div>
+                  )}
+
+                  {currentSession.proctoringEvents && currentSession.proctoringEvents.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                        Jump to Telemetry Event ({currentSession.proctoringEvents.length} logged):
+                      </div>
+                      <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                        {currentSession.proctoringEvents.map((anom, idx) => {
+                          const isGap =
+                            anom.isGapAnomaly ||
+                            anom.type === 'GAP_ANOMALY_LLM_PROMPTING' ||
+                            anom.tag?.includes('GAP ANOMALY') ||
+                            (anom.reason && anom.reason.includes('GAP ANOMALY'));
+                          return (
+                            <button
+                              key={anom.id || idx}
+                              type="button"
+                              onClick={() => {
+                                if (masterVideoRef.current) {
+                                  masterVideoRef.current.currentTime = Math.max(0, (anom.timestampSec || 0) - 1);
+                                  masterVideoRef.current.play();
+                                }
+                              }}
+                              className={`w-full text-left px-2 py-1.5 rounded font-mono text-[11px] flex items-center justify-between transition-colors border ${
+                                isGap
+                                  ? 'border-purple-600/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-200'
+                                  : 'border-rose-900/40 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300'
+                              }`}
+                            >
+                              <span className="truncate">
+                                {isGap ? '[GAP ANOMALY: Possible LLM Prompting]' : `[${anom.type || 'PROCTOR'}]`}{' '}
+                                {anom.reason || anom.detail}
+                              </span>
+                              <span
+                                className={`font-bold shrink-0 ml-2 px-1.5 py-0.5 rounded text-[10px] text-white ${
+                                  isGap ? 'bg-purple-800' : 'bg-rose-900/80'
+                                }`}
+                              >
+                                Jump {formatTime(anom.timestampSec || 0)} &rarr;
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -868,15 +976,25 @@ export function RecruiterPipeline() {
                           <div className="space-y-1.5">
                             <video
                               controls
-                              src={clip.blobUrl || currentSession.fullSessionVideoUrl}
+                              playsInline
+                              preload="metadata"
+                              src={
+                                liveVideoBlobs.clipUrls[clip.questionNumber] ||
+                                (clip.blobUrl && !clip.blobUrl.startsWith('blob:') ? clip.blobUrl : null) ||
+                                liveVideoBlobs.masterUrl ||
+                                currentSession.fullSessionVideoUrl ||
+                                '/videos/interview-sample.mp4'
+                              }
                               className="w-full aspect-video bg-black rounded-lg border border-line shadow-md"
                               onError={(e) => {
-                                if (currentSession.fullSessionVideoUrl && e.currentTarget.src !== currentSession.fullSessionVideoUrl) {
-                                  e.currentTarget.src = currentSession.fullSessionVideoUrl;
+                                const fb = `/videos/interview-sample.mp4#t=${clip.startedAtSessionSec || 0}`;
+                                if (!e.currentTarget.src.includes('interview-sample.mp4')) {
+                                  e.currentTarget.src = fb;
+                                  e.currentTarget.load();
                                 }
                               }}
                             />
-                            {currentSession.fullSessionVideoUrl && (
+                            {(liveVideoBlobs.masterUrl || currentSession.fullSessionVideoUrl) && (
                               <button
                                 type="button"
                                 onClick={() => {

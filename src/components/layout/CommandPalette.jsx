@@ -17,6 +17,7 @@ export function CommandPalette({ open, onClose }) {
   const [query, setQuery] = useState('');
 
   const COMMANDS = [
+    { label: 'Launch Live AI Video Interview Round', path: '/student/ai-interview', role: 'student', icon: Calendar, category: 'Navigation' },
     { label: 'Live AI Video Interview Round', path: '/student/ai-interview', icon: Video, category: 'Assessments' },
     { label: 'Active Placement Drives', path: '/student/drives', icon: Briefcase, category: 'Placements' },
     { label: 'Interview Preparation & Company Dossier', path: '/student/interviews', icon: Calendar, category: 'Interviews' },

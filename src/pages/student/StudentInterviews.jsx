@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Video, Globe, Sparkles, Building2, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,15 @@ import { MarginNote } from '@/components/ui/MarginNote';
 import { CompanyResearchDrawer } from '@/components/student/CompanyResearchDrawer';
 
 export function StudentInterviews() {
+  let navigate;
+  try {
+    navigate = useNavigate();
+  } catch {
+    navigate = (path) => {
+      if (typeof window !== 'undefined') window.location.href = path;
+    };
+  }
+
   const { studentInterviews = [], currentStudent, applications = [], drives = [] } = useStore();
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -72,9 +82,19 @@ export function StudentInterviews() {
               Synchronized assessment calendar with corporate panels. Access on-demand intelligence dossiers to review company tech stacks, round timelines, and interview tips.
             </p>
           </div>
-          <div className="text-xs font-mono text-fg-soft bg-surface border border-line px-3 py-1.5 rounded-lg flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-indigo-400" />
-            <span>Active Slots: <strong className="text-fg">{studentInterviews.length}</strong></span>
+          <div className="flex items-center gap-3">
+            <div className="text-xs font-mono text-fg-soft bg-surface border border-line px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-indigo-400" />
+              <span>Active Slots: <strong className="text-fg">{studentInterviews.length}</strong></span>
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => navigate('/student/ai-interview')}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3 py-1.5 shadow-md shadow-indigo-600/20"
+            >
+              <Video className="w-3.5 h-3.5 text-emerald-400" />
+              Launch AI Video Round &rarr;
+            </Button>
           </div>
         </div>
       </header>
