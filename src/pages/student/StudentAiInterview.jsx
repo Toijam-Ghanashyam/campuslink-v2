@@ -26,7 +26,6 @@ import { Button } from '../../components/ui/button';
 import { Stamp } from '../../components/ui/Stamp';
 import { useToast } from '../../components/ui/toast';
 import { PageTransition } from '../../components/ui/PageTransition';
-import { InteractiveProctoringTimeline } from '../../components/interview/InteractiveProctoringTimeline';
 
 // 1. Initialize once when permissions are granted
 export async function initProctoringModel() {
@@ -390,7 +389,12 @@ export function StudentAiInterview() {
         });
 
         setStep('completed');
-        toast('AI Interview submitted! Full recording + 10 answer clips + proctoring pins archived.', 'jade');
+        toast('AI Technical Interview submitted directly to the recruiter portal!', 'jade');
+
+        // Immediately direct the student back to their overview/dashboard
+        setTimeout(() => {
+          handleNavigateOverview();
+        }, 800);
       };
       masterRecorderRef.current.stop();
     }
@@ -710,79 +714,30 @@ export function StudentAiInterview() {
       )}
 
       {step === 'completed' && (
-        <div className="space-y-6">
-          <Card className="p-6 border-emerald-500/40 bg-emerald-950/20 text-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-            <div className="space-y-1">
-              <Stamp tone="jade">DUAL RECORDINGS &amp; PROCTORING ARCHIVED</Stamp>
-              <h3 className="font-display text-xl font-bold text-white pt-1">
-                AI Interview Submitted to Placement &amp; Recruiter Portals
-              </h3>
-              <p className="text-xs text-slate-300">
-                Full Unbroken Session: <strong className="font-mono text-white">{formatTime(masterSeconds)}</strong> · Segmented Question Clips: <strong className="font-mono text-white">{questionClips.length} / 10</strong> · Proctoring Flags: <strong className="font-mono text-rose-300">{proctoringEvents.length}</strong>
-              </p>
-            </div>
-            <Button variant="primary" onClick={handleNavigateOverview} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5">
-              View Updated Readiness Score →
-            </Button>
-          </Card>
-
-          {/* Interactive Timeline Scrubber with Jump-to-Violation Pins */}
-          <InteractiveProctoringTimeline
-            videoRef={fullVideoRef}
-            totalDurationSec={masterSeconds}
-            questionClips={questionClips}
-            proctoringEvents={proctoringEvents}
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-5 p-5 space-y-3 bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="font-mono text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <Film className="w-4 h-4 text-indigo-400" /> 01 · Full Unbroken Recording
-                </span>
-                <span className="font-mono text-[11px] text-slate-400">{formatTime(masterSeconds)}</span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Continuous recording across all 10 questions including reading pauses and gaps.
-              </p>
-              {fullRecordingUrl && (
-                <video
-                  ref={fullVideoRef}
-                  src={fullRecordingUrl}
-                  controls
-                  className="w-full aspect-video bg-black rounded-lg border border-slate-800 shadow-lg"
-                />
-              )}
-            </Card>
-
-            <Card className="lg:col-span-7 p-5 space-y-4 bg-slate-900 border border-slate-800 text-slate-100 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="font-mono text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <Video className="w-4 h-4 text-emerald-400" /> 02 · Per-Question Answer Clips ({questionClips.length})
-                </span>
-                <span className="font-mono text-[11px] text-emerald-400 font-semibold">Start-to-End Isolated</span>
-              </div>
-
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 divide-y divide-slate-800">
-                {questionClips.map((clip) => (
-                  <div key={clip.questionId} className="pt-3 first:pt-0 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                    <div className="sm:col-span-7 space-y-1">
-                      <div className="flex items-center gap-2 font-mono text-[11px]">
-                        <span className="font-bold text-indigo-400">Q{clip.questionNumber}</span>
-                        <span className="text-slate-400">· {clip.category}</span>
-                        <span className="text-emerald-400 font-semibold">({formatTime(clip.durationSec)})</span>
-                      </div>
-                      <p className="text-xs text-slate-200 line-clamp-2">{clip.prompt}</p>
-                    </div>
-                    <div className="sm:col-span-5">
-                      <video src={clip.blobUrl} controls className="w-full aspect-video bg-black rounded-lg border border-slate-800" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+        <Card className="p-8 border border-emerald-500/40 bg-slate-900 text-slate-100 text-center space-y-5 max-w-xl mx-auto shadow-2xl">
+          <div className="w-16 h-16 rounded-full bg-emerald-950/80 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400">
+            <CheckCircle2 className="w-8 h-8" />
           </div>
-        </div>
+          <div className="space-y-1.5">
+            <Stamp tone="jade">INTERVIEW DIRECTLY SUBMITTED</Stamp>
+            <h3 className="font-display text-2xl font-bold text-white pt-2">
+              Live AI Interview Completed
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+              Your 10 technical question recordings and full session audio/video have been submitted directly to the recruiter evaluation portal.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleNavigateOverview}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 shadow-lg shadow-indigo-600/30"
+            >
+              Return to Placement Dashboard →
+            </Button>
+          </div>
+        </Card>
       )}
     </PageTransition>
   );
