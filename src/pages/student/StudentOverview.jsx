@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Stamp } from '../../components/ui/Stamp';
 import { PageTransition } from '../../components/ui/PageTransition';
+import { LiveAssessmentNotifier } from '../../components/interview/LiveAssessmentNotifier';
 
 export function StudentOverview() {
   let navigate;
@@ -33,9 +34,17 @@ export function StudentOverview() {
 
   const { currentStudent = {}, applications = [], aiInterviewSessions = {} } = useStore();
   const hasAiSession = Boolean(aiInterviewSessions[currentStudent.id]);
+  const invitedApplication = applications.find(
+    (a) =>
+      a.stage === 'VIDEO_ASSESSMENT' ||
+      a.stage === 'VIDEO_ASSESSMENT_CALLED' ||
+      a.videoAssessmentCalled ||
+      a.status === 'Video Assessment Called'
+  );
 
   return (
     <PageTransition className="space-y-6">
+      <LiveAssessmentNotifier />
       <Masthead
         context="STUDENT READINESS PORTAL · BPUT CAMPUSLINK"
         title={`Welcome back, ${currentStudent.name || currentStudent.full_name || 'Student'}.`}
@@ -103,31 +112,74 @@ export function StudentOverview() {
         </Card>
       </div>
 
-      {/* Live AI Technical Interview Banner */}
-      <Card className="p-6 border-indigo-500/50 bg-indigo-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+      {/* Live AI Technical Interview Banner - Unlocks on Recruiter Call */}
+      <Card className={`p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 ${
+        hasAiSession
+          ? 'border-emerald-500/50 bg-emerald-950/20'
+          : invitedApplication
+          ? 'border-indigo-500/80 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-emerald-950/30'
+          : 'border-slate-800 bg-slate-900/60'
+      }`}>
         <div className="space-y-1.5 max-w-xl">
           <div className="flex items-center gap-2">
-            <Stamp tone={hasAiSession ? 'jade' : 'accent'}>
-              {hasAiSession ? 'INTERVIEW COMPLETED' : 'AVAILABLE NOW'}
+            <Stamp tone={hasAiSession ? 'jade' : invitedApplication ? 'accent' : 'ink'}>
+              {hasAiSession
+                ? 'INTERVIEW SUBMITTED'
+                : invitedApplication
+                ? 'RECRUITER CALL · READY'
+                : 'UNLOCKS POST-APPLICATION'}
             </Stamp>
-            <span className="text-xs text-fg-soft font-mono">5 Questions · Dual-Stream Recording</span>
+            <span className="text-xs text-fg-soft font-mono">
+              {hasAiSession || invitedApplication ? '5 Questions · Groq Whisper Transcripts' : 'Invitation-Only Assessment'}
+            </span>
           </div>
           <h3 className="font-display text-xl font-semibold text-fg">
-            Autonomous Live AI Technical Interview Round
+            {hasAiSession
+              ? 'AI Technical Video Assessment Completed'
+              : invitedApplication
+              ? `Live AI Video Assessment: ${invitedApplication.company || invitedApplication.company_name || 'Infosys Limited'}`
+              : 'Autonomous Live AI Technical Interview Round'}
           </h3>
           <p className="text-xs text-fg-soft leading-relaxed">
-            Take the 5-question AI technical assessment with continuous full-session master recording and isolated question-by-question answer clips. Results automatically advance your recruiter pipeline profile.
+            {hasAiSession
+              ? 'Your unbroken master recording, 5 answer clips, and Groq Whisper transcriptions have been submitted to the recruiter war room.'
+              : invitedApplication
+              ? `Following your application, the recruiter has invited you to take the 5-question proctored technical video round for ${invitedApplication.role || invitedApplication.role_title || 'Data Analyst'}.`
+              : 'The Live AI Video Assessment round is initiated after you apply to an enterprise placement drive and the recruiter calls you for a video interview.'}
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="lg"
-          icon={Video}
-          onClick={() => navigate('/student/ai-interview')}
-          className="shrink-0"
-        >
-          {hasAiSession ? 'Retake AI Interview →' : 'Start AI Interview Round →'}
-        </Button>
+        <div>
+          {hasAiSession ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              icon={Video}
+              onClick={() => navigate('/student/ai-interview')}
+              className="shrink-0 text-xs border-emerald-600/50 text-emerald-300"
+            >
+              Retake AI Interview →
+            </Button>
+          ) : invitedApplication ? (
+            <Button
+              variant="primary"
+              size="lg"
+              icon={Video}
+              onClick={() => navigate('/student/ai-interview')}
+              className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+            >
+              Start AI Video Assessment Round →
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => navigate('/student/drives')}
+              className="shrink-0 text-xs text-slate-300"
+            >
+              Apply to Drives First →
+            </Button>
+          )}
+        </div>
       </Card>
     </PageTransition>
   );

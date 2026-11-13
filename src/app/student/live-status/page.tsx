@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { acceptOffer } from '@/app/actions/placement';
+import { LiveAssessmentNotifier } from '@/components/interview/LiveAssessmentNotifier';
 
 export default function CandidateLiveStatusPage() {
   const [profile, setProfile] = useState<any>(null);
@@ -63,8 +64,13 @@ export default function CandidateLiveStatusPage() {
         },
         (payload) => {
           loadStudentState();
-          if (payload.new && payload.new.ai_feedback_summary?.includes('[DISPATCH ALERT]')) {
-            setActiveAlert(payload.new.ai_feedback_summary);
+          if (
+            payload.new &&
+            (payload.new.ai_feedback_summary?.includes('[DISPATCH ALERT]') ||
+              payload.new.stage === 'VIDEO_ASSESSMENT' ||
+              payload.new.ai_feedback_summary?.includes('Video Assessment'))
+          ) {
+            setActiveAlert(payload.new.ai_feedback_summary || 'Recruiter called for Live AI Video Assessment!');
             // Browser chime audio synthesized using Web Audio API
             try {
               const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -99,6 +105,7 @@ export default function CandidateLiveStatusPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
+      <LiveAssessmentNotifier onNotificationReceived={() => loadStudentState()} />
       <div className="max-w-3xl mx-auto space-y-6">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>

@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Globe } from 'lucide-react';
 import { CompanyResearchDrawer } from '@/components/student/CompanyResearchDrawer';
+import { LiveAssessmentNotifier } from '@/components/interview/LiveAssessmentNotifier';
 import { RecommendedProjectBlueprint, PortfolioSuitabilityResult } from '@/types/projects';
 import { evaluatePortfolioSuitabilityForDrive } from '@/lib/portfolio-matcher';
 
@@ -533,6 +534,7 @@ export default function StudentDrivesPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 text-slate-100">
+      <LiveAssessmentNotifier onNotificationReceived={() => loadData()} />
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Navigation Bar */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
@@ -548,11 +550,6 @@ export default function StudentDrivesPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link href="/student/ai-interview">
-              <Button variant="outline" size="sm" className="border-emerald-600/50 text-emerald-400 hover:bg-emerald-950/40 text-xs font-semibold">
-                🎥 AI Video Round
-              </Button>
-            </Link>
             <Link href="/student/live-status">
               <Button variant="outline" size="sm" className="border-indigo-600/40 text-indigo-400 hover:bg-indigo-950/40 text-xs">
                 Live Dispatch
@@ -1039,7 +1036,7 @@ export default function StudentDrivesPage() {
                       </Button>
 
                       {application ? (
-                        <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-1">
+                        <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs space-y-2">
                           <div className="flex justify-between">
                             <span className="text-slate-400">Application Stage:</span>
                             <span className="font-semibold text-indigo-400">{application.stage}</span>
@@ -1054,6 +1051,18 @@ export default function StudentDrivesPage() {
                             <p className="text-slate-300 italic pt-1 border-t border-slate-800/80 text-[11px]">
                               "{application.ai_feedback_summary}"
                             </p>
+                          )}
+                          {(application.stage === 'VIDEO_ASSESSMENT' ||
+                            application.stage === 'VIDEO_ASSESSMENT_CALLED' ||
+                            application.video_assessment_called) && (
+                            <Link
+                              href={`/student/ai-interview?appId=${application.id}&driveId=${drive.id}&company=${encodeURIComponent(drive.company_name)}&role=${encodeURIComponent(drive.role_title)}`}
+                              className="block pt-1"
+                            >
+                              <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30">
+                                <span>📹</span> Start Invited AI Video Assessment →
+                              </Button>
+                            </Link>
                           )}
                         </div>
                       ) : (

@@ -73,7 +73,9 @@ export async function advanceCandidateStage(
   }
 
   // If a room/panel instruction is provided, prefix or store in feedback summary
-  if (panelRoom) {
+  if (newStage === 'VIDEO_ASSESSMENT') {
+    updatePayload.ai_feedback_summary = '[ACTION REQUIRED]: Recruiter called for Live AI Technical Video Assessment. Please complete the 5-question round.';
+  } else if (panelRoom) {
     updatePayload.ai_feedback_summary = `[DISPATCH ALERT]: Please report immediately to ${panelRoom}.`;
   }
 

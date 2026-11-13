@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Globe } from 'lucide-react';
 import { CompanyResearchDrawer } from '@/components/student/CompanyResearchDrawer';
+import { LiveAssessmentNotifier } from '@/components/interview/LiveAssessmentNotifier';
 
 export default function StudentDashboardPage() {
   const [student, setStudent] = useState<any>(null);
@@ -298,6 +299,9 @@ export default function StudentDashboardPage() {
     switch (stage) {
       case 'OFFERED':
         return <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Offer Extended</Badge>;
+      case 'VIDEO_ASSESSMENT':
+      case 'VIDEO_ASSESSMENT_CALLED':
+        return <Badge className="bg-amber-500/25 text-amber-300 border border-amber-500/50 font-bold animate-pulse">📹 AI Video Round Called</Badge>;
       case 'INTERVIEW':
         return <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30">Interview</Badge>;
       case 'ASSESSMENT':
@@ -312,6 +316,7 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 text-slate-100">
+      <LiveAssessmentNotifier onNotificationReceived={() => loadData()} />
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Navigation Bar */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
@@ -580,11 +585,6 @@ export default function StudentDashboardPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <Link href="/student/ai-interview">
-                    <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 shadow-lg shadow-emerald-600/30 whitespace-nowrap">
-                      🎥 AI Video Round →
-                    </Button>
-                  </Link>
                   <Link href="/student/readiness-test">
                     <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 shadow-lg shadow-indigo-600/30 whitespace-nowrap">
                       {student.last_readiness_test_at || (student.readiness_status && student.readiness_status !== 'NOT_TESTED')
@@ -597,6 +597,49 @@ export default function StudentDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* RECRUITER AI VIDEO ASSESSMENT INVITATION BANNER (AFTER APPLYING TO COMPANY) */}
+        {(() => {
+          const invitedApp = applications.find(
+            (a) =>
+              a.stage === 'VIDEO_ASSESSMENT' ||
+              a.stage === 'VIDEO_ASSESSMENT_CALLED' ||
+              a.video_assessment_called ||
+              a.stage === 'INTERVIEW_R1'
+          );
+          if (!invitedApp) return null;
+          const targetDrive = invitedApp.placement_drives;
+          return (
+            <div className="rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/50 p-5 shadow-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="space-y-1 max-w-2xl">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-black shadow-sm">
+                      Recruiter Called For AI Video Assessment
+                    </span>
+                    <span className="text-xs font-mono text-emerald-400 font-bold">
+                      {targetDrive?.company_name || 'Enterprise Partner'} · {targetDrive?.role_title || 'Software Engineering'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white">
+                    Live AI Technical Interview Assessment Requested
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Following your application, the recruiter has invited you to complete the 5-question Live AI Technical Video Assessment. Your dual-stream recording and Groq Whisper transcriptions will be submitted directly to the recruiter war room.
+                  </p>
+                </div>
+                <Link
+                  href={`/student/ai-interview?appId=${invitedApp.id}&driveId=${targetDrive?.id || ''}&company=${encodeURIComponent(targetDrive?.company_name || '')}&role=${encodeURIComponent(targetDrive?.role_title || '')}`}
+                  className="shrink-0"
+                >
+                  <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-3 shadow-lg shadow-emerald-600/40 flex items-center gap-2 whitespace-nowrap">
+                    <span>📹</span> Start AI Video Assessment Round →
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* AI SKILL COMPATIBILITY: TOP RECOMMENDED DRIVES */}
         {topDrives.length > 0 && (
@@ -872,6 +915,16 @@ export default function StudentDashboardPage() {
                                 <Globe className="h-3 w-3 text-indigo-400" />
                                 {app.stage === 'INTERVIEW' ? 'Prep Dossier' : 'Dossier'}
                               </Button>
+                            )}
+                            {(app.stage === 'VIDEO_ASSESSMENT' || app.stage === 'VIDEO_ASSESSMENT_CALLED' || app.video_assessment_called) && (
+                              <Link href={`/student/ai-interview?appId=${app.id}&driveId=${drive?.id || ''}&company=${encodeURIComponent(drive?.company_name || '')}&role=${encodeURIComponent(drive?.role_title || '')}`}>
+                                <Button
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-7.5 px-3 flex items-center gap-1 shadow-sm shadow-emerald-600/30 whitespace-nowrap"
+                                >
+                                  <span>📹</span> Give Video Round →
+                                </Button>
+                              </Link>
                             )}
                             {canAccept ? (
                               <Button

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { advanceCandidateStage } from '@/app/actions/war-room';
+import { broadcastLiveAssessmentCall } from '@/components/interview/LiveAssessmentNotifier';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 
 const STAGES = [
   'APPLIED',
+  'VIDEO_ASSESSMENT',
   'OA_CLEARED',
   'INTERVIEW_R1',
   'INTERVIEW_R2',
@@ -70,11 +72,19 @@ export default function RecruiterWarRoom() {
       .from('drive_applications')
       .select(`
         id,
+        drive_id,
+        student_id,
         stage,
         ai_fit_score,
         ai_feedback_summary,
         offer_ctc,
         offer_status,
+        video_assessment_called,
+        video_interview_completed,
+        full_session_video_url,
+        question_clips,
+        proctoring_events,
+        video_integrity_score,
         student_profiles (
           *
         )
@@ -116,6 +126,18 @@ export default function RecruiterWarRoom() {
     const isOffer = stage === 'OFFERED';
     await advanceCandidateStage(appId, stage, panelRoom, isOffer ? ctcOffer : undefined);
     fetchApplications(selectedDriveId);
+
+    if (stage === 'VIDEO_ASSESSMENT') {
+      const targetApp = applications.find((a) => a.id === appId);
+      const targetDrive = drives.find((d) => d.id === selectedDriveId);
+      broadcastLiveAssessmentCall({
+        applicationId: appId,
+        driveId: selectedDriveId,
+        studentId: targetApp?.student_profiles?.id || targetApp?.student_id,
+        companyName: targetDrive?.company_name || 'Enterprise Partner',
+        roleTitle: targetDrive?.role_title || 'Software Engineer',
+      });
+    }
   };
 
   if (loading) {
@@ -312,11 +334,19 @@ export default function RecruiterWarRoom() {
                         )}
 
                         <Link
-                          href="/recruiter/pipeline"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 hover:text-white hover:bg-indigo-900 transition-colors"
+                          href={`/recruiter/pipeline?studentId=${student?.id || app.student_id}&appId=${app.id}&driveId=${selectedDriveId}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all border ${
+                            app.video_interview_completed || (app.question_clips && app.question_clips.length > 0) || app.stage === 'OA_CLEARED'
+                              ? 'bg-emerald-950/90 text-emerald-300 border-emerald-600 hover:bg-emerald-900 hover:text-white shadow-sm shadow-emerald-500/20'
+                              : 'bg-indigo-950/80 border-indigo-700/60 text-indigo-300 hover:text-white hover:bg-indigo-900'
+                          }`}
                           title="Inspect candidate dual-stream video footage and Groq Whisper transcriptions"
                         >
-                          📹 AI Video &amp; Whisper Transcripts &rarr;
+                          <span>
+                            {app.video_interview_completed || (app.question_clips && app.question_clips.length > 0) || app.stage === 'OA_CLEARED'
+                              ? '📹 AI Video & Transcripts (5 Clips Ready) →'
+                              : '📹 AI Video & Whisper Transcripts →'}
+                          </span>
                         </Link>
                       </div>
                     </div>
@@ -335,6 +365,19 @@ export default function RecruiterWarRoom() {
                       </Badge>
 
                       <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`h-8 text-xs font-semibold ${
+                            app.stage === 'VIDEO_ASSESSMENT'
+                              ? 'bg-purple-950/80 text-purple-300 border-purple-500 shadow-sm'
+                              : 'border-purple-600/50 text-purple-300 hover:bg-purple-950/50'
+                          }`}
+                          onClick={() => handleStageChange(app.id, 'VIDEO_ASSESSMENT')}
+                          title="Call candidate for Live AI Video Technical Assessment"
+                        >
+                          📹 Call Video Assessment
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
