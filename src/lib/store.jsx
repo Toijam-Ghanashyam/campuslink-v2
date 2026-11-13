@@ -226,9 +226,6 @@ const SEEDED_SESSIONS = {
       { questionNumber: 3, questionId: 3, category: 'Frontend Architecture', prompt: 'Explain how React reconciliation and virtual DOM diffing optimize rendering performance in data-heavy dashboards.', startedAtSessionSec: 54, durationSec: 18 },
       { questionNumber: 4, questionId: 4, category: 'Database Systems', prompt: 'When would you choose PostgreSQL composite indexing over a hash index, and how do you diagnose a slow query?', startedAtSessionSec: 78, durationSec: 17 },
       { questionNumber: 5, questionId: 5, category: 'System Design', prompt: 'Design a real-time conflict-free interview slot booking service handling 1,500 concurrent student requests.', startedAtSessionSec: 102, durationSec: 20 },
-      { questionNumber: 6, questionId: 6, category: 'API Security', prompt: 'Compare stateless JWT authentication with session-based cookies. How do you mitigate token replay attacks?', startedAtSessionSec: 128, durationSec: 15 },
-      { questionNumber: 7, questionId: 7, category: 'Concurrency', prompt: 'How does the Node.js event loop handle CPU-bound tasks vs. asynchronous I/O operations?', startedAtSessionSec: 148, durationSec: 16 },
-      { questionNumber: 8, questionId: 8, category: 'Behavioral', prompt: 'Tell us about a time a hackathon deadline was at risk. How did you prioritize and deliver?', startedAtSessionSec: 168, durationSec: 10 },
     ],
     proctoringEvents: [
       { id: 'evt-1', timestampSec: 28, type: 'HEAD_TURNED_AWAY', status: 'warning', reason: 'Head yaw turned > 72% away from display' },
@@ -361,7 +358,7 @@ export function StoreProvider({ children, initialStudent = null, initialDrives =
     const studentName = currentStudent?.name || currentStudent?.full_name || 'Candidate';
     addNotification('recruiter', {
       title: 'AI Video Interview Submitted',
-      message: `${studentName} completed the 10-question AI video round (Full recording + 10 answer clips available).`,
+      message: `${studentName} completed the 5-question AI video round (Full recording + 5 answer clips available).`,
       category: 'Shortlisting',
     });
   };

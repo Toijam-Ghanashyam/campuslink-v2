@@ -72,7 +72,7 @@ export function RecruiterPipeline() {
       <Masthead
         context="RECRUITER PIPELINE · TALENT ACQUISITION"
         title="Candidate Assessment & Pipeline Review."
-        lede="Review applicants, inspect automated AI video interview recordings (unbroken session + 10 question clips), and advance candidate stages."
+        lede="Review applicants, inspect automated AI video interview recordings (unbroken session + 5 question clips), and advance candidate stages."
       />
 
       {/* Tabs */}
@@ -153,7 +153,7 @@ export function RecruiterPipeline() {
                       <Video className="w-3.5 h-3.5 text-emerald-400" /> AI Video Round Archived
                     </span>
                     <span className="font-mono text-[10px] text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                      10 Clips
+                      {aiInterviewSessions[candidate.studentId]?.questionClips?.length || 5} Clips
                     </span>
                   </div>
                 )}
@@ -254,7 +254,9 @@ export function RecruiterPipeline() {
                       Live AI Video Interview Round
                     </h4>
                   </div>
-                  <Stamp tone="jade">10 / 10 ANSWER CLIPS ARCHIVED</Stamp>
+                  <Stamp tone="jade">
+                    {currentSession.questionClips?.length || 5} / {currentSession.questionClips?.length || 5} ANSWER CLIPS ARCHIVED
+                  </Stamp>
                 </div>
 
                 {/* Stream 1: Full Unbroken Session */}
@@ -340,7 +342,7 @@ export function RecruiterPipeline() {
                   No AI Video Interview Recorded Yet
                 </h4>
                 <p className="text-xs text-fg-soft max-w-sm mx-auto">
-                  Candidate has not yet completed the autonomous 10-question dual-stream AI technical interview.
+                  Candidate has not yet completed the autonomous 5-question dual-stream AI technical interview.
                 </p>
               </Card>
             )}

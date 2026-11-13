@@ -89,11 +89,6 @@ const AI_QUESTIONS = [
   { id: 3, category: 'Frontend Architecture', prompt: 'Explain how React reconciliation and virtual DOM diffing optimize rendering performance in data-heavy dashboards.' },
   { id: 4, category: 'Database Systems', prompt: 'When would you choose PostgreSQL composite indexing over a hash index, and how do you diagnose a slow query?' },
   { id: 5, category: 'System Design', prompt: 'Design a real-time conflict-free interview slot booking service handling 1,500 concurrent student requests.' },
-  { id: 6, category: 'API Security', prompt: 'Compare stateless JWT authentication with session-based cookies. How do you mitigate token replay attacks?' },
-  { id: 7, category: 'Concurrency', prompt: 'How does the Node.js event loop handle CPU-bound tasks vs. asynchronous I/O operations?' },
-  { id: 8, category: 'Cloud & DevOps', prompt: 'Describe your strategy for zero-downtime deployment using Docker containers and CI/CD pipelines.' },
-  { id: 9, category: 'Debugging Scenario', prompt: 'A production microservice is experiencing gradual memory leaks every 6 hours. How do you isolate and fix it?' },
-  { id: 10, category: 'Behavioral & Ownership', prompt: 'Tell us about a time a hackathon or production deadline was at risk. How did you prioritize and deliver?' },
 ];
 
 export function StudentAiInterview() {
@@ -511,7 +506,7 @@ export function StudentAiInterview() {
               <li className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
                 <span className="font-mono text-xs font-bold text-indigo-400 mt-0.5 px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60">01</span>
                 <div>
-                  <strong className="text-white block font-semibold">10 Technical Questions:</strong>
+                  <strong className="text-white block font-semibold">5 Technical Questions:</strong>
                   <span className="text-slate-300">Sequential evaluation across DSA, System Design, Core Engineering, and Behavioral scenarios.</span>
                 </div>
               </li>
@@ -519,7 +514,7 @@ export function StudentAiInterview() {
                 <span className="font-mono text-xs font-bold text-indigo-400 mt-0.5 px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60">02</span>
                 <div>
                   <strong className="text-white block font-semibold">Full-Session Master Recording:</strong>
-                  <span className="text-slate-300">Clicking <em className="text-indigo-300 font-medium">"I'm Ready"</em> starts an unbroken master video recording covering the entire 10-question round, including reading pauses and inter-question gaps.</span>
+                  <span className="text-slate-300">Clicking <em className="text-indigo-300 font-medium">"I'm Ready"</em> starts an unbroken master video recording covering the entire 5-question round, including reading pauses and inter-question gaps.</span>
                 </div>
               </li>
               <li className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
@@ -650,7 +645,7 @@ export function StudentAiInterview() {
               )}
             </div>
 
-            <div className="grid grid-cols-10 gap-1.5 pt-1">
+            <div className="grid grid-cols-5 gap-1.5 pt-1">
               {AI_QUESTIONS.map((q, idx) => (
                 <div
                   key={q.id}
@@ -724,7 +719,7 @@ export function StudentAiInterview() {
               Live AI Interview Completed
             </h3>
             <p className="text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
-              Your 10 technical question recordings and full session audio/video have been submitted directly to the recruiter evaluation portal.
+              Your 5 technical question recordings and full session audio/video have been submitted directly to the recruiter evaluation portal.
             </p>
           </div>
           <div className="pt-2">

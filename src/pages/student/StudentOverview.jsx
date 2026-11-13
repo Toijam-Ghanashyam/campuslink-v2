@@ -110,13 +110,13 @@ export function StudentOverview() {
             <Stamp tone={hasAiSession ? 'jade' : 'accent'}>
               {hasAiSession ? 'INTERVIEW COMPLETED' : 'AVAILABLE NOW'}
             </Stamp>
-            <span className="text-xs text-fg-soft font-mono">10 Questions · Dual-Stream Recording</span>
+            <span className="text-xs text-fg-soft font-mono">5 Questions · Dual-Stream Recording</span>
           </div>
           <h3 className="font-display text-xl font-semibold text-fg">
             Autonomous Live AI Technical Interview Round
           </h3>
           <p className="text-xs text-fg-soft leading-relaxed">
-            Take the 10-question AI technical assessment with continuous full-session master recording and isolated question-by-question answer clips. Results automatically advance your recruiter pipeline profile.
+            Take the 5-question AI technical assessment with continuous full-session master recording and isolated question-by-question answer clips. Results automatically advance your recruiter pipeline profile.
           </p>
         </div>
         <Button

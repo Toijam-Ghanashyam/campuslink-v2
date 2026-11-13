@@ -216,7 +216,7 @@ export function InteractiveProctoringTimeline({
         <div className="flex flex-wrap items-center gap-3 text-[11px]">
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 border border-emerald-400" />
-            <span className="text-emerald-400 font-semibold">Jade Blocks:</span> Question Answers (Q1–Q10)
+            <span className="text-emerald-400 font-semibold">Jade Blocks:</span> Question Answers (Q1–Q5)
           </span>
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700" />
